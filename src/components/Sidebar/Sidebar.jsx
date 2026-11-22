@@ -16,6 +16,8 @@ import {
   MessageSquare,
   Bot,
   Globe,
+  TrendingUp,
+  Code,
 } from 'lucide-react';
 import { useTasks } from '../../hooks/useTasks';
 import { useI18n } from '../../i18n/I18nContext';
@@ -37,6 +39,8 @@ export function Sidebar({ activeTab = 'overview', onTabChange, onOpenFeedback })
     { id: 'billing', label: t('nav.billing', 'Plans & Billing'), icon: CreditCard, count: null },
     { id: 'intelligence', label: t('nav.intelligence', 'Intelligence'), icon: Brain, count: null },
     { id: 'enterprise', label: t('nav.enterprise', 'Enterprise Admin'), icon: ShieldCheck, count: null },
+    { id: 'executive', label: t('nav.executive', 'Executive BI'), icon: TrendingUp, count: null },
+    { id: 'developer', label: t('nav.developer', 'Developer Platform'), icon: Code, count: null },
     { id: 'analytics', label: t('nav.analytics', 'Analytics'), icon: BarChart2, count: null },
     { id: 'support', label: t('nav.support', 'Support & Help'), icon: HelpCircle, count: null },
     { id: 'settings', label: t('nav.settings', 'Regional Settings'), icon: Globe, count: null },

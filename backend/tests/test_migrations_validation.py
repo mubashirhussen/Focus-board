@@ -57,6 +57,16 @@ def test_alembic_migrations_lifecycle():
             "ai_agent_approvals",
             "ai_persistent_preferences",
             "user_regional_settings",
+            "project_milestones",
+            "project_risks",
+            "resource_capacities",
+            "analytics_reports",
+            "developer_applications",
+            "developer_credentials",
+            "webhook_subscriptions",
+            "webhook_deliveries",
+            "api_usage_records",
+            "idempotency_records",
         ]
 
         for table in expected_tables:

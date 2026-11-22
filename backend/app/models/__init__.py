@@ -47,6 +47,20 @@ from app.models.ai_agent import (
     AIPersistentPreference,
 )
 from app.models.regional_settings import UserRegionalSetting
+from app.models.enterprise_analytics import (
+    ProjectMilestone,
+    ProjectRisk,
+    ResourceCapacity,
+    AnalyticsReport,
+)
+from app.models.developer_platform import (
+    DeveloperApplication,
+    DeveloperCredential,
+    WebhookSubscription,
+    WebhookDelivery,
+    APIUsageRecord,
+    IdempotencyRecord,
+)
 
 __all__ = [
     "User",
@@ -93,4 +107,14 @@ __all__ = [
     "AIAgentApproval",
     "AIPersistentPreference",
     "UserRegionalSetting",
+    "ProjectMilestone",
+    "ProjectRisk",
+    "ResourceCapacity",
+    "AnalyticsReport",
+    "DeveloperApplication",
+    "DeveloperCredential",
+    "WebhookSubscription",
+    "WebhookDelivery",
+    "APIUsageRecord",
+    "IdempotencyRecord",
 ]

@@ -17,6 +17,8 @@ import {
   ArrowRight,
   Bot,
   Globe,
+  TrendingUp,
+  Code,
 } from 'lucide-react';
 import { searchApi } from '../../services/searchApi';
 import { userPrivacyApi } from '../../services/userPrivacyApi';
@@ -132,6 +134,20 @@ export function CommandPalette({
       label: 'Open Enterprise Governance & Security RBAC',
       icon: ShieldCheck,
       action: () => { onNavigate('enterprise'); onClose(); },
+    },
+    {
+      id: 'nav-executive',
+      category: 'Navigation',
+      label: 'Open Executive Intelligence & Portfolio BI',
+      icon: TrendingUp,
+      action: () => { onNavigate('executive'); onClose(); },
+    },
+    {
+      id: 'nav-developer',
+      category: 'Navigation',
+      label: 'Open Developer Platform, Public API & Webhooks',
+      icon: Code,
+      action: () => { onNavigate('developer'); onClose(); },
     },
     {
       id: 'nav-analytics',

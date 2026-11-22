@@ -17,6 +17,8 @@ import { Enterprise } from '../pages/Enterprise/Enterprise';
 import SupportPortal from '../pages/Support/SupportPortal';
 import AIAgentWorkspace from '../pages/AIAgents/AIAgentWorkspace';
 import RegionalSettingsPage from '../pages/Settings/RegionalSettingsPage';
+import ExecutiveDashboard from '../pages/Executive/ExecutiveDashboard';
+import DeveloperPortal from '../pages/Developer/DeveloperPortal';
 import { I18nProvider, useI18n } from '../i18n/I18nContext';
 import OnboardingModal from '../components/Onboarding/OnboardingModal';
 import FeedbackModal from '../components/FeedbackModal/FeedbackModal';
@@ -80,6 +82,10 @@ function AppContent() {
         return 'Product Intelligence & Behavioral Insights';
       case 'enterprise':
         return 'Enterprise Governance & Security RBAC';
+      case 'executive':
+        return 'Executive Business Intelligence & Portfolio Analytics';
+      case 'developer':
+        return 'Developer Platform, Public API & Webhooks';
       case 'support':
         return 'Customer Operations & Support';
       case 'tasks':
@@ -112,6 +118,10 @@ function AppContent() {
         return <Intelligence />;
       case 'enterprise':
         return <Enterprise />;
+      case 'executive':
+        return <ExecutiveDashboard />;
+      case 'developer':
+        return <DeveloperPortal />;
       case 'support':
         return <SupportPortal />;
       case 'settings':
