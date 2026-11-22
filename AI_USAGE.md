@@ -37,6 +37,13 @@ AI tooling was utilized in an engineering acceleration, architecture validation,
 - **OWASP Security Hardening & Rate Limiting**: Implementing sliding window token tracking, OWASP security response headers, and audit trail metadata sanitization.
 - **Disaster Recovery Scripts**: Engineering zero-downtime online SQLite snapshotting with GZIP compression, SHA256 integrity validation, and backup retention pruning.
 
+### Phase 19–21 (SaaS Billing, Integrations, Calendar Sync, PWA & Offline Engine)
+- **SaaS Plan & Quota Engine**: Structuring plan tier limits, atomic usage metering, and provider abstraction (Stripe/Mock).
+- **Google Calendar Sync & Conflict Detection**: Designing bidirectional task-event mapping and overlapping schedule collision detection.
+- **Workflow Automation Engine**: Lightweight event-driven trigger matching with loop prevention and execution depth caps.
+- **Progressive Web App & Offline Reconciliation**: Implementing service worker caching, IndexedDB local persistence, and background offline mutation queue playback.
+- **Web Push Backend**: Architecture of VAPID key storage and background push notifications.
+
 ---
 
 ## 3. Human Engineering Decisions & Authorship
@@ -56,6 +63,6 @@ All core architecture, UX decisions, and code reviews were driven by the candida
 Every piece of code generated or assisted was executed, verified, and validated through real compilers and automated test suites:
 - Frontend Node test script: `28/28 passing`
 - Frontend Vite production build: `dist/ built cleanly with 0 errors`
-- Backend Pytest test suite: `19/19 tests passing (100% assertions across all 13 suites)`
-- Alembic database migrations: `001_initial`, `002_ai_notifications_collaboration`, and `003_audit_trail` upgraded cleanly
+- Backend Pytest test suite: `30/30 tests passing (100% assertions across all 17 suites)`
+- Alembic database migrations: `001_initial`, `002_ai_notifications_collaboration`, `003_audit_trail`, and `004_saas_billing_integrations_pwa` upgraded cleanly
 - Disaster recovery backup script verified: `focusboard_*.db.gz` generated with SHA256 checksum and verified restoration

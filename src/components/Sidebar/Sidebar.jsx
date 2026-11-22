@@ -6,6 +6,8 @@ import {
   Users,
   BarChart2,
   Calendar,
+  Layers,
+  CreditCard,
   Settings,
   RotateCcw,
 } from 'lucide-react';
@@ -21,9 +23,10 @@ export function Sidebar({ activeTab = 'overview', onTabChange }) {
     { id: 'tasks', label: 'My Tasks', icon: CheckSquare, count: stats.total },
     { id: 'ai', label: 'AI Planner', icon: Sparkles, count: null },
     { id: 'team', label: 'Team Space', icon: Users, count: null },
-    { id: 'analytics', label: 'Analytics', icon: BarChart2, count: null },
     { id: 'calendar', label: 'Calendar', icon: Calendar, count: null },
-    { id: 'settings', label: 'Settings', icon: Settings, count: null },
+    { id: 'integrations', label: 'Integrations', icon: Layers, count: null },
+    { id: 'billing', label: 'Plans & Billing', icon: CreditCard, count: null },
+    { id: 'analytics', label: 'Analytics', icon: BarChart2, count: null },
   ];
 
   const handleReset = () => {

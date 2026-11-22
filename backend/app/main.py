@@ -4,12 +4,14 @@ import logging
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.rate_limiter import RateLimiterMiddleware
 from app.core.security_headers import SecurityHeadersMiddleware
 from app.db.database import engine, Base
 import app.models  # Ensure all models are registered
+from app.services.entitlement_service import seed_default_plans
 from app.api.routes import (
     auth_routes,
     task_routes,
@@ -21,6 +23,11 @@ from app.api.routes import (
     websocket_routes,
     search_routes,
     audit_routes,
+    billing_routes,
+    integration_routes,
+    calendar_routes,
+    workflow_routes,
+    push_routes,
 )
 
 # Configure structured logging
@@ -33,10 +40,17 @@ logger = logging.getLogger("focusboard")
 # Initialize DB tables for SQLite / fallback
 Base.metadata.create_all(bind=engine)
 
+# Seed default plans on startup
+try:
+    with Session(bind=engine) as init_db:
+        seed_default_plans(init_db)
+except Exception as exc:
+    logger.warning(f"Could not seed default plans: {exc}")
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
-    description="FocusBoard AI-Powered Multi-User Task Management & Collaborative Workspace API"
+    description="FocusBoard Enterprise SaaS Task Management & Connected Platform API"
 )
 
 # 1. Security Headers Middleware (OWASP protection)
@@ -58,7 +72,6 @@ app.add_middleware(RateLimiterMiddleware, enabled=True)
 # 4. Correlation Request ID and Structured Logging Middleware
 @app.middleware("http")
 async def correlation_id_and_logging_middleware(request: Request, call_next):
-    # Extract or generate correlation ID
     request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
     request.state.request_id = request_id
 
@@ -91,6 +104,11 @@ app.include_router(workspace_routes.router, prefix=settings.API_V1_STR)
 app.include_router(websocket_routes.router, prefix=settings.API_V1_STR)
 app.include_router(search_routes.router, prefix=settings.API_V1_STR)
 app.include_router(audit_routes.router, prefix=settings.API_V1_STR)
+app.include_router(billing_routes.router, prefix=settings.API_V1_STR)
+app.include_router(integration_routes.router, prefix=settings.API_V1_STR)
+app.include_router(calendar_routes.router, prefix=settings.API_V1_STR)
+app.include_router(workflow_routes.router, prefix=settings.API_V1_STR)
+app.include_router(push_routes.router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 def root():

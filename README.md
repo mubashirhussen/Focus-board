@@ -11,6 +11,9 @@ Originally initiated as a high-fidelity frontend based on Figma design specifica
 - **Phase 16**: Real-Time Team Collaboration, Shared Projects, Task Assignment & WebSocket Activity Feeds
 - **Phase 17**: Advanced Search, Global Command Palette (`⌘K`), Keyboard Shortcuts & UX Optimization
 - **Phase 18**: Security Hardening, Privacy & GDPR Controls, Immutable Audit Trails, Automated Backup & Disaster Recovery
+- **Phase 19**: SaaS Platform Architecture, Subscriptions, Billing Provider Integration & Usage Quotas
+- **Phase 20**: External Integrations Hub, Google Calendar 2-Way Sync & Event-Driven Workflow Automations
+- **Phase 21**: Mobile PWA, Offline IndexedDB Reconciliation Engine & Web Push Notifications
 
 ---
 
@@ -64,6 +67,24 @@ Originally initiated as a high-fidelity frontend based on Figma design specifica
 - **GDPR Privacy & Data Portability**: Machine-readable full data export (`GET /api/v1/auth/export-data`) and permanent account erasure (`DELETE /api/v1/auth/me`) with cascading cleanup.
 - **Immutable Security Audit Trail**: Database audit log model (`audit_logs`) capturing authentication, authorization, access views, and mutations with metadata sanitization (redacting passwords and credentials).
 - **Automated Backup & Disaster Recovery Runbook**: Online zero-downtime database snapshot scripts (`backend/scripts/backup_db.py`, `restore_db.py`) with GZIP compression, SHA256 verification, and automated retention pruning.
+
+### SaaS Billing, Subscriptions & Quota Metering (Phase 19)
+- **Centralized Plan Catalog**: Tiered subscription architecture (`Free`, `Starter`, `Pro`, `Team`, `Enterprise`) with feature flags and quota allocations.
+- **Pre-Execution Quota Enforcement**: Atomic verification of plan limits (`check_entitlement()`) preventing unauthorized consumption of metered AI, project, and workspace resources.
+- **Provider Abstraction**: Decoupled `BillingProvider` interface supporting Stripe Checkout Sessions and mock providers for testing.
+- **Idempotent Webhooks**: Authoritative server-side webhook processing with signature verification.
+
+### External Integrations Hub, Google Calendar & Workflows (Phase 20)
+- **Integrations Hub**: Unified catalog connecting external tools (Google Calendar, Slack, GitHub).
+- **Google Calendar 2-Way Sync**: Bidirectional event mappings, secure OAuth 2.0 credential encryption at rest, and automated conflict detection for overlapping tasks or scheduling outside working hours.
+- **Event-Driven Workflow Engine**: Deterministic trigger-condition-action automations (`task_created`, `task_completed`, `task_overdue`, `calendar_sync_completed`) with recursion depth controls ($\le 3$).
+
+### Mobile PWA, Offline IndexedDB Sync & Web Push (Phase 21)
+- **Installable Progressive Web App (PWA)**: Web app manifest with maskable icons and custom `#4F46E5` theme.
+- **Service Worker Caching**: Stale-while-revalidate for application shell assets with selective offline caching.
+- **Offline IndexedDB Storage & Sync**: Local task storage with persistent FIFO mutation queue (`CREATE`, `UPDATE`, `DELETE`) and automatic background reconciliation on network restoration.
+- **Web Push Notifications**: VAPID key support delivering background reminders directly to mobile and desktop devices.
+- **Mobile Ergonomics**: Touch-friendly bottom navigation bar and responsive layouts optimized across 320px–1440px viewports.
 
 ---
 

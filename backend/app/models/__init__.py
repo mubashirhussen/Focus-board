@@ -10,6 +10,15 @@ from app.models.collaboration import (
     Activity,
 )
 from app.models.audit import AuditLog
+from app.models.billing import Plan, Subscription, BillingCustomer, UsageRecord
+from app.models.integration import (
+    ExternalIntegration,
+    IntegrationCredential,
+    CalendarSyncMapping,
+    SyncLog,
+)
+from app.models.workflow import Workflow, WorkflowExecution
+from app.models.push import PushSubscriptionRecord
 
 __all__ = [
     "User",
@@ -23,4 +32,15 @@ __all__ = [
     "TaskComment",
     "Activity",
     "AuditLog",
+    "Plan",
+    "Subscription",
+    "BillingCustomer",
+    "UsageRecord",
+    "ExternalIntegration",
+    "IntegrationCredential",
+    "CalendarSyncMapping",
+    "SyncLog",
+    "Workflow",
+    "WorkflowExecution",
+    "PushSubscriptionRecord",
 ]

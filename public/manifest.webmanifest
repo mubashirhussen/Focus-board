@@ -1,0 +1,19 @@
+{
+  "name": "FocusBoard — Intelligent Productivity Platform",
+  "short_name": "FocusBoard",
+  "description": "Enterprise-grade task management, AI daily planning, calendar sync, and team collaboration dashboard.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0F172A",
+  "theme_color": "#4F46E5",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

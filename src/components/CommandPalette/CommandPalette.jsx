@@ -95,6 +95,27 @@ export function CommandPalette({
       action: () => { onNavigate('team'); onClose(); },
     },
     {
+      id: 'nav-calendar',
+      category: 'Navigation',
+      label: 'Open Calendar Schedule & Google Sync',
+      icon: Folder,
+      action: () => { onNavigate('calendar'); onClose(); },
+    },
+    {
+      id: 'nav-integrations',
+      category: 'Navigation',
+      label: 'Open Integrations Hub & Automations',
+      icon: Briefcase,
+      action: () => { onNavigate('integrations'); onClose(); },
+    },
+    {
+      id: 'nav-billing',
+      category: 'Navigation',
+      label: 'View Subscription Plans & Quota Limits',
+      icon: Download,
+      action: () => { onNavigate('billing'); onClose(); },
+    },
+    {
       id: 'nav-analytics',
       category: 'Navigation',
       label: 'Open Productivity Analytics',

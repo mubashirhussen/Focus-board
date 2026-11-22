@@ -14,6 +14,11 @@ class Task(Base):
     priority = Column(String(50), default="Medium", nullable=False, index=True)
     due_date = Column(String(50), nullable=True)
     
+    # Task Scheduling & Time Blocking (Phase 20)
+    scheduled_start = Column(DateTime, nullable=True, index=True)
+    scheduled_end = Column(DateTime, nullable=True)
+    estimated_duration_minutes = Column(Integer, default=30, nullable=True)
+    
     # Ownership & Timestamps
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)

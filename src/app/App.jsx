@@ -9,6 +9,10 @@ import { Dashboard } from '../pages/Dashboard/Dashboard';
 import { Analytics } from '../pages/Analytics/Analytics';
 import { AIAssistant } from '../pages/AIAssistant/AIAssistant';
 import { TeamWorkspace } from '../pages/TeamWorkspace/TeamWorkspace';
+import { CalendarView } from '../pages/Calendar/CalendarView';
+import { Integrations } from '../pages/Integrations/Integrations';
+import { Billing } from '../pages/Billing/Billing';
+import { MobileBottomNav } from '../components/Navigation/MobileBottomNav';
 import { AuthModal } from '../components/auth/AuthModal';
 import { CommandPalette } from '../components/CommandPalette/CommandPalette';
 import { KeyboardShortcutsModal } from '../components/KeyboardShortcutsModal/KeyboardShortcutsModal';
@@ -45,10 +49,14 @@ function AppContent() {
         return 'Team Workspace & Collaboration';
       case 'analytics':
         return 'Productivity Analytics';
+      case 'calendar':
+        return 'Calendar Schedule & Google Sync';
+      case 'integrations':
+        return 'Integrations Hub & Automations';
+      case 'billing':
+        return 'SaaS Plans & Usage Limits';
       case 'tasks':
         return 'Task Management';
-      case 'calendar':
-        return 'Calendar Schedule';
       case 'settings':
         return 'Preferences & Settings';
       case 'overview':
@@ -65,6 +73,12 @@ function AppContent() {
         return <TeamWorkspace />;
       case 'analytics':
         return <Analytics />;
+      case 'calendar':
+        return <CalendarView />;
+      case 'integrations':
+        return <Integrations />;
+      case 'billing':
+        return <Billing />;
       default:
         return <Dashboard activeTab={activeTab} />;
     }
@@ -72,7 +86,7 @@ function AppContent() {
 
   return (
     <div className="app-layout">
-      {/* Navigation Sidebar (Desktop sticky / Mobile bottom) */}
+      {/* Navigation Sidebar (Desktop sticky / Tablet) */}
       <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
       {/* Main Content Area */}
@@ -85,6 +99,9 @@ function AppContent() {
           {renderActiveContent()}
         </main>
       </div>
+
+      {/* Mobile Touch Navigation & Offline Status (Bottom bar on screens <= 768px) */}
+      <MobileBottomNav activeTab={activeTab} onTabChange={setActiveTab} />
 
       {/* Authentication Modal */}
       <AuthModal />
