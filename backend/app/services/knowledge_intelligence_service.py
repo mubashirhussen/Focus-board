@@ -1,13 +1,17 @@
 import uuid
 import re
+import os
+import json
 from datetime import datetime, timezone, timedelta
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 from sqlalchemy.orm import Session
-from sqlalchemy import func, desc, or_
+from sqlalchemy import func, desc, or_, and_
 
 from app.models.knowledge_intelligence import (
     KnowledgeDocument,
     KnowledgeDocumentVersion,
+    KnowledgeDocumentChunk,
+    KnowledgeDocumentLink,
     KnowledgeCollection,
     KnowledgeEntity,
     KnowledgeRelationship,
@@ -17,6 +21,11 @@ from app.models.knowledge_intelligence import (
 from app.schemas.knowledge_intelligence import (
     KnowledgeDocumentCreate,
     KnowledgeDocumentUpdate,
+    KnowledgeDocumentChunkResponse,
+    KnowledgeDocumentLinkCreate,
+    KnowledgeDocumentLinkResponse,
+    DocumentUploadResponse,
+    DocumentSummaryResponse,
     KnowledgeCollectionCreate,
     KnowledgeEntityCreate,
     KnowledgeRelationshipCreate,
@@ -31,13 +40,44 @@ from app.schemas.knowledge_intelligence import (
     AIKnowledgeQueryResponse,
     AIKnowledgeCitation,
 )
+from app.services.document_processing_service import DocumentProcessingService
+from app.ai.providers import get_llm_provider
 
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
+def index_document_chunks(db: Session, doc: KnowledgeDocument):
+    """Chunk document content, generate embeddings, and persist KnowledgeDocumentChunk records."""
+    if not doc or not doc.content:
+        return
+    # Remove existing chunks
+    db.query(KnowledgeDocumentChunk).filter(KnowledgeDocumentChunk.document_id == doc.id).delete()
+    
+    chunks = DocumentProcessingService.chunk_document(doc.content)
+    for c in chunks:
+        chk = KnowledgeDocumentChunk(
+            id=f"kdchk_{uuid.uuid4().hex[:12]}",
+            document_id=doc.id,
+            chunk_index=c.chunk_index,
+            content=c.content,
+            heading=c.heading,
+            page_number=c.page_number,
+            token_count=c.token_count,
+            embedding_json=json.dumps(c.embedding),
+            metadata_json=json.dumps(c.metadata),
+        )
+        db.add(chk)
+    db.flush()
+
 def seed_default_knowledge_data(db: Session, author_id: Optional[int] = None, workspace_id: Optional[int] = None):
     """Seed comprehensive organizational knowledge base if empty."""
     if db.query(KnowledgeDocument).first():
+        # Check if existing documents need chunk indexing
+        unindexed = db.query(KnowledgeDocument).filter(~KnowledgeDocument.chunks.any()).all()
+        if unindexed:
+            for u in unindexed:
+                index_document_chunks(db, u)
+            db.commit()
         return
 
     # 1. Knowledge Collections
@@ -196,6 +236,10 @@ def seed_default_knowledge_data(db: Session, author_id: Optional[int] = None, wo
         created_at=utc_now() - timedelta(days=8),
     )
     db.add(ver3_0)
+    db.flush()
+
+    for d in [doc1, doc2, doc3]:
+        index_document_chunks(db, d)
 
     # 3. Knowledge Graph Entities
     ent_search = KnowledgeEntity(
@@ -356,6 +400,11 @@ def get_knowledge_overview(db: Session, workspace_id: Optional[int] = None) -> D
             "version": d.version,
             "author_id": d.author_id,
             "quality_score": d.quality_score,
+            "original_filename": d.original_filename,
+            "file_size": d.file_size or 0,
+            "mime_type": d.mime_type,
+            "processing_status": d.processing_status or "COMPLETED",
+            "summary": d.summary,
             "created_at": d.created_at,
             "updated_at": d.updated_at,
             "versions_count": len(d.versions),
@@ -439,6 +488,11 @@ def get_documents(
             "version": d.version,
             "author_id": d.author_id,
             "quality_score": d.quality_score,
+            "original_filename": d.original_filename,
+            "file_size": d.file_size or 0,
+            "mime_type": d.mime_type,
+            "processing_status": d.processing_status or "COMPLETED",
+            "summary": d.summary,
             "created_at": d.created_at,
             "updated_at": d.updated_at,
             "versions_count": len(d.versions),
@@ -460,6 +514,8 @@ def create_document(db: Session, data: KnowledgeDocumentCreate, author_id: Optio
         slug = f"{base_slug}-{idx}"
         idx += 1
 
+    summary_info = DocumentProcessingService.extract_summary(data.content)
+
     doc = KnowledgeDocument(
         id=f"kdoc_{uuid.uuid4().hex[:12]}",
         workspace_id=data.workspace_id,
@@ -473,6 +529,11 @@ def create_document(db: Session, data: KnowledgeDocumentCreate, author_id: Optio
         version=data.version or "1.0",
         author_id=author_id,
         quality_score=data.quality_score,
+        original_filename=data.original_filename,
+        file_size=data.file_size if data.file_size else len(data.content.encode('utf-8')),
+        mime_type=data.mime_type or "text/markdown",
+        processing_status=data.processing_status or "COMPLETED",
+        summary=data.summary or summary_info.get("summary"),
     )
     db.add(doc)
     db.flush()
@@ -487,6 +548,9 @@ def create_document(db: Session, data: KnowledgeDocumentCreate, author_id: Optio
         editor_id=author_id,
     )
     db.add(initial_ver)
+    db.flush()
+
+    index_document_chunks(db, doc)
     db.commit()
     db.refresh(doc)
     return doc
@@ -510,9 +574,8 @@ def update_document(
         setattr(doc, field, val)
     doc.updated_at = utc_now()
 
-    # If content changed, record a new version
+    # If content changed, record a new version and re-index chunks
     if content_changed:
-        # Increment version e.g. 1.0 -> 1.1
         try:
             parts = doc.version.split(".")
             minor = int(parts[-1]) + 1
@@ -530,10 +593,158 @@ def update_document(
             editor_id=editor_id,
         )
         db.add(new_ver)
+        db.flush()
+
+        summary_info = DocumentProcessingService.extract_summary(doc.content)
+        doc.summary = summary_info.get("summary")
+        index_document_chunks(db, doc)
 
     db.commit()
     db.refresh(doc)
     return doc
+
+def upload_document(
+    db: Session,
+    file_bytes: bytes,
+    filename: str,
+    mime_type: Optional[str] = None,
+    workspace_id: Optional[int] = None,
+    category: str = "Engineering",
+    document_type: str = "SPECIFICATION",
+    visibility: str = "INTERNAL",
+    author_id: Optional[int] = None,
+) -> Tuple[KnowledgeDocument, int, int]:
+    """Upload document file, extract text, normalize, create document, version, and indexed chunks."""
+    extracted_text = DocumentProcessingService.extract_text(file_bytes, filename, mime_type)
+    if not extracted_text.strip():
+        extracted_text = f"Uploaded document: {filename}\n[Binary attachment indexed for retrieval]"
+
+    base_title = os.path.splitext(filename)[0].replace("-", " ").replace("_", " ").title()
+    slug_base = re.sub(r"[^a-zA-Z0-9]+", "-", filename.lower()).strip("-")
+    slug = f"{slug_base}-{uuid.uuid4().hex[:6]}"
+
+    summary_info = DocumentProcessingService.extract_summary(extracted_text)
+
+    doc = KnowledgeDocument(
+        id=f"kdoc_{uuid.uuid4().hex[:12]}",
+        workspace_id=workspace_id,
+        title=base_title,
+        slug=slug,
+        content=extracted_text,
+        document_type=document_type,
+        category=category,
+        visibility=visibility,
+        status="VERIFIED",
+        version="1.0",
+        author_id=author_id,
+        quality_score=92.0,
+        original_filename=filename,
+        file_size=len(file_bytes),
+        mime_type=mime_type or "application/octet-stream",
+        processing_status="COMPLETED",
+        summary=summary_info.get("summary"),
+    )
+    db.add(doc)
+    db.flush()
+
+    ver = KnowledgeDocumentVersion(
+        id=f"kdver_{uuid.uuid4().hex[:12]}",
+        document_id=doc.id,
+        version="1.0",
+        content=extracted_text,
+        change_summary=f"Uploaded source file {filename}",
+        editor_id=author_id,
+    )
+    db.add(ver)
+    db.flush()
+
+    index_document_chunks(db, doc)
+    db.commit()
+    db.refresh(doc)
+
+    return doc, len(doc.chunks), len(extracted_text)
+
+def get_document_chunks(db: Session, doc_id: str) -> List[KnowledgeDocumentChunk]:
+    """Retrieve indexed chunks for a knowledge document."""
+    doc = get_document_by_id(db, doc_id)
+    if not doc:
+        return []
+    chunks = db.query(KnowledgeDocumentChunk).filter(
+        KnowledgeDocumentChunk.document_id == doc_id
+    ).order_by(KnowledgeDocumentChunk.chunk_index).all()
+    if not chunks and doc.content:
+        index_document_chunks(db, doc)
+        db.commit()
+        chunks = db.query(KnowledgeDocumentChunk).filter(
+            KnowledgeDocumentChunk.document_id == doc_id
+        ).order_by(KnowledgeDocumentChunk.chunk_index).all()
+    return chunks
+
+# --- Knowledge Document Links ---
+def link_document_to_entity(
+    db: Session,
+    doc_id: str,
+    entity_type: str,
+    entity_id: str,
+    user_id: Optional[int] = None,
+) -> Optional[KnowledgeDocumentLink]:
+    """Link a document to a task, project, workspace, or collection."""
+    doc = get_document_by_id(db, doc_id)
+    if not doc:
+        return None
+    clean_type = entity_type.upper()
+    clean_id = str(entity_id)
+
+    existing = db.query(KnowledgeDocumentLink).filter(
+        KnowledgeDocumentLink.document_id == doc_id,
+        KnowledgeDocumentLink.entity_type == clean_type,
+        KnowledgeDocumentLink.entity_id == clean_id,
+    ).first()
+    if existing:
+        return existing
+
+    link = KnowledgeDocumentLink(
+        id=f"kdlnk_{uuid.uuid4().hex[:12]}",
+        document_id=doc_id,
+        entity_type=clean_type,
+        entity_id=clean_id,
+        created_by=user_id,
+    )
+    db.add(link)
+    db.commit()
+    db.refresh(link)
+    return link
+
+def unlink_document_entity(db: Session, doc_id: str, link_id: str) -> bool:
+    """Remove a link between a document and an entity."""
+    link = db.query(KnowledgeDocumentLink).filter(
+        KnowledgeDocumentLink.id == link_id,
+        KnowledgeDocumentLink.document_id == doc_id,
+    ).first()
+    if not link:
+        return False
+    db.delete(link)
+    db.commit()
+    return True
+
+def get_document_links(db: Session, doc_id: str) -> List[KnowledgeDocumentLink]:
+    """List all entity links for a given document."""
+    return db.query(KnowledgeDocumentLink).filter(
+        KnowledgeDocumentLink.document_id == doc_id
+    ).order_by(desc(KnowledgeDocumentLink.created_at)).all()
+
+def summarize_document(db: Session, doc_id: str) -> Optional[Dict[str, Any]]:
+    """Generate structured summary with bullet points for a document."""
+    doc = get_document_by_id(db, doc_id)
+    if not doc:
+        return None
+    summary_data = DocumentProcessingService.extract_summary(doc.content, max_sentences=4)
+    return {
+        "document_id": doc.id,
+        "title": doc.title,
+        "summary": summary_data["summary"],
+        "key_points": summary_data["key_points"],
+    }
 
 def delete_document(db: Session, doc_id: str) -> bool:
     doc = get_document_by_id(db, doc_id)
@@ -645,13 +856,22 @@ def semantic_search(
     limit: int = 10,
 ) -> SemanticSearchResponse:
     seed_default_knowledge_data(db, workspace_id=workspace_id)
-    terms = [t.lower() for t in re.split(r'\W+', query) if len(t) > 2]
+    query_text = (query or "").strip()
+    terms = [t.lower() for t in re.split(r'\W+', query_text) if len(t) > 2]
     if not terms:
-        terms = [query.lower().strip()]
+        terms = [query_text.lower()] if query_text else []
+
+    query_embedding = DocumentProcessingService.generate_embedding(query_text)
 
     dq = db.query(KnowledgeDocument)
-    if workspace_id:
-        dq = dq.filter(or_(KnowledgeDocument.workspace_id == workspace_id, KnowledgeDocument.visibility == "INTERNAL"))
+    if workspace_id is not None:
+        # Multi-tenant boundary: workspace-specific documents or global internal documents
+        dq = dq.filter(
+            or_(
+                KnowledgeDocument.workspace_id == workspace_id,
+                and_(KnowledgeDocument.workspace_id.is_(None), KnowledgeDocument.visibility != "CONFIDENTIAL")
+            )
+        )
     if category:
         dq = dq.filter(KnowledgeDocument.category == category)
 
@@ -659,26 +879,50 @@ def semantic_search(
     hits: List[SemanticSearchHit] = []
 
     for d in docs:
-        score = 0.0
+        kw_score = 0.0
         title_lower = d.title.lower()
         content_lower = d.content.lower()
 
         matched_term = None
         for term in terms:
             if term in title_lower:
-                score += 3.0
+                kw_score += 3.0
                 matched_term = term
             if term in content_lower:
-                score += 1.5
+                kw_score += 1.5
                 matched_term = matched_term or term
 
-        if score > 0:
-            # Quality bonus
-            score += (d.quality_score / 100.0) * 0.5
-            
-            # Extract relevant snippet around match
+        # Vector semantic similarity across document chunks
+        best_chunk_sim = 0.0
+        best_chunk = None
+        if d.chunks:
+            for chk in d.chunks:
+                if chk.embedding_json:
+                    try:
+                        emb = json.loads(chk.embedding_json)
+                        sim = DocumentProcessingService.cosine_similarity(query_embedding, emb)
+                        if sim > best_chunk_sim:
+                            best_chunk_sim = sim
+                            best_chunk = chk
+                    except Exception:
+                        pass
+        else:
+            doc_emb = DocumentProcessingService.generate_embedding(d.content)
+            best_chunk_sim = DocumentProcessingService.cosine_similarity(query_embedding, doc_emb)
+
+        # Hybrid score combining keyword matching (normalized) and vector cosine similarity
+        norm_kw = min(kw_score / 3.0, 1.0)
+        hybrid_score = (0.5 * norm_kw) + (0.5 * best_chunk_sim)
+
+        # Quality score minor boost
+        hybrid_score += (d.quality_score / 100.0) * 0.05
+
+        if kw_score > 0 or best_chunk_sim > 0.15:
+            # Extract relevant snippet
             snippet = ""
-            if matched_term and matched_term in content_lower:
+            if best_chunk and best_chunk.content:
+                snippet = best_chunk.content[:200].replace("\n", " ").strip() + "..."
+            elif matched_term and matched_term in content_lower:
                 idx = content_lower.find(matched_term)
                 start = max(0, idx - 60)
                 end = min(len(d.content), idx + 140)
@@ -693,7 +937,7 @@ def semantic_search(
                     document_type=d.document_type,
                     category=d.category,
                     snippet=snippet,
-                    relevance_score=round(min(score / 5.0, 1.0), 2),
+                    relevance_score=round(min(hybrid_score, 1.0), 2),
                     author_id=d.author_id,
                     updated_at=d.updated_at,
                 )
@@ -701,7 +945,7 @@ def semantic_search(
 
     hits.sort(key=lambda h: h.relevance_score, reverse=True)
     return SemanticSearchResponse(
-        query=query,
+        query=query_text,
         total_hits=len(hits),
         hits=hits[:limit],
     )
@@ -720,6 +964,15 @@ def query_ai_knowledge_assistant(
     grounded_snippets: List[str] = []
 
     for hit in search_res.hits:
+        # Find matching chunk for granular citation
+        chk = db.query(KnowledgeDocumentChunk).filter(
+            KnowledgeDocumentChunk.document_id == hit.document_id
+        ).first()
+
+        chunk_id = chk.id if chk else None
+        heading = chk.heading if chk else "Overview"
+        page_number = chk.page_number if chk else 1
+
         citations.append(
             AIKnowledgeCitation(
                 source_id=hit.document_id,
@@ -727,24 +980,40 @@ def query_ai_knowledge_assistant(
                 source_type=hit.document_type,
                 snippet=hit.snippet,
                 relevance=hit.relevance_score,
+                chunk_id=chunk_id,
+                heading=heading,
+                page_number=page_number,
             )
         )
-        grounded_snippets.append(f"[{hit.title}]: {hit.snippet}")
+        grounded_snippets.append(f"Source [{hit.title}] ({heading}):\n{hit.snippet}")
 
     if citations:
-        context_str = " ".join(grounded_snippets)
-        answer = (
-            f"Based on organizational documentation:\n\n"
-            f"{context_str}\n\n"
-            f"Key recommendation: Follow the verified procedures outlined in the cited decision records and runbooks."
+        context_str = "\n\n".join(grounded_snippets)
+        prompt = (
+            f"Organizational Knowledge Documentation:\n\n{context_str}\n\n"
+            f"User Question: {question}\n\n"
+            f"Provide an accurate, grounded answer citing the referenced sources above."
         )
-        confidence = 0.94
+        try:
+            llm = get_llm_provider()
+            llm_res = llm.generate(
+                prompt=prompt,
+                system_prompt="You are FocusBoard Knowledge Intelligence Assistant. Answer using ONLY verified organizational knowledge.",
+                temperature=0.2,
+            )
+            answer = llm_res.content
+        except Exception:
+            answer = (
+                f"Based on organizational documentation:\n\n{context_str}\n\n"
+                f"Key verified recommendation: Follow the procedures outlined in the cited decision records."
+            )
+        confidence = round(max(c.relevance for c in citations), 2)
     else:
         answer = (
             "I could not locate specific verified documentation matching your query in the organizational knowledge base. "
             "Consider creating a new RFC or Knowledge Document to address this domain."
         )
-        confidence = 0.40
+        confidence = 0.0
 
     return AIKnowledgeQueryResponse(
         question=question,

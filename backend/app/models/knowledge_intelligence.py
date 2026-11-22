@@ -23,12 +23,20 @@ class KnowledgeDocument(Base):
     version = Column(String(16), default="1.0", nullable=False)
     author_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     quality_score = Column(Float, default=92.0, nullable=False)  # 0 to 100
+    original_filename = Column(String(255), nullable=True)
+    file_size = Column(Integer, default=0, nullable=False)
+    mime_type = Column(String(128), nullable=True)
+    storage_path = Column(String(512), nullable=True)
+    processing_status = Column(String(32), default="COMPLETED", nullable=False)  # UPLOADED, PROCESSING, COMPLETED, FAILED
+    summary = Column(Text, nullable=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
     author = relationship("User", foreign_keys=[author_id])
     workspace = relationship("Workspace", foreign_keys=[workspace_id])
     versions = relationship("KnowledgeDocumentVersion", back_populates="document", cascade="all, delete-orphan")
+    chunks = relationship("KnowledgeDocumentChunk", back_populates="document", cascade="all, delete-orphan")
+    links = relationship("KnowledgeDocumentLink", back_populates="document", cascade="all, delete-orphan")
 
 class KnowledgeDocumentVersion(Base):
     __tablename__ = "knowledge_document_versions"
@@ -43,6 +51,35 @@ class KnowledgeDocumentVersion(Base):
 
     document = relationship("KnowledgeDocument", back_populates="versions")
     editor = relationship("User", foreign_keys=[editor_id])
+
+class KnowledgeDocumentChunk(Base):
+    __tablename__ = "knowledge_document_chunks"
+
+    id = Column(String(64), primary_key=True, default=lambda: f"kdchk_{uuid.uuid4().hex[:12]}")
+    document_id = Column(String(64), ForeignKey("knowledge_documents.id", ondelete="CASCADE"), nullable=False, index=True)
+    chunk_index = Column(Integer, nullable=False, index=True)
+    content = Column(Text, nullable=False)
+    heading = Column(String(255), nullable=True)
+    page_number = Column(Integer, nullable=True)
+    token_count = Column(Integer, default=0, nullable=False)
+    embedding_json = Column(Text, nullable=True)  # JSON array of float vector embeddings
+    metadata_json = Column(Text, default="{}", nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+
+    document = relationship("KnowledgeDocument", back_populates="chunks")
+
+class KnowledgeDocumentLink(Base):
+    __tablename__ = "knowledge_document_links"
+
+    id = Column(String(64), primary_key=True, default=lambda: f"kdlnk_{uuid.uuid4().hex[:12]}")
+    document_id = Column(String(64), ForeignKey("knowledge_documents.id", ondelete="CASCADE"), nullable=False, index=True)
+    entity_type = Column(String(32), nullable=False, index=True)  # TASK, PROJECT, WORKSPACE, COLLECTION
+    entity_id = Column(String(64), nullable=False, index=True)
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+
+    document = relationship("KnowledgeDocument", back_populates="links")
+    creator = relationship("User", foreign_keys=[created_by])
 
 class KnowledgeCollection(Base):
     __tablename__ = "knowledge_collections"

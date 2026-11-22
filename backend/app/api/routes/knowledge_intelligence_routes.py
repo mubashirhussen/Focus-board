@@ -1,5 +1,5 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form, status
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
@@ -10,6 +10,11 @@ from app.schemas.knowledge_intelligence import (
     KnowledgeDocumentUpdate,
     KnowledgeDocumentResponse,
     KnowledgeDocumentVersionResponse,
+    KnowledgeDocumentChunkResponse,
+    KnowledgeDocumentLinkCreate,
+    KnowledgeDocumentLinkResponse,
+    DocumentUploadResponse,
+    DocumentSummaryResponse,
     KnowledgeCollectionCreate,
     KnowledgeCollectionResponse,
     KnowledgeEntityCreate,
@@ -63,6 +68,62 @@ def list_documents(
         offset=offset,
     )
 
+@router.post("/documents/upload", response_model=DocumentUploadResponse, status_code=status.HTTP_201_CREATED)
+async def upload_document(
+    file: UploadFile = File(...),
+    workspace_id: Optional[int] = Form(None),
+    category: str = Form("Engineering"),
+    document_type: str = Form("SPECIFICATION"),
+    visibility: str = Form("INTERNAL"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Upload a knowledge document file (.txt, .md, .csv, .json, .html, .docx, .pdf), extract text, and chunk embeddings."""
+    content_bytes = await file.read()
+    filename = file.filename or "uploaded_document.txt"
+    mime_type = file.content_type
+
+    doc, chunks_count, chars_count = knowledge_intelligence_service.upload_document(
+        db,
+        file_bytes=content_bytes,
+        filename=filename,
+        mime_type=mime_type,
+        workspace_id=workspace_id,
+        category=category,
+        document_type=document_type,
+        visibility=visibility,
+        author_id=current_user.id,
+    )
+
+    doc_response = {
+        "id": doc.id,
+        "workspace_id": doc.workspace_id,
+        "title": doc.title,
+        "slug": doc.slug,
+        "content": doc.content,
+        "document_type": doc.document_type,
+        "category": doc.category,
+        "visibility": doc.visibility,
+        "status": doc.status,
+        "version": doc.version,
+        "author_id": doc.author_id,
+        "quality_score": doc.quality_score,
+        "original_filename": doc.original_filename,
+        "file_size": doc.file_size,
+        "mime_type": doc.mime_type,
+        "processing_status": doc.processing_status,
+        "summary": doc.summary,
+        "created_at": doc.created_at,
+        "updated_at": doc.updated_at,
+        "versions_count": len(doc.versions),
+    }
+
+    return {
+        "document": doc_response,
+        "chunks_count": chunks_count,
+        "extracted_characters": chars_count,
+    }
+
 @router.get("/documents/{doc_id}", response_model=KnowledgeDocumentResponse)
 def get_document(
     doc_id: str,
@@ -85,6 +146,11 @@ def get_document(
         "version": doc.version,
         "author_id": doc.author_id,
         "quality_score": doc.quality_score,
+        "original_filename": doc.original_filename,
+        "file_size": doc.file_size or 0,
+        "mime_type": doc.mime_type,
+        "processing_status": doc.processing_status or "COMPLETED",
+        "summary": doc.summary,
         "created_at": doc.created_at,
         "updated_at": doc.updated_at,
         "versions_count": len(doc.versions),
@@ -110,6 +176,11 @@ def create_document(
         "version": doc.version,
         "author_id": doc.author_id,
         "quality_score": doc.quality_score,
+        "original_filename": doc.original_filename,
+        "file_size": doc.file_size or 0,
+        "mime_type": doc.mime_type,
+        "processing_status": doc.processing_status or "COMPLETED",
+        "summary": doc.summary,
         "created_at": doc.created_at,
         "updated_at": doc.updated_at,
         "versions_count": 1,
@@ -138,6 +209,11 @@ def update_document(
         "version": doc.version,
         "author_id": doc.author_id,
         "quality_score": doc.quality_score,
+        "original_filename": doc.original_filename,
+        "file_size": doc.file_size or 0,
+        "mime_type": doc.mime_type,
+        "processing_status": doc.processing_status or "COMPLETED",
+        "summary": doc.summary,
         "created_at": doc.created_at,
         "updated_at": doc.updated_at,
         "versions_count": len(doc.versions),
@@ -161,6 +237,68 @@ def get_document_versions(
     db: Session = Depends(get_db),
 ):
     return knowledge_intelligence_service.get_document_versions(db, doc_id)
+
+@router.get("/documents/{doc_id}/chunks", response_model=List[KnowledgeDocumentChunkResponse])
+def get_document_chunks(
+    doc_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Retrieve indexed text chunks and metadata for a knowledge document."""
+    return knowledge_intelligence_service.get_document_chunks(db, doc_id)
+
+@router.post("/documents/{doc_id}/links", response_model=KnowledgeDocumentLinkResponse, status_code=status.HTTP_201_CREATED)
+def link_document(
+    doc_id: str,
+    payload: KnowledgeDocumentLinkCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Link a document to a task, project, workspace, or collection."""
+    link = knowledge_intelligence_service.link_document_to_entity(
+        db,
+        doc_id=doc_id,
+        entity_type=payload.entity_type,
+        entity_id=payload.entity_id,
+        user_id=current_user.id,
+    )
+    if not link:
+        raise HTTPException(status_code=404, detail="Knowledge document not found")
+    return link
+
+@router.delete("/documents/{doc_id}/links/{link_id}", status_code=status.HTTP_204_NO_CONTENT)
+def unlink_document(
+    doc_id: str,
+    link_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Remove a link from a document."""
+    success = knowledge_intelligence_service.unlink_document_entity(db, doc_id=doc_id, link_id=link_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Knowledge document link not found")
+    return None
+
+@router.get("/documents/{doc_id}/links", response_model=List[KnowledgeDocumentLinkResponse])
+def get_document_links(
+    doc_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """List entity links for a given document."""
+    return knowledge_intelligence_service.get_document_links(db, doc_id)
+
+@router.get("/documents/{doc_id}/summarize", response_model=DocumentSummaryResponse)
+def summarize_document(
+    doc_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Generate structured summary with key takeaways for a document."""
+    res = knowledge_intelligence_service.summarize_document(db, doc_id)
+    if not res:
+        raise HTTPException(status_code=404, detail="Knowledge document not found")
+    return res
 
 # --- Collections ---
 @router.get("/collections", response_model=List[KnowledgeCollectionResponse])

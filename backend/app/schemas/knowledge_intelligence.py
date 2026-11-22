@@ -13,6 +13,11 @@ class KnowledgeDocumentBase(BaseModel):
     status: str = Field(default="VERIFIED", description="DRAFT, IN_REVIEW, VERIFIED, NEEDS_UPDATE, ARCHIVED")
     version: str = "1.0"
     quality_score: float = 92.0
+    original_filename: Optional[str] = None
+    file_size: int = 0
+    mime_type: Optional[str] = None
+    processing_status: str = "COMPLETED"
+    summary: Optional[str] = None
 
 class KnowledgeDocumentCreate(KnowledgeDocumentBase):
     workspace_id: Optional[int] = None
@@ -49,6 +54,45 @@ class KnowledgeDocumentVersionResponse(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+# --- Chunks & Embeddings ---
+class KnowledgeDocumentChunkResponse(BaseModel):
+    id: str
+    document_id: str
+    chunk_index: int
+    content: str
+    heading: Optional[str] = None
+    page_number: Optional[int] = None
+    token_count: int = 0
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+# --- Document Links ---
+class KnowledgeDocumentLinkCreate(BaseModel):
+    entity_type: str = Field(..., description="TASK, PROJECT, WORKSPACE, COLLECTION")
+    entity_id: str
+
+class KnowledgeDocumentLinkResponse(BaseModel):
+    id: str
+    document_id: str
+    entity_type: str
+    entity_id: str
+    created_by: Optional[int] = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+class DocumentUploadResponse(BaseModel):
+    document: KnowledgeDocumentResponse
+    chunks_count: int
+    extracted_characters: int
+
+class DocumentSummaryResponse(BaseModel):
+    document_id: str
+    title: str
+    summary: str
+    key_points: List[str]
 
 # --- Knowledge Collection ---
 class KnowledgeCollectionBase(BaseModel):
@@ -193,6 +237,9 @@ class AIKnowledgeCitation(BaseModel):
     source_type: str
     snippet: str
     relevance: float
+    chunk_id: Optional[str] = None
+    heading: Optional[str] = None
+    page_number: Optional[int] = None
 
 class AIKnowledgeQueryResponse(BaseModel):
     question: str

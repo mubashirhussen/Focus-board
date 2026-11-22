@@ -20,6 +20,12 @@ export const knowledgeIntelligenceApi = {
   updateDocument: (docId, data) => apiClient.patch(`/knowledge/documents/${docId}`, data),
   deleteDocument: (docId) => apiClient.delete(`/knowledge/documents/${docId}`),
   getDocumentVersions: (docId) => apiClient.get(`/knowledge/documents/${docId}/versions`),
+  getDocumentChunks: (docId) => apiClient.get(`/knowledge/documents/${docId}/chunks`),
+  uploadDocument: (formData) => apiClient.post('/knowledge/documents/upload', formData),
+  linkDocument: (docId, data) => apiClient.post(`/knowledge/documents/${docId}/links`, data),
+  unlinkDocument: (docId, linkId) => apiClient.delete(`/knowledge/documents/${docId}/links/${linkId}`),
+  getDocumentLinks: (docId) => apiClient.get(`/knowledge/documents/${docId}/links`),
+  summarizeDocument: (docId) => apiClient.get(`/knowledge/documents/${docId}/summarize`),
 
   listCollections: (workspaceId = null) => {
     const url = workspaceId ? `/knowledge/collections?workspace_id=${workspaceId}` : '/knowledge/collections';
