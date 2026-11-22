@@ -12,7 +12,6 @@ export const APP_CONFIG = {
   priorities: ['Low', 'Medium', 'High'],
   categories: ['Design', 'Development', 'Content', 'Marketing', 'Research', 'Planning'],
   navItems: [
-    { id: 'overview', label: 'Overview', icon: 'LayoutGrid' },
     { id: 'tasks', label: 'My Tasks', icon: 'CheckSquare' },
     { id: 'calendar', label: 'Calendar', icon: 'Calendar' },
     { id: 'settings', label: 'Settings', icon: 'Settings' },

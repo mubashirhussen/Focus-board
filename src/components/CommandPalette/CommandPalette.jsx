@@ -79,13 +79,6 @@ export function CommandPalette({
   // Static Navigation Commands
   const navigationCommands = useMemo(() => [
     {
-      id: 'nav-overview',
-      category: 'Navigation',
-      label: 'Go to Overview Dashboard',
-      icon: LayoutDashboard,
-      action: () => { onNavigate('overview'); onClose(); },
-    },
-    {
       id: 'nav-tasks',
       category: 'Navigation',
       label: 'Go to Tasks Management',
@@ -317,7 +310,7 @@ export function CommandPalette({
             type: r.type,
             icon: r.type === 'WORKSPACE' ? Briefcase : r.type === 'PROJECT' ? Folder : CheckSquare,
             action: () => {
-              if (r.type === 'TASK') onNavigate('overview');
+              if (r.type === 'TASK') onNavigate('tasks');
               else if (r.type === 'WORKSPACE' || r.type === 'PROJECT') onNavigate('team');
               onClose();
             },
@@ -347,7 +340,7 @@ export function CommandPalette({
           sublabel: `${t.category} • ${t.status}`,
           type: 'TASK',
           icon: CheckSquare,
-          action: () => { onNavigate('overview'); onClose(); },
+          action: () => { onNavigate('tasks'); onClose(); },
         }));
       setSearchResults(localMatches);
     };

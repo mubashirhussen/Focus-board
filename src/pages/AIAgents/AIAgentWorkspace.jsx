@@ -265,7 +265,7 @@ export default function AIAgentWorkspace() {
               required
             />
 
-            <div className="quick-prompts-bar">
+            <div className="agent-quick-prompts-bar">
               <span className="quick-label">Suggested goals:</span>
               <div className="quick-chips">
                 {quickPrompts.map((qp, idx) => (

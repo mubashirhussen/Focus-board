@@ -22,7 +22,6 @@ export function MobileBottomNav({ activeTab, onTabChange }) {
   }, []);
 
   const navItems = [
-    { id: 'overview', label: 'Overview', icon: LayoutGrid },
     { id: 'tasks', label: 'Tasks', icon: CheckSquare },
     { id: 'calendar', label: 'Calendar', icon: Calendar },
     { id: 'ai', label: 'AI Planner', icon: Sparkles },

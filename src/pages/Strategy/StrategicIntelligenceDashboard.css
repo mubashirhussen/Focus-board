@@ -277,6 +277,97 @@
   font-weight: 600;
 }
 
+.strat-split-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 992px) {
+  .strat-split-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* SWOT Summary Cards */
+.swot-summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.swot-pill {
+  padding: 16px 14px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border: 1px solid transparent;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.swot-pill:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.swot-pill.strength {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.25);
+  color: #065f46;
+}
+
+.swot-pill.strength .swot-pill-count {
+  color: #059669;
+}
+
+.swot-pill.weakness {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.25);
+  color: #92400e;
+}
+
+.swot-pill.weakness .swot-pill-count {
+  color: #d97706;
+}
+
+.swot-pill.opportunity {
+  background: rgba(99, 102, 241, 0.08);
+  border-color: rgba(99, 102, 241, 0.25);
+  color: #3730a3;
+}
+
+.swot-pill.opportunity .swot-pill-count {
+  color: #4f46e5;
+}
+
+.swot-pill.threat {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.25);
+  color: #991b1b;
+}
+
+.swot-pill.threat .swot-pill-count {
+  color: #dc2626;
+}
+
+.swot-pill-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+
+.swot-pill-count {
+  font-size: 26px;
+  font-weight: 800;
+}
+
 /* SWOT Quadrants */
 .swot-grid {
   display: grid;

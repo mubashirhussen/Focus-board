@@ -58,9 +58,9 @@ export function Dashboard() {
       {/* 2. Focus Notes Carousel (Figma 15:2, 15:30, 15:58) */}
       <FocusNotes />
 
-      {/* 3. Overview Statistics Cards (Derived dynamically from task state) */}
-      <section className="overview-stats-section" aria-label="Task statistics overview">
-        <h2 className="stats-section-title">Overview</h2>
+      {/* 3. Task Statistics & Metrics Cards */}
+      <section className="overview-stats-section" aria-label="Task statistics and focus metrics">
+        <h2 className="stats-section-title">Task Metrics & Focus</h2>
         <div className="stats-grid">
           <StatCard
             icon={Layers}

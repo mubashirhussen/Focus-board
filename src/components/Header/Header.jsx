@@ -5,7 +5,7 @@ import { UserProfileMenu } from '../auth/UserProfileMenu';
 import { NotificationBell } from '../notifications/NotificationBell';
 import './Header.css';
 
-export function Header({ title = 'Overview', onOpenCommandPalette }) {
+export function Header({ title = 'Task Management', onOpenCommandPalette }) {
   const isMac = typeof navigator !== 'undefined' && navigator.platform?.toUpperCase().indexOf('MAC') >= 0;
   const shortcutLabel = isMac ? '⌘K' : 'Ctrl+K';
 

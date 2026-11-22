@@ -42,7 +42,7 @@ import { KeyboardShortcutsModal } from '../components/KeyboardShortcutsModal/Key
 import './App.css';
 
 function AppContent() {
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('tasks');
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
@@ -62,7 +62,7 @@ function AppContent() {
     onToggleCommandPalette: () => setIsCommandPaletteOpen((prev) => !prev),
     onOpenSearch: () => setIsCommandPaletteOpen(true),
     onNewTask: () => {
-      setActiveTab('overview');
+      setActiveTab('tasks');
       openCreateModal?.();
     },
     onToggleShortcutsModal: () => setIsShortcutsModalOpen((prev) => !prev),
@@ -122,13 +122,11 @@ function AppContent() {
         return 'FocusBoard Enterprise Trust Center';
       case 'support':
         return 'Customer Operations & Support';
-      case 'tasks':
-        return 'Task Management';
       case 'settings':
         return 'Preferences & Settings';
-      case 'overview':
+      case 'tasks':
       default:
-        return 'Overview';
+        return 'Task Management';
     }
   };
 
@@ -231,7 +229,7 @@ function AppContent() {
         onClose={() => setIsCommandPaletteOpen(false)}
         onNavigate={(tab) => setActiveTab(tab)}
         onNewTask={() => {
-          setActiveTab('overview');
+          setActiveTab('tasks');
           openCreateModal?.();
         }}
         onOpenShortcuts={() => setIsShortcutsModalOpen(true)}

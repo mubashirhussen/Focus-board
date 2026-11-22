@@ -35,12 +35,11 @@ import { useI18n } from '../../i18n/I18nContext';
 import { APP_CONFIG } from '../../app/appConfig';
 import './Sidebar.css';
 
-export function Sidebar({ activeTab = 'overview', onTabChange, onOpenFeedback }) {
+export function Sidebar({ activeTab = 'tasks', onTabChange, onOpenFeedback }) {
   const { stats, resetToSampleData } = useTasks();
   const { t } = useI18n();
 
   const navItems = [
-    { id: 'overview', label: t('nav.overview', 'Overview'), icon: LayoutGrid, count: null },
     { id: 'tasks', label: t('nav.tasks', 'My Tasks'), icon: CheckSquare, count: stats.total },
     { id: 'ai', label: t('nav.ai', 'AI Planner'), icon: Sparkles, count: null },
     { id: 'agents', label: t('nav.agents', 'AI Agents'), icon: Bot, count: null },

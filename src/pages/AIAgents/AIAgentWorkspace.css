@@ -228,7 +228,7 @@
   resize: vertical;
 }
 
-.quick-prompts-bar {
+.agent-quick-prompts-bar {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
