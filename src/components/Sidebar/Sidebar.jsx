@@ -14,26 +14,32 @@ import {
   RotateCcw,
   HelpCircle,
   MessageSquare,
+  Bot,
+  Globe,
 } from 'lucide-react';
 import { useTasks } from '../../hooks/useTasks';
+import { useI18n } from '../../i18n/I18nContext';
 import { APP_CONFIG } from '../../app/appConfig';
 import './Sidebar.css';
 
 export function Sidebar({ activeTab = 'overview', onTabChange, onOpenFeedback }) {
   const { stats, resetToSampleData } = useTasks();
+  const { t } = useI18n();
 
   const navItems = [
-    { id: 'overview', label: 'Overview', icon: LayoutGrid, count: null },
-    { id: 'tasks', label: 'My Tasks', icon: CheckSquare, count: stats.total },
-    { id: 'ai', label: 'AI Planner', icon: Sparkles, count: null },
-    { id: 'team', label: 'Team Space', icon: Users, count: null },
-    { id: 'calendar', label: 'Calendar', icon: Calendar, count: null },
-    { id: 'integrations', label: 'Integrations', icon: Layers, count: null },
-    { id: 'billing', label: 'Plans & Billing', icon: CreditCard, count: null },
-    { id: 'intelligence', label: 'Intelligence', icon: Brain, count: null },
-    { id: 'enterprise', label: 'Enterprise Admin', icon: ShieldCheck, count: null },
-    { id: 'analytics', label: 'Analytics', icon: BarChart2, count: null },
-    { id: 'support', label: 'Support & Help', icon: HelpCircle, count: null },
+    { id: 'overview', label: t('nav.overview', 'Overview'), icon: LayoutGrid, count: null },
+    { id: 'tasks', label: t('nav.tasks', 'My Tasks'), icon: CheckSquare, count: stats.total },
+    { id: 'ai', label: t('nav.ai', 'AI Planner'), icon: Sparkles, count: null },
+    { id: 'agents', label: t('nav.agents', 'AI Agents'), icon: Bot, count: null },
+    { id: 'team', label: t('nav.team', 'Team Space'), icon: Users, count: null },
+    { id: 'calendar', label: t('nav.calendar', 'Calendar'), icon: Calendar, count: null },
+    { id: 'integrations', label: t('nav.integrations', 'Integrations'), icon: Layers, count: null },
+    { id: 'billing', label: t('nav.billing', 'Plans & Billing'), icon: CreditCard, count: null },
+    { id: 'intelligence', label: t('nav.intelligence', 'Intelligence'), icon: Brain, count: null },
+    { id: 'enterprise', label: t('nav.enterprise', 'Enterprise Admin'), icon: ShieldCheck, count: null },
+    { id: 'analytics', label: t('nav.analytics', 'Analytics'), icon: BarChart2, count: null },
+    { id: 'support', label: t('nav.support', 'Support & Help'), icon: HelpCircle, count: null },
+    { id: 'settings', label: t('nav.settings', 'Regional Settings'), icon: Globe, count: null },
   ];
 
   const handleReset = () => {

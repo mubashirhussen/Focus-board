@@ -39,6 +39,14 @@ from app.models.support import (
     KnowledgeBaseArticle,
     ProductRoadmapItem,
 )
+from app.models.ai_agent import (
+    AIAgent,
+    AIAgentExecution,
+    AIAgentExecutionStep,
+    AIAgentApproval,
+    AIPersistentPreference,
+)
+from app.models.regional_settings import UserRegionalSetting
 
 __all__ = [
     "User",
@@ -79,4 +87,10 @@ __all__ = [
     "KnowledgeBaseCategory",
     "KnowledgeBaseArticle",
     "ProductRoadmapItem",
+    "AIAgent",
+    "AIAgentExecution",
+    "AIAgentExecutionStep",
+    "AIAgentApproval",
+    "AIPersistentPreference",
+    "UserRegionalSetting",
 ]

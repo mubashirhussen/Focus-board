@@ -15,6 +15,8 @@ import {
   ShieldCheck,
   X,
   ArrowRight,
+  Bot,
+  Globe,
 } from 'lucide-react';
 import { searchApi } from '../../services/searchApi';
 import { userPrivacyApi } from '../../services/userPrivacyApi';
@@ -144,6 +146,20 @@ export function CommandPalette({
       label: 'Open Customer Support, Knowledge Base & Roadmap',
       icon: HelpCircle,
       action: () => { onNavigate('support'); onClose(); },
+    },
+    {
+      id: 'nav-agents',
+      category: 'Navigation',
+      label: 'Launch Autonomous AI Agents & Task Orchestration',
+      icon: Bot,
+      action: () => { onNavigate('agents'); onClose(); },
+    },
+    {
+      id: 'nav-settings',
+      category: 'Navigation',
+      label: 'Open Regional Settings, Multi-Currency & Languages',
+      icon: Globe,
+      action: () => { onNavigate('settings'); onClose(); },
     },
   ], [onNavigate, onClose]);
 

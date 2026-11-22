@@ -15,6 +15,9 @@ import { Billing } from '../pages/Billing/Billing';
 import { Intelligence } from '../pages/Intelligence/Intelligence';
 import { Enterprise } from '../pages/Enterprise/Enterprise';
 import SupportPortal from '../pages/Support/SupportPortal';
+import AIAgentWorkspace from '../pages/AIAgents/AIAgentWorkspace';
+import RegionalSettingsPage from '../pages/Settings/RegionalSettingsPage';
+import { I18nProvider, useI18n } from '../i18n/I18nContext';
 import OnboardingModal from '../components/Onboarding/OnboardingModal';
 import FeedbackModal from '../components/FeedbackModal/FeedbackModal';
 import { growthApi } from '../services/growthApi';
@@ -61,6 +64,8 @@ function AppContent() {
     switch (tab) {
       case 'ai':
         return 'AI Task Planning & Assistant';
+      case 'agents':
+        return 'AI Autonomous Agents & Orchestration';
       case 'team':
         return 'Team Workspace & Collaboration';
       case 'analytics':
@@ -91,6 +96,8 @@ function AppContent() {
     switch (activeTab) {
       case 'ai':
         return <AIAssistant />;
+      case 'agents':
+        return <AIAgentWorkspace />;
       case 'team':
         return <TeamWorkspace />;
       case 'analytics':
@@ -107,6 +114,8 @@ function AppContent() {
         return <Enterprise />;
       case 'support':
         return <SupportPortal />;
+      case 'settings':
+        return <RegionalSettingsPage />;
       default:
         return <Dashboard activeTab={activeTab} />;
     }
@@ -173,11 +182,13 @@ function AppContent() {
 
 export function App() {
   return (
-    <AuthProvider>
-      <TaskProvider>
-        <AppContent />
-      </TaskProvider>
-    </AuthProvider>
+    <I18nProvider>
+      <AuthProvider>
+        <TaskProvider>
+          <AppContent />
+        </TaskProvider>
+      </AuthProvider>
+    </I18nProvider>
   );
 }
 
