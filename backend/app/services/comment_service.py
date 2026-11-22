@@ -138,6 +138,7 @@ class CommentService:
         # 5. Extract and persist user mentions
         candidates = mention_service.extract_mentions(clean_content)
         valid_mentions = mention_service.resolve_valid_mentions(db, candidates, org_id, ws_id)
+        from app.services.notification_service import notification_service
         for target in valid_mentions:
             mention = CommentMention(
                 organization_id=org_id,
@@ -149,6 +150,16 @@ class CommentService:
                 created_at=utc_now(),
             )
             db.add(mention)
+            try:
+                notification_service.notify_mention(db, comment, current_user.id, target.id)
+            except Exception:
+                pass
+
+        if parent_comment and parent_comment.author_id != current_user.id:
+            try:
+                notification_service.notify_comment(db, comment, current_user.id, [parent_comment.author_id])
+            except Exception:
+                pass
 
         # 6. Emit Activity event
         event_name = "REPLY_CREATED" if comment_in.parent_comment_id else "COMMENT_CREATED"

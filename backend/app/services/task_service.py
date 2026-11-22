@@ -289,6 +289,13 @@ def create_task(
     db.commit()
     db.refresh(task)
 
+    if task.assignee_id and task.assignee_id != current_user.id:
+        try:
+            from app.services.notification_service import notification_service
+            notification_service.notify_task_assigned(db, task, task.assignee_id, current_user.id)
+        except Exception:
+            pass
+
     if task.parent_task_id:
         rollup_subtask_progress(db, task.parent_task_id)
 
@@ -353,6 +360,7 @@ def update_task(
         task.timezone_name = task_in.timezone_name
 
     # Reassignments & project linkage
+    old_assignee = task.assignee_id
     if task_in.project_id is not None:
         task.project_id = task_in.project_id
     if task_in.assignee_id is not None:
@@ -373,6 +381,21 @@ def update_task(
     task.updated_at = now
     db.commit()
     db.refresh(task)
+
+    if task_in.assignee_id is not None and task_in.assignee_id != old_assignee and task_in.assignee_id != current_user.id:
+        try:
+            from app.services.notification_service import notification_service
+            notification_service.notify_task_assigned(db, task, task_in.assignee_id, current_user.id)
+        except Exception:
+            pass
+
+    if status_changed and task.status.lower() == "completed":
+        try:
+            from app.services.notification_service import notification_service
+            notification_service.notify_task_completed(db, task, current_user.id)
+            notification_service.on_task_completed(db, task.id, current_user.id)
+        except Exception:
+            pass
 
     if status_changed and task.parent_task_id:
         rollup_subtask_progress(db, task.parent_task_id)
@@ -401,6 +424,14 @@ def update_status(
     task.updated_at = now
     db.commit()
     db.refresh(task)
+
+    if task.status.lower() == "completed" and old_status.lower() != "completed":
+        try:
+            from app.services.notification_service import notification_service
+            notification_service.notify_task_completed(db, task, current_user.id)
+            notification_service.on_task_completed(db, task.id, current_user.id)
+        except Exception:
+            pass
 
     if task.parent_task_id:
         rollup_subtask_progress(db, task.parent_task_id)

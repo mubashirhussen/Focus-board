@@ -8,7 +8,7 @@ from app.models.organization import OrganizationMember
 from app.models.collaboration import WorkspaceMember
 from app.schemas.comment import MentionUserAutocomplete
 
-MENTION_REGEX = re.compile(r"@([\w\.\-]+)")
+MENTION_REGEX = re.compile(r"@([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+|[\w\.\-]+)")
 
 class MentionService:
     @staticmethod
@@ -48,13 +48,18 @@ class MentionService:
             )
             candidates = user_query.limit(5).all()
             for cand in candidates:
-                # Verify cand belongs to organization
+                # Allow if member of current org, or if mentioned by matching email/prefix
+                is_matched = (
+                    cand.email.lower() == term
+                    or cand.email.lower().startswith(f"{term}@")
+                    or (cand.name and cand.name.lower() == term)
+                )
                 org_mem = db.query(OrganizationMember).filter(
                     OrganizationMember.organization_id == organization_id,
                     OrganizationMember.user_id == cand.id,
                     OrganizationMember.is_active == True
                 ).first()
-                if org_mem and cand not in found_users:
+                if (org_mem or is_matched) and cand not in found_users:
                     found_users.append(cand)
 
         return found_users

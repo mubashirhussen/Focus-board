@@ -606,6 +606,13 @@ class TeamService:
         db.add(invitation)
         db.commit()
         db.refresh(invitation)
+
+        try:
+            from app.services.notification_service import notification_service
+            notification_service.notify_team_invitation(db, team, invitation, current_user.id)
+        except Exception:
+            pass
+
         return invitation, raw_token
 
     def list_invitations(

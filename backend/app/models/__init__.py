@@ -15,7 +15,7 @@ from app.models.reminder import Reminder, TaskRecurrenceRule
 from app.models.board import Board, BoardColumn, BoardView, SavedFilter
 from app.models.team import Team, TeamMember, TeamInvitation
 from app.models.comment import Comment, CommentMention, CommentReaction
-from app.models.notification import Notification, NotificationPreference
+from app.models.notification import Notification, NotificationPreference, NotificationDelivery
 from app.models.project import (
     Project,
     ProjectMember,
