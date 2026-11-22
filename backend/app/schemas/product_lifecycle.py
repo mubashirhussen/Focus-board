@@ -70,6 +70,7 @@ class ProductIdeaResponse(BaseModel):
     priority: str
     status: str
     owner_id: Optional[int] = None
+    organization_id: Optional[int] = None
     tags_json: str
     created_at: datetime
     updated_at: datetime
@@ -111,6 +112,7 @@ class ProductFeatureRequestResponse(BaseModel):
     merged_into_id: Optional[str] = None
     linked_idea_id: Optional[str] = None
     owner_id: Optional[int] = None
+    organization_id: Optional[int] = None
     created_at: datetime
     updated_at: datetime
 
@@ -131,6 +133,15 @@ class ProductOpportunityCreate(BaseModel):
     risk_level: str = "LOW"
     validation_status: str = "IDENTIFIED"
     priority: str = "MEDIUM"
+    organization_id: Optional[int] = None
+
+class ProductOpportunityUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    validation_status: Optional[str] = None
+    priority: Optional[str] = None
+    revenue_potential: Optional[float] = None
+    effort_estimate: Optional[str] = None
 
 class ProductOpportunityResponse(BaseModel):
     id: str
@@ -148,6 +159,7 @@ class ProductOpportunityResponse(BaseModel):
     validation_status: str
     priority: str
     owner_id: Optional[int] = None
+    organization_id: Optional[int] = None
     created_at: datetime
     updated_at: datetime
 
@@ -158,15 +170,16 @@ class ProductPrioritizationItemCreate(BaseModel):
     item_type: str = "FEATURE_REQUEST"
     item_id: str
     title: str
-    reach: float = 100.0
-    impact: float = 3.0
-    confidence: float = 0.8
-    effort: float = 2.0
-    ease: float = 3.0
+    reach: float = Field(100.0, ge=1.0)
+    impact: float = Field(3.0, ge=0.1, le=10.0)
+    confidence: float = Field(0.8, ge=0.01, le=1.0)
+    effort: float = Field(2.0, gt=0.0)
+    ease: float = Field(3.0, ge=0.1, le=10.0)
     moscow_category: str = "SHOULD_HAVE"
     weighted_score: float = 75.0
     priority_rank: int = 1
     notes: Optional[str] = None
+    organization_id: Optional[int] = None
 
 class ProductPrioritizationItemResponse(BaseModel):
     id: str
@@ -185,6 +198,7 @@ class ProductPrioritizationItemResponse(BaseModel):
     priority_rank: int
     notes: Optional[str] = None
     evaluated_by_id: Optional[int] = None
+    organization_id: Optional[int] = None
     evaluated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -199,6 +213,14 @@ class ProductInitiativeCreate(BaseModel):
     progress_pct: float = 0.0
     start_date: Optional[datetime] = None
     target_date: Optional[datetime] = None
+    organization_id: Optional[int] = None
+
+class ProductInitiativeUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    priority: Optional[str] = None
+    status: Optional[str] = None
+    progress_pct: Optional[float] = None
 
 class ProductInitiativeResponse(BaseModel):
     id: str
@@ -209,6 +231,7 @@ class ProductInitiativeResponse(BaseModel):
     status: str
     progress_pct: float
     owner_id: Optional[int] = None
+    organization_id: Optional[int] = None
     start_date: Optional[datetime] = None
     target_date: Optional[datetime] = None
     created_at: datetime
@@ -228,6 +251,14 @@ class LifecycleRoadmapItemCreate(BaseModel):
     start_date: Optional[datetime] = None
     target_date: Optional[datetime] = None
     progress_pct: float = 0.0
+    organization_id: Optional[int] = None
+
+class LifecycleRoadmapItemUpdate(BaseModel):
+    title: Optional[str] = None
+    status: Optional[str] = None
+    priority: Optional[str] = None
+    progress_pct: Optional[float] = None
+    target_date: Optional[datetime] = None
 
 class LifecycleRoadmapItemResponse(BaseModel):
     id: str
@@ -242,6 +273,7 @@ class LifecycleRoadmapItemResponse(BaseModel):
     target_date: Optional[datetime] = None
     progress_pct: float
     owner_id: Optional[int] = None
+    organization_id: Optional[int] = None
     created_at: datetime
     updated_at: datetime
 
@@ -292,9 +324,18 @@ class ProductExperimentCreate(BaseModel):
     hypothesis: str
     experiment_type: str = "AB_TEST"
     primary_metric: str = "conversion_rate"
-    status: str = "RUNNING"
+    status: str = "DRAFT"
     audience_segment: str = "ALL_USERS"
     variants: List[ExperimentVariantCreate] = []
+    organization_id: Optional[int] = None
+
+class ProductExperimentUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    hypothesis: Optional[str] = None
+    status: Optional[str] = None
+    conclusion: Optional[str] = None
+    end_date: Optional[datetime] = None
 
 class ProductExperimentResponse(BaseModel):
     id: str
@@ -310,6 +351,7 @@ class ProductExperimentResponse(BaseModel):
     total_sample_size: int
     conclusion: Optional[str] = None
     owner_id: Optional[int] = None
+    organization_id: Optional[int] = None
     created_at: datetime
     updated_at: datetime
     variants: List[ExperimentVariantResponse] = []
@@ -325,6 +367,14 @@ class ProductReleaseCreate(BaseModel):
     release_date: Optional[datetime] = None
     rollout_percentage: float = 100.0
     release_notes: str
+    organization_id: Optional[int] = None
+
+class ProductReleaseUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[str] = None
+    rollout_percentage: Optional[float] = None
+    release_notes: Optional[str] = None
 
 class ProductReleaseResponse(BaseModel):
     id: str
@@ -336,12 +386,62 @@ class ProductReleaseResponse(BaseModel):
     rollout_percentage: float
     release_notes: str
     owner_id: Optional[int] = None
+    organization_id: Optional[int] = None
     created_at: datetime
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 
-# 10. AI Product Assistant Query
+# 10. Product Decisions & Risks Schemas
+class ProductDecisionCreate(BaseModel):
+    title: str
+    problem: str
+    decision_summary: str
+    rationale: str
+    alternatives_considered: Optional[str] = None
+    status: str = "APPROVED"
+    organization_id: Optional[int] = None
+
+class ProductDecisionResponse(BaseModel):
+    id: str
+    title: str
+    problem: str
+    decision_summary: str
+    rationale: str
+    alternatives_considered: Optional[str] = None
+    status: str
+    decision_maker_id: Optional[int] = None
+    organization_id: Optional[int] = None
+    decision_date: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+class ProductRiskCreate(BaseModel):
+    title: str
+    description: str
+    category: str = "TECHNICAL"
+    severity: str = "MEDIUM"
+    likelihood: str = "MEDIUM"
+    mitigation_plan: str
+    status: str = "IDENTIFIED"
+    organization_id: Optional[int] = None
+
+class ProductRiskResponse(BaseModel):
+    id: str
+    title: str
+    description: str
+    category: str
+    severity: str
+    likelihood: str
+    mitigation_plan: str
+    status: str
+    owner_id: Optional[int] = None
+    organization_id: Optional[int] = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+# 11. AI Product Assistant Query
 class AIProductAssistantRequest(BaseModel):
     query: str
     context_type: Optional[str] = "PRODUCT_OVERVIEW"

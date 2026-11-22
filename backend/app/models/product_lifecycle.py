@@ -46,6 +46,7 @@ class ProductIdea(Base):
     status = Column(String(32), default="NEW", nullable=False, index=True)
     # NEW, UNDER_REVIEW, VALIDATED, PLANNED, IN_PROGRESS, SHIPPED, ARCHIVED
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    organization_id = Column(Integer, nullable=True, index=True)
     tags_json = Column(Text, server_default="[]", nullable=False)
     created_at = Column(DateTime, default=utc_now, nullable=False)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
@@ -73,6 +74,7 @@ class ProductFeatureRequest(Base):
     merged_into_id = Column(String(64), ForeignKey("product_feature_requests.id", ondelete="SET NULL"), nullable=True)
     linked_idea_id = Column(String(64), ForeignKey("product_ideas.id", ondelete="SET NULL"), nullable=True)
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    organization_id = Column(Integer, nullable=True, index=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
@@ -98,6 +100,7 @@ class ProductOpportunity(Base):
     # IDENTIFIED, INVESTIGATING, VALIDATING, VALIDATED, PRIORITIZED, PLANNED, IMPLEMENTING, COMPLETED
     priority = Column(String(32), default="MEDIUM", nullable=False)
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    organization_id = Column(Integer, nullable=True, index=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
@@ -123,6 +126,7 @@ class ProductPrioritizationItem(Base):
     priority_rank = Column(Integer, default=1, nullable=False)
     notes = Column(Text, nullable=True)
     evaluated_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    organization_id = Column(Integer, nullable=True, index=True)
     evaluated_at = Column(DateTime, default=utc_now, nullable=False)
 
     evaluated_by = relationship("User", foreign_keys=[evaluated_by_id])
@@ -139,6 +143,7 @@ class ProductInitiative(Base):
     status = Column(String(32), default="IN_PROGRESS", nullable=False, index=True) # PLANNED, IN_PROGRESS, ON_HOLD, COMPLETED, CANCELLED
     progress_pct = Column(Float, default=0.0, nullable=False)
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    organization_id = Column(Integer, nullable=True, index=True)
     start_date = Column(DateTime, nullable=True)
     target_date = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
@@ -163,6 +168,7 @@ class LifecycleRoadmapItem(Base):
     target_date = Column(DateTime, nullable=True)
     progress_pct = Column(Float, default=0.0, nullable=False)
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    organization_id = Column(Integer, nullable=True, index=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
@@ -195,6 +201,7 @@ class ProductValidation(Base):
     outcome = Column(String(32), default="VALIDATED", nullable=False) # NOT_VALIDATED, VALIDATING, VALIDATED, INVALIDATED, INCONCLUSIVE
     confidence_pct = Column(Float, default=85.0, nullable=False)
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    organization_id = Column(Integer, nullable=True, index=True)
     validated_at = Column(DateTime, default=utc_now, nullable=False)
 
     discovery = relationship("ProductDiscovery", back_populates="validations")
@@ -210,13 +217,14 @@ class ProductExperiment(Base):
     hypothesis = Column(Text, nullable=False)
     experiment_type = Column(String(32), default="AB_TEST", nullable=False) # AB_TEST, MULTIVARIATE, FEATURE_FLAG, ONBOARDING, PRICING
     primary_metric = Column(String(128), default="conversion_rate", nullable=False)
-    status = Column(String(32), default="RUNNING", nullable=False, index=True) # DRAFT, REVIEW, APPROVED, SCHEDULED, RUNNING, PAUSED, COMPLETED, ANALYZED, ARCHIVED
+    status = Column(String(32), default="DRAFT", nullable=False, index=True) # DRAFT, REVIEW, APPROVED, SCHEDULED, RUNNING, PAUSED, COMPLETED, ANALYZED, ARCHIVED
     audience_segment = Column(String(64), default="ALL_USERS", nullable=False)
     start_date = Column(DateTime, default=utc_now, nullable=False)
     end_date = Column(DateTime, nullable=True)
     total_sample_size = Column(Integer, default=0, nullable=False)
     conclusion = Column(Text, nullable=True)
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    organization_id = Column(Integer, nullable=True, index=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
@@ -275,6 +283,7 @@ class ProductRelease(Base):
     rollout_percentage = Column(Float, default=100.0, nullable=False)
     release_notes = Column(Text, nullable=False)
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    organization_id = Column(Integer, nullable=True, index=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
@@ -325,6 +334,7 @@ class ProductDecision(Base):
     alternatives_considered = Column(Text, nullable=True)
     status = Column(String(32), default="APPROVED", nullable=False) # PROPOSED, APPROVED, REJECTED, SUPERSEDED
     decision_maker_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    organization_id = Column(Integer, nullable=True, index=True)
     decision_date = Column(DateTime, default=utc_now, nullable=False)
 
     decision_maker = relationship("User", foreign_keys=[decision_maker_id])
@@ -342,6 +352,7 @@ class ProductRiskRecord(Base):
     mitigation_plan = Column(Text, nullable=False)
     status = Column(String(32), default="IDENTIFIED", nullable=False, index=True) # IDENTIFIED, ASSESSED, MITIGATING, ACCEPTED, RESOLVED
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    organization_id = Column(Integer, nullable=True, index=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
 
     owner = relationship("User", foreign_keys=[owner_id])

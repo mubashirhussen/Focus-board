@@ -303,8 +303,24 @@ def test_experimentation_variant_assignment_and_events(auth_context):
     }
     exp_resp = client.post("/api/v1/product-lifecycle/experiments", json=exp_payload, headers=headers)
     assert exp_resp.status_code == 201
-    exp_id = exp_resp.json()["id"]
+    exp = exp_resp.json()
+    exp_id = exp["id"]
+    assert exp["status"] == "DRAFT"
 
+    # Safeguard check: Cannot assign variants when experiment is in DRAFT status
+    draft_assign_resp = client.post(f"/api/v1/product-lifecycle/experiments/{exp_id}/assign", headers=headers)
+    assert draft_assign_resp.status_code == 400
+
+    # Activate experiment to RUNNING
+    activate_resp = client.patch(
+        f"/api/v1/product-lifecycle/experiments/{exp_id}",
+        json={"status": "RUNNING"},
+        headers=headers,
+    )
+    assert activate_resp.status_code == 200
+    assert activate_resp.json()["status"] == "RUNNING"
+
+    # Now assignment succeeds
     assign_resp = client.post(f"/api/v1/product-lifecycle/experiments/{exp_id}/assign", headers=headers)
     assert assign_resp.status_code == 200
     variant = assign_resp.json()
@@ -331,3 +347,152 @@ def test_ai_product_assistant(auth_context):
     assert "total_feature_requests" in data
     assert "recommended_roadmap_actions" in data
     assert "grounded_evidence" in data
+
+# ----------------- PHASE 45 SECURITY & TENANT ISOLATION TESTS -----------------
+def test_prioritization_effort_boundary_validation(auth_context):
+    headers, _, _ = auth_context
+    # Effort <= 0 must be strictly rejected
+    resp = client.post(
+        "/api/v1/product-lifecycle/prioritization/calculate?reach=100&impact=3&confidence=0.8&effort=0&ease=2",
+        headers=headers,
+    )
+    assert resp.status_code in [400, 422]
+
+def test_feature_request_merge_edge_cases(auth_context):
+    headers, _, _ = auth_context
+    # Create request
+    req = client.post(
+        "/api/v1/product-lifecycle/feature-requests",
+        json={"title": "Self-Merge Candidate", "description": "Testing self-merge safety.", "customer_name": "Org A", "request_count": 2},
+        headers=headers,
+    ).json()
+
+    # Self-merge must be rejected
+    self_merge_resp = client.post(
+        f"/api/v1/product-lifecycle/feature-requests/{req['id']}/merge?target_id={req['id']}",
+        headers=headers,
+    )
+    assert self_merge_resp.status_code == 400
+    assert "Cannot merge a feature request into itself" in self_merge_resp.json()["detail"]
+
+def test_multi_tenant_isolation_suite(db_session: Session, auth_context):
+    headers_a, user_a, ws_a = auth_context
+
+    # Create Org B user & workspace
+    user_b = User(
+        email=f"org_b_{uuid.uuid4().hex[:8]}@focusboard.enterprise",
+        name="Org B Tenant User",
+        hashed_password="pw_b_fixture",
+        role="member",
+        is_active=True,
+    )
+    db_session.add(user_b)
+    db_session.flush()
+
+    ws_b = Workspace(name="Org B Workspace", description="Isolated tenant", owner_id=user_b.id)
+    db_session.add(ws_b)
+    db_session.commit()
+    db_session.refresh(user_b)
+    db_session.refresh(ws_b)
+
+    token_b = create_access_token(user_b.id)
+    headers_b = {"Authorization": f"Bearer {token_b}"}
+
+    # Org A creates resources in Org A's workspace
+    disc_resp = client.post(
+        f"/api/v1/product-lifecycle/discoveries?organization_id={ws_a.id}",
+        json={
+            "title": "Org A Secret Research",
+            "problem_statement": "Org A unique bottleneck statement.",
+            "hypothesis": "Org A automation will increase velocity.",
+            "target_users": "Org A Internal Staff",
+            "customer_segment": "ENTERPRISE",
+            "business_impact": "High efficiency.",
+            "customer_impact": "Fast execution.",
+        },
+        headers=headers_a,
+    )
+    assert disc_resp.status_code == 201
+    disc_a = disc_resp.json()
+
+    idea_resp = client.post(
+        f"/api/v1/product-lifecycle/ideas?organization_id={ws_a.id}",
+        json={
+            "discovery_id": disc_a["id"],
+            "title": "Org A Secret Idea",
+            "description": "Proprietary design.",
+            "problem_statement": "Org A isolated problem.",
+            "proposed_solution": "Org A proprietary pipeline.",
+            "product_area": "CORE_PLATFORM",
+            "category": "PRODUCTIVITY",
+        },
+        headers=headers_a,
+    )
+    assert idea_resp.status_code == 201
+    idea_a = idea_resp.json()
+
+    req_resp = client.post(
+        f"/api/v1/product-lifecycle/feature-requests?organization_id={ws_a.id}",
+        json={
+            "title": "Org A Feature Request",
+            "description": "Confidential customer demand.",
+            "customer_name": "Org A Client",
+            "request_count": 4,
+            "revenue_impact": 40000.0,
+        },
+        headers=headers_a,
+    )
+    assert req_resp.status_code == 201
+    req_a = req_resp.json()
+
+    exp_resp = client.post(
+        f"/api/v1/product-lifecycle/experiments?organization_id={ws_a.id}",
+        json={
+            "name": "Org A Secret Experiment",
+            "description": "Tenant A only experiment.",
+            "hypothesis": "Isolated A test.",
+            "primary_metric": "conversion_rate",
+            "variants": [
+                {"variant_name": "A1", "variant_key": "a1", "allocation_pct": 50.0},
+                {"variant_name": "A2", "variant_key": "a2", "allocation_pct": 50.0},
+            ]
+        },
+        headers=headers_a,
+    )
+    assert exp_resp.status_code == 201
+    exp_a = exp_resp.json()
+
+    # 1. Org B cannot list Org A's discoveries
+    list_disc_b = client.get(f"/api/v1/product-lifecycle/discoveries?organization_id={ws_b.id}", headers=headers_b).json()
+    assert all(d["id"] != disc_a["id"] for d in list_disc_b)
+
+    # 2. Org B cannot access Org A's discovery directly
+    get_disc_b = client.get(f"/api/v1/product-lifecycle/discoveries/{disc_a['id']}", headers=headers_b)
+    assert get_disc_b.status_code == 404
+
+    # 3. Org B cannot access Org A's idea directly
+    get_idea_b = client.get(f"/api/v1/product-lifecycle/ideas/{idea_a['id']}", headers=headers_b)
+    assert get_idea_b.status_code == 404
+
+    # 4. Org B cannot access or merge Org A's feature request
+    get_req_b = client.get(f"/api/v1/product-lifecycle/feature-requests/{req_a['id']}", headers=headers_b)
+    assert get_req_b.status_code == 404
+
+    # 5. Org B cannot access Org A's experiment
+    get_exp_b = client.get(f"/api/v1/product-lifecycle/experiments/{exp_a['id']}", headers=headers_b)
+    assert get_exp_b.status_code == 404
+
+    # 6. Org B cannot assign variants from Org A's experiment
+    assign_b = client.post(f"/api/v1/product-lifecycle/experiments/{exp_a['id']}/assign", headers=headers_b)
+    assert assign_b.status_code == 404
+
+    # 7. Org B cannot record telemetry events to Org A's experiment
+    event_b = client.post(
+        f"/api/v1/product-lifecycle/experiments/{exp_a['id']}/events?event_name=test&metric_value=1.0",
+        headers=headers_b,
+    )
+    assert event_b.status_code == 404
+
+    # 8. User cannot access another workspace without membership (403 Forbidden)
+    forbidden_resp = client.get(f"/api/v1/product-lifecycle/discoveries?organization_id={ws_a.id}", headers=headers_b)
+    assert forbidden_resp.status_code == 403

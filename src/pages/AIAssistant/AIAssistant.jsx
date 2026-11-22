@@ -324,6 +324,10 @@ export function AIAssistant() {
       {/* Top Header */}
       <div className="ai-header">
         <div className="ai-header-titles">
+          <span className="ai-sparkle-badge">
+            <Sparkles size={13} />
+            <span>AI PRODUCTIVITY INTELLIGENCE</span>
+          </span>
           <h1 className="ai-title">Task Planning & Productivity Assistant</h1>
           <p className="ai-subtitle">
             Intelligent daily workload planning, transparent priority scoring, and proposal-based workflow execution.

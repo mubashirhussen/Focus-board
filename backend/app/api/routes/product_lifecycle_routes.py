@@ -1,11 +1,13 @@
+from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Header, status
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 
 from app.db.database import get_db
 from app.api.deps import get_current_user
 from app.models.user import User
+from app.models.collaboration import Workspace, WorkspaceMember
 from app.models.product_lifecycle import (
     ProductDiscovery,
     ProductIdea,
@@ -18,6 +20,8 @@ from app.models.product_lifecycle import (
     ProductExperiment,
     ExperimentVariant,
     ProductRelease,
+    ProductDecision,
+    ProductRiskRecord,
 )
 from app.schemas.product_lifecycle import (
     ProductDiscoveryCreate,
@@ -30,20 +34,29 @@ from app.schemas.product_lifecycle import (
     ProductFeatureRequestUpdate,
     ProductFeatureRequestResponse,
     ProductOpportunityCreate,
+    ProductOpportunityUpdate,
     ProductOpportunityResponse,
     ProductPrioritizationItemCreate,
     ProductPrioritizationItemResponse,
     ProductInitiativeCreate,
+    ProductInitiativeUpdate,
     ProductInitiativeResponse,
     LifecycleRoadmapItemCreate,
+    LifecycleRoadmapItemUpdate,
     LifecycleRoadmapItemResponse,
     RoadmapDependencyCreate,
     RoadmapDependencyResponse,
     ProductExperimentCreate,
+    ProductExperimentUpdate,
     ProductExperimentResponse,
     ExperimentVariantResponse,
     ProductReleaseCreate,
+    ProductReleaseUpdate,
     ProductReleaseResponse,
+    ProductDecisionCreate,
+    ProductDecisionResponse,
+    ProductRiskCreate,
+    ProductRiskResponse,
     AIProductAssistantRequest,
     AIProductAssistantResponse,
 )
@@ -51,21 +64,71 @@ from app.services.product_lifecycle_service import ProductLifecycleService
 
 router = APIRouter()
 
-@router.get("/overview", response_model=Dict[str, Any])
-def get_lifecycle_overview(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    """Retrieve aggregate product lifecycle pipeline metrics, customer demand, and experiment counts."""
-    return ProductLifecycleService.get_lifecycle_overview(db)
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
 
-# Discoveries
-@router.get("/discoveries", response_model=List[ProductDiscoveryResponse])
-def list_discoveries(
-    status_filter: Optional[str] = None,
+def resolve_tenant_org_id(db: Session, current_user: User, explicit_org_id: Optional[int] = None) -> int:
+    """
+    Resolve and enforce organization / workspace tenant boundary for current_user.
+    If explicit_org_id is provided, validates that user belongs to that workspace/organization.
+    Raises 403 Forbidden if unauthorized.
+    """
+    if explicit_org_id is not None:
+        if current_user.role == "admin":
+            return explicit_org_id
+        # Check workspace membership
+        member = db.query(WorkspaceMember).filter(
+            WorkspaceMember.workspace_id == explicit_org_id,
+            WorkspaceMember.user_id == current_user.id
+        ).first()
+        if member:
+            return explicit_org_id
+        # Check workspace ownership
+        ws = db.query(Workspace).filter(
+            Workspace.id == explicit_org_id,
+            Workspace.owner_id == current_user.id
+        ).first()
+        if ws:
+            return explicit_org_id
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: You do not have authorization for this organization context."
+        )
+
+    # Resolve user's primary workspace
+    member = db.query(WorkspaceMember).filter(WorkspaceMember.user_id == current_user.id).first()
+    if member:
+        return member.workspace_id
+    ws = db.query(Workspace).filter(Workspace.owner_id == current_user.id).first()
+    if ws:
+        return ws.id
+    # Default to user's personal ID as fallback tenant boundary
+    return current_user.id
+
+# ----------------- OVERVIEW -----------------
+@router.get("/overview", response_model=Dict[str, Any])
+def get_lifecycle_overview(
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """List product discoveries and customer problem investigations."""
-    ProductLifecycleService.seed_initial_product_lifecycle_data(db)
-    query = db.query(ProductDiscovery)
+    """Retrieve aggregate product lifecycle pipeline metrics scoped to tenant organization."""
+    org_id = resolve_tenant_org_id(db, current_user, organization_id or x_organization_id)
+    return ProductLifecycleService.get_lifecycle_overview(db, organization_id=org_id)
+
+# ----------------- DISCOVERIES -----------------
+@router.get("/discoveries", response_model=List[ProductDiscoveryResponse])
+def list_discoveries(
+    status_filter: Optional[str] = None,
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List product discoveries scoped to tenant organization."""
+    org_id = resolve_tenant_org_id(db, current_user, organization_id or x_organization_id)
+    query = db.query(ProductDiscovery).filter(ProductDiscovery.organization_id == org_id)
     if status_filter:
         query = query.filter(ProductDiscovery.status == status_filter)
     return query.order_by(desc(ProductDiscovery.created_at)).all()
@@ -73,26 +136,96 @@ def list_discoveries(
 @router.post("/discoveries", response_model=ProductDiscoveryResponse, status_code=status.HTTP_201_CREATED)
 def create_discovery(
     disc_in: ProductDiscoveryCreate,
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """Log a new customer problem discovery and opportunity hypothesis."""
-    disc = ProductDiscovery(**disc_in.model_dump(), owner_id=current_user.id)
+    org_id = resolve_tenant_org_id(db, current_user, disc_in.organization_id or organization_id or x_organization_id)
+    data = disc_in.model_dump()
+    data.pop("organization_id", None)
+    disc = ProductDiscovery(**data, owner_id=current_user.id, organization_id=org_id)
     db.add(disc)
     db.commit()
     db.refresh(disc)
     return disc
 
-# Ideas
-@router.get("/ideas", response_model=List[ProductIdeaResponse])
-def list_ideas(
-    status_filter: Optional[str] = None,
+@router.get("/discoveries/{discovery_id}", response_model=ProductDiscoveryResponse)
+def get_discovery(
+    discovery_id: str,
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """List product solution ideas."""
-    ProductLifecycleService.seed_initial_product_lifecycle_data(db)
-    query = db.query(ProductIdea)
+    """Retrieve discovery by ID with tenant scoping."""
+    org_id = resolve_tenant_org_id(db, current_user, organization_id or x_organization_id)
+    disc = db.query(ProductDiscovery).filter(
+        ProductDiscovery.id == discovery_id,
+        ProductDiscovery.organization_id == org_id
+    ).first()
+    if not disc:
+        raise HTTPException(status_code=404, detail="Discovery not found or unauthorized.")
+    return disc
+
+@router.patch("/discoveries/{discovery_id}", response_model=ProductDiscoveryResponse)
+def update_discovery(
+    discovery_id: str,
+    disc_update: ProductDiscoveryUpdate,
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Update discovery status or hypothesis with tenant check."""
+    org_id = resolve_tenant_org_id(db, current_user, organization_id or x_organization_id)
+    disc = db.query(ProductDiscovery).filter(
+        ProductDiscovery.id == discovery_id,
+        ProductDiscovery.organization_id == org_id
+    ).first()
+    if not disc:
+        raise HTTPException(status_code=404, detail="Discovery not found or unauthorized.")
+
+    for k, v in disc_update.model_dump(exclude_unset=True).items():
+        setattr(disc, k, v)
+    disc.updated_at = utc_now()
+    db.commit()
+    db.refresh(disc)
+    return disc
+
+@router.delete("/discoveries/{discovery_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_discovery(
+    discovery_id: str,
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Delete a discovery record with tenant check."""
+    org_id = resolve_tenant_org_id(db, current_user, organization_id or x_organization_id)
+    disc = db.query(ProductDiscovery).filter(
+        ProductDiscovery.id == discovery_id,
+        ProductDiscovery.organization_id == org_id
+    ).first()
+    if not disc:
+        raise HTTPException(status_code=404, detail="Discovery not found or unauthorized.")
+    db.delete(disc)
+    db.commit()
+    return None
+
+# ----------------- IDEAS -----------------
+@router.get("/ideas", response_model=List[ProductIdeaResponse])
+def list_ideas(
+    status_filter: Optional[str] = None,
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List product solution ideas scoped to tenant organization."""
+    org_id = resolve_tenant_org_id(db, current_user, organization_id or x_organization_id)
+    query = db.query(ProductIdea).filter(ProductIdea.organization_id == org_id)
     if status_filter:
         query = query.filter(ProductIdea.status == status_filter)
     return query.order_by(desc(ProductIdea.created_at)).all()
@@ -100,27 +233,103 @@ def list_ideas(
 @router.post("/ideas", response_model=ProductIdeaResponse, status_code=status.HTTP_201_CREATED)
 def create_idea(
     idea_in: ProductIdeaCreate,
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """Submit a product concept or solution idea."""
-    idea = ProductIdea(**idea_in.model_dump(), owner_id=current_user.id)
+    org_id = resolve_tenant_org_id(db, current_user, organization_id or x_organization_id)
+    if idea_in.discovery_id:
+        disc = db.query(ProductDiscovery).filter(
+            ProductDiscovery.id == idea_in.discovery_id,
+            ProductDiscovery.organization_id == org_id
+        ).first()
+        if not disc:
+            raise HTTPException(status_code=404, detail="Linked discovery not found in current organization.")
+
+    idea = ProductIdea(**idea_in.model_dump(), owner_id=current_user.id, organization_id=org_id)
     db.add(idea)
     db.commit()
     db.refresh(idea)
     return idea
 
-# Feature Requests
+@router.get("/ideas/{idea_id}", response_model=ProductIdeaResponse)
+def get_idea(
+    idea_id: str,
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Retrieve idea by ID with tenant scoping."""
+    org_id = resolve_tenant_org_id(db, current_user, organization_id or x_organization_id)
+    idea = db.query(ProductIdea).filter(
+        ProductIdea.id == idea_id,
+        ProductIdea.organization_id == org_id
+    ).first()
+    if not idea:
+        raise HTTPException(status_code=404, detail="Idea not found or unauthorized.")
+    return idea
+
+@router.patch("/ideas/{idea_id}", response_model=ProductIdeaResponse)
+def update_idea(
+    idea_id: str,
+    idea_update: ProductIdeaUpdate,
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Update idea properties with tenant isolation."""
+    org_id = resolve_tenant_org_id(db, current_user, organization_id or x_organization_id)
+    idea = db.query(ProductIdea).filter(
+        ProductIdea.id == idea_id,
+        ProductIdea.organization_id == org_id
+    ).first()
+    if not idea:
+        raise HTTPException(status_code=404, detail="Idea not found or unauthorized.")
+
+    for k, v in idea_update.model_dump(exclude_unset=True).items():
+        setattr(idea, k, v)
+    idea.updated_at = utc_now()
+    db.commit()
+    db.refresh(idea)
+    return idea
+
+@router.delete("/ideas/{idea_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_idea(
+    idea_id: str,
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Delete an idea record with tenant check."""
+    org_id = resolve_tenant_org_id(db, current_user, organization_id or x_organization_id)
+    idea = db.query(ProductIdea).filter(
+        ProductIdea.id == idea_id,
+        ProductIdea.organization_id == org_id
+    ).first()
+    if not idea:
+        raise HTTPException(status_code=404, detail="Idea not found or unauthorized.")
+    db.delete(idea)
+    db.commit()
+    return None
+
+# ----------------- FEATURE REQUESTS -----------------
 @router.get("/feature-requests", response_model=List[ProductFeatureRequestResponse])
 def list_feature_requests(
     status_filter: Optional[str] = None,
     priority: Optional[str] = None,
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """List customer feature requests with demand count and revenue impact."""
-    ProductLifecycleService.seed_initial_product_lifecycle_data(db)
-    query = db.query(ProductFeatureRequest)
+    """List customer feature requests scoped to tenant organization."""
+    org_id = resolve_tenant_org_id(db, current_user, organization_id or x_organization_id)
+    query = db.query(ProductFeatureRequest).filter(ProductFeatureRequest.organization_id == org_id)
     if status_filter:
         query = query.filter(ProductFeatureRequest.status == status_filter)
     if priority:
@@ -130,12 +339,58 @@ def list_feature_requests(
 @router.post("/feature-requests", response_model=ProductFeatureRequestResponse, status_code=status.HTTP_201_CREATED)
 def create_feature_request(
     req_in: ProductFeatureRequestCreate,
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """Submit a customer-demanded feature request."""
-    freq = ProductFeatureRequest(**req_in.model_dump(), owner_id=current_user.id)
+    org_id = resolve_tenant_org_id(db, current_user, organization_id or x_organization_id)
+    freq = ProductFeatureRequest(**req_in.model_dump(), owner_id=current_user.id, organization_id=org_id)
     db.add(freq)
+    db.commit()
+    db.refresh(freq)
+    return freq
+
+@router.get("/feature-requests/{request_id}", response_model=ProductFeatureRequestResponse)
+def get_feature_request(
+    request_id: str,
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Retrieve feature request by ID with tenant scoping."""
+    org_id = resolve_tenant_org_id(db, current_user, organization_id or x_organization_id)
+    freq = db.query(ProductFeatureRequest).filter(
+        ProductFeatureRequest.id == request_id,
+        ProductFeatureRequest.organization_id == org_id
+    ).first()
+    if not freq:
+        raise HTTPException(status_code=404, detail="Feature request not found or unauthorized.")
+    return freq
+
+@router.patch("/feature-requests/{request_id}", response_model=ProductFeatureRequestResponse)
+def update_feature_request(
+    request_id: str,
+    req_update: ProductFeatureRequestUpdate,
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Update feature request status or priority."""
+    org_id = resolve_tenant_org_id(db, current_user, organization_id or x_organization_id)
+    freq = db.query(ProductFeatureRequest).filter(
+        ProductFeatureRequest.id == request_id,
+        ProductFeatureRequest.organization_id == org_id
+    ).first()
+    if not freq:
+        raise HTTPException(status_code=404, detail="Feature request not found or unauthorized.")
+
+    for k, v in req_update.model_dump(exclude_unset=True).items():
+        setattr(freq, k, v)
+    freq.updated_at = utc_now()
     db.commit()
     db.refresh(freq)
     return freq
@@ -144,72 +399,127 @@ def create_feature_request(
 def merge_feature_requests(
     request_id: str,
     target_id: str = Query(..., description="ID of primary feature request to merge into"),
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Merge duplicate feature request into a primary record, aggregating demand count."""
-    source_req = db.query(ProductFeatureRequest).filter(ProductFeatureRequest.id == request_id).first()
-    target_req = db.query(ProductFeatureRequest).filter(ProductFeatureRequest.id == target_id).first()
-    if not source_req or not target_req:
-        raise HTTPException(status_code=404, detail="Source or target feature request not found")
+    """Hardened merge endpoint with self-merge, cross-tenant, and circularity prevention."""
+    if request_id == target_id:
+        raise HTTPException(status_code=400, detail="Cannot merge a feature request into itself.")
 
+    org_id = resolve_tenant_org_id(db, current_user, organization_id or x_organization_id)
+    source_req = db.query(ProductFeatureRequest).filter(
+        ProductFeatureRequest.id == request_id,
+        ProductFeatureRequest.organization_id == org_id
+    ).first()
+    target_req = db.query(ProductFeatureRequest).filter(
+        ProductFeatureRequest.id == target_id,
+        ProductFeatureRequest.organization_id == org_id
+    ).first()
+
+    if not source_req or not target_req:
+        raise HTTPException(status_code=404, detail="Source or target feature request not found in organization.")
+
+    if source_req.merged_into_id is not None:
+        raise HTTPException(status_code=400, detail="Source feature request has already been merged into another record.")
+
+    if target_req.merged_into_id is not None:
+        raise HTTPException(status_code=400, detail="Cannot merge into a target that is itself already merged.")
+
+    if target_req.id == source_req.merged_into_id:
+        raise HTTPException(status_code=400, detail="Circular merge detected.")
+
+    # Atomic demand and revenue aggregation
     target_req.request_count += source_req.request_count
     target_req.revenue_impact += source_req.revenue_impact
     source_req.merged_into_id = target_req.id
     source_req.status = "DECLINED"
+    source_req.updated_at = utc_now()
+    target_req.updated_at = utc_now()
 
     db.commit()
     db.refresh(target_req)
     return target_req
 
-# Opportunities
+# ----------------- OPPORTUNITIES -----------------
 @router.get("/opportunities", response_model=List[ProductOpportunityResponse])
-def list_opportunities(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    """List evaluated market and product opportunities."""
-    ProductLifecycleService.seed_initial_product_lifecycle_data(db)
-    return db.query(ProductOpportunity).order_by(desc(ProductOpportunity.created_at)).all()
+def list_opportunities(
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List evaluated market and product opportunities scoped to tenant organization."""
+    org_id = resolve_tenant_org_id(db, current_user, organization_id or x_organization_id)
+    return db.query(ProductOpportunity).filter(
+        ProductOpportunity.organization_id == org_id
+    ).order_by(desc(ProductOpportunity.created_at)).all()
 
 @router.post("/opportunities", response_model=ProductOpportunityResponse, status_code=status.HTTP_201_CREATED)
 def create_opportunity(
     opp_in: ProductOpportunityCreate,
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """Record a qualified product business opportunity."""
-    opp = ProductOpportunity(**opp_in.model_dump(), owner_id=current_user.id)
+    org_id = resolve_tenant_org_id(db, current_user, opp_in.organization_id or organization_id or x_organization_id)
+    data = opp_in.model_dump()
+    data.pop("organization_id", None)
+    opp = ProductOpportunity(**data, owner_id=current_user.id, organization_id=org_id)
     db.add(opp)
     db.commit()
     db.refresh(opp)
     return opp
 
-# Prioritization
+# ----------------- PRIORITIZATION -----------------
 @router.post("/prioritization/calculate", response_model=Dict[str, float])
 def calculate_prioritization(
     reach: float = Query(..., ge=1.0),
-    impact: float = Query(..., ge=0.5, le=5.0),
-    confidence: float = Query(..., ge=0.1, le=1.0),
-    effort: float = Query(..., ge=0.5),
-    ease: float = Query(3.0, ge=1.0, le=5.0),
+    impact: float = Query(..., ge=0.1, le=10.0),
+    confidence: float = Query(..., ge=0.01, le=1.0),
+    effort: float = Query(..., gt=0.0),
+    ease: float = Query(3.0, ge=0.1, le=10.0),
     current_user: User = Depends(get_current_user),
 ):
-    """Calculate RICE, ICE, and weighted priority scores."""
-    return ProductLifecycleService.calculate_prioritization(reach, impact, confidence, effort, ease)
+    """Calculate RICE, ICE, and weighted priority scores with strict mathematical validation."""
+    try:
+        return ProductLifecycleService.calculate_prioritization(reach, impact, confidence, effort, ease)
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
 
 @router.get("/prioritization/items", response_model=List[ProductPrioritizationItemResponse])
-def list_prioritization_items(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    """List ranked prioritization items."""
-    return db.query(ProductPrioritizationItem).order_by(desc(ProductPrioritizationItem.rice_score)).all()
+def list_prioritization_items(
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List ranked prioritization items scoped to tenant organization."""
+    org_id = resolve_tenant_org_id(db, current_user, organization_id or x_organization_id)
+    return db.query(ProductPrioritizationItem).filter(
+        ProductPrioritizationItem.organization_id == org_id
+    ).order_by(desc(ProductPrioritizationItem.rice_score)).all()
 
 @router.post("/prioritization/items", response_model=ProductPrioritizationItemResponse, status_code=status.HTTP_201_CREATED)
 def score_prioritization_item(
     item_in: ProductPrioritizationItemCreate,
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """Persist a scored prioritization entry with RICE/ICE evaluation."""
-    scores = ProductLifecycleService.calculate_prioritization(
-        item_in.reach, item_in.impact, item_in.confidence, item_in.effort, item_in.ease
-    )
+    org_id = resolve_tenant_org_id(db, current_user, item_in.organization_id or organization_id or x_organization_id)
+    try:
+        scores = ProductLifecycleService.calculate_prioritization(
+            item_in.reach, item_in.impact, item_in.confidence, item_in.effort, item_in.ease
+        )
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+
     pitem = ProductPrioritizationItem(
         item_type=item_in.item_type,
         item_id=item_in.item_id,
@@ -226,71 +536,122 @@ def score_prioritization_item(
         priority_rank=item_in.priority_rank,
         notes=item_in.notes,
         evaluated_by_id=current_user.id,
-        evaluated_at=ProductLifecycleService.seed_initial_product_lifecycle_data(db) or ProductLifecycleService.calculate_prioritization(1,1,1,1) and None or None,
+        organization_id=org_id,
+        evaluated_at=utc_now(),
     )
-    from datetime import datetime, timezone
-    pitem.evaluated_at = datetime.now(timezone.utc)
     db.add(pitem)
     db.commit()
     db.refresh(pitem)
     return pitem
 
-# Initiatives & Roadmaps
+# ----------------- INITIATIVES & ROADMAP -----------------
 @router.get("/initiatives", response_model=List[ProductInitiativeResponse])
-def list_initiatives(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    """List strategic product initiatives."""
-    ProductLifecycleService.seed_initial_product_lifecycle_data(db)
-    return db.query(ProductInitiative).order_by(desc(ProductInitiative.created_at)).all()
+def list_initiatives(
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List strategic product initiatives scoped to tenant organization."""
+    org_id = resolve_tenant_org_id(db, current_user, organization_id or x_organization_id)
+    return db.query(ProductInitiative).filter(
+        ProductInitiative.organization_id == org_id
+    ).order_by(desc(ProductInitiative.created_at)).all()
 
 @router.post("/initiatives", response_model=ProductInitiativeResponse, status_code=status.HTTP_201_CREATED)
 def create_initiative(
     init_in: ProductInitiativeCreate,
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """Create a high-level strategic product initiative."""
-    init = ProductInitiative(**init_in.model_dump(), owner_id=current_user.id)
+    org_id = resolve_tenant_org_id(db, current_user, init_in.organization_id or organization_id or x_organization_id)
+    data = init_in.model_dump()
+    data.pop("organization_id", None)
+    init = ProductInitiative(**data, owner_id=current_user.id, organization_id=org_id)
     db.add(init)
     db.commit()
     db.refresh(init)
     return init
 
 @router.get("/roadmap", response_model=List[LifecycleRoadmapItemResponse])
-def list_roadmap_items(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    """List all scheduled roadmap timeline deliverables."""
-    ProductLifecycleService.seed_initial_product_lifecycle_data(db)
-    return db.query(LifecycleRoadmapItem).order_by(LifecycleRoadmapItem.quarter, LifecycleRoadmapItem.target_date).all()
+def list_roadmap_items(
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List scheduled roadmap deliverables scoped to tenant organization."""
+    org_id = resolve_tenant_org_id(db, current_user, organization_id or x_organization_id)
+    return db.query(LifecycleRoadmapItem).filter(
+        LifecycleRoadmapItem.organization_id == org_id
+    ).order_by(LifecycleRoadmapItem.quarter, LifecycleRoadmapItem.target_date).all()
 
 @router.post("/roadmap", response_model=LifecycleRoadmapItemResponse, status_code=status.HTTP_201_CREATED)
 def create_roadmap_item(
     item_in: LifecycleRoadmapItemCreate,
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """Add an item to the product roadmap schedule."""
-    item = LifecycleRoadmapItem(**item_in.model_dump(), owner_id=current_user.id)
+    org_id = resolve_tenant_org_id(db, current_user, item_in.organization_id or organization_id or x_organization_id)
+    if item_in.initiative_id:
+        init = db.query(ProductInitiative).filter(
+            ProductInitiative.id == item_in.initiative_id,
+            ProductInitiative.organization_id == org_id
+        ).first()
+        if not init:
+            raise HTTPException(status_code=404, detail="Linked initiative not found in organization.")
+
+    data = item_in.model_dump()
+    data.pop("organization_id", None)
+    item = LifecycleRoadmapItem(**data, owner_id=current_user.id, organization_id=org_id)
     db.add(item)
     db.commit()
     db.refresh(item)
     return item
 
-# Experiments & A/B Testing
+# ----------------- EXPERIMENTS -----------------
 @router.get("/experiments", response_model=List[ProductExperimentResponse])
-def list_experiments(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    """List all A/B testing and growth experiments."""
-    ProductLifecycleService.seed_initial_product_lifecycle_data(db)
-    return db.query(ProductExperiment).order_by(desc(ProductExperiment.created_at)).all()
+def list_experiments(
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List A/B experiments scoped to tenant organization."""
+    org_id = resolve_tenant_org_id(db, current_user, organization_id or x_organization_id)
+    return db.query(ProductExperiment).filter(
+        ProductExperiment.organization_id == org_id
+    ).order_by(desc(ProductExperiment.created_at)).all()
 
 @router.post("/experiments", response_model=ProductExperimentResponse, status_code=status.HTTP_201_CREATED)
 def create_experiment(
     exp_in: ProductExperimentCreate,
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Configure a new A/B test experiment with treatment variants."""
+    """Configure a new experiment with validated variant allocations summing to 100%."""
+    org_id = resolve_tenant_org_id(db, current_user, exp_in.organization_id or organization_id or x_organization_id)
     data = exp_in.model_dump()
+    data.pop("organization_id", None)
     variants_data = data.pop("variants", [])
-    exp = ProductExperiment(**data, owner_id=current_user.id)
+
+    if variants_data:
+        total_alloc = sum(v.get("allocation_pct", 0.0) for v in variants_data)
+        if abs(total_alloc - 100.0) > 0.5:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Variant allocation percentages must sum to 100%. Current total: {total_alloc}%."
+            )
+
+    exp = ProductExperiment(**data, owner_id=current_user.id, organization_id=org_id)
     db.add(exp)
     db.flush()
 
@@ -308,16 +669,78 @@ def create_experiment(
     db.refresh(exp)
     return exp
 
-@router.post("/experiments/{exp_id}/assign", response_model=ExperimentVariantResponse)
-def assign_user_to_experiment(
+@router.get("/experiments/{exp_id}", response_model=ProductExperimentResponse)
+def get_experiment(
     exp_id: str,
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Deterministically assign user to an experiment variant."""
+    """Retrieve experiment by ID with tenant scoping."""
+    org_id = resolve_tenant_org_id(db, current_user, organization_id or x_organization_id)
+    exp = db.query(ProductExperiment).filter(
+        ProductExperiment.id == exp_id,
+        ProductExperiment.organization_id == org_id
+    ).first()
+    if not exp:
+        raise HTTPException(status_code=404, detail="Experiment not found or unauthorized.")
+    return exp
+
+@router.patch("/experiments/{exp_id}", response_model=ProductExperimentResponse)
+def update_experiment(
+    exp_id: str,
+    exp_update: ProductExperimentUpdate,
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Update experiment lifecycle status with variant readiness checks."""
+    org_id = resolve_tenant_org_id(db, current_user, organization_id or x_organization_id)
+    exp = db.query(ProductExperiment).filter(
+        ProductExperiment.id == exp_id,
+        ProductExperiment.organization_id == org_id
+    ).first()
+    if not exp:
+        raise HTTPException(status_code=404, detail="Experiment not found in organization.")
+
+    update_dict = exp_update.model_dump(exclude_unset=True)
+    if "status" in update_dict and update_dict["status"] == "RUNNING":
+        variants = db.query(ExperimentVariant).filter(ExperimentVariant.experiment_id == exp.id).all()
+        if len(variants) < 1:
+            raise HTTPException(status_code=400, detail="Cannot activate experiment without configured treatment variants.")
+        total_alloc = sum(v.allocation_pct for v in variants)
+        if abs(total_alloc - 100.0) > 0.5:
+            raise HTTPException(status_code=400, detail=f"Cannot activate experiment: Variant allocations sum to {total_alloc}%, expected 100%.")
+
+    for k, v in update_dict.items():
+        setattr(exp, k, v)
+    exp.updated_at = utc_now()
+    db.commit()
+    db.refresh(exp)
+    return exp
+
+@router.post("/experiments/{exp_id}/assign", response_model=ExperimentVariantResponse)
+def assign_user_to_experiment(
+    exp_id: str,
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Deterministically assign user to an active experiment variant within tenant context."""
+    org_id = resolve_tenant_org_id(db, current_user, organization_id or x_organization_id)
+    exp = db.query(ProductExperiment).filter(
+        ProductExperiment.id == exp_id,
+        ProductExperiment.organization_id == org_id
+    ).first()
+    if not exp:
+        raise HTTPException(status_code=404, detail="Experiment not found in authorized organization context.")
+
     try:
-        return ProductLifecycleService.assign_experiment_variant(db, exp_id, current_user.id)
-    except Exception as e:
+        return ProductLifecycleService.assign_experiment_variant(db, exp_id, current_user.id, organization_id=org_id)
+    except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/experiments/{exp_id}/events", status_code=status.HTTP_200_OK)
@@ -325,39 +748,147 @@ def track_experiment_telemetry(
     exp_id: str,
     event_name: str = Query(..., description="Telemetry event e.g. conversion, task_completed"),
     metric_value: float = Query(1.0),
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Track conversion event for the current user's assigned variant."""
-    ProductLifecycleService.track_experiment_event(db, exp_id, current_user.id, event_name, metric_value)
-    return {"status": "recorded", "experiment_id": exp_id, "event_name": event_name}
+    """Track conversion event for the current user's assigned variant with tenant security."""
+    org_id = resolve_tenant_org_id(db, current_user, organization_id or x_organization_id)
+    exp = db.query(ProductExperiment).filter(
+        ProductExperiment.id == exp_id,
+        ProductExperiment.organization_id == org_id
+    ).first()
+    if not exp:
+        raise HTTPException(status_code=404, detail="Experiment not found in authorized organization context.")
 
-# Releases
+    try:
+        ProductLifecycleService.track_experiment_event(
+            db, exp_id, current_user.id, event_name, metric_value, organization_id=org_id
+        )
+        return {"status": "recorded", "experiment_id": exp_id, "event_name": event_name}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+# ----------------- RELEASES -----------------
 @router.get("/releases", response_model=List[ProductReleaseResponse])
-def list_releases(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    """List product feature releases and rollout stages."""
-    ProductLifecycleService.seed_initial_product_lifecycle_data(db)
-    return db.query(ProductRelease).order_by(desc(ProductRelease.created_at)).all()
+def list_releases(
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List product feature releases scoped to tenant organization."""
+    org_id = resolve_tenant_org_id(db, current_user, organization_id or x_organization_id)
+    return db.query(ProductRelease).filter(
+        ProductRelease.organization_id == org_id
+    ).order_by(desc(ProductRelease.created_at)).all()
 
 @router.post("/releases", response_model=ProductReleaseResponse, status_code=status.HTTP_201_CREATED)
 def create_release(
     rel_in: ProductReleaseCreate,
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """Schedule and document a product feature release."""
-    rel = ProductRelease(**rel_in.model_dump(), owner_id=current_user.id)
+    org_id = resolve_tenant_org_id(db, current_user, rel_in.organization_id or organization_id or x_organization_id)
+    data = rel_in.model_dump()
+    data.pop("organization_id", None)
+    rel = ProductRelease(**data, owner_id=current_user.id, organization_id=org_id)
     db.add(rel)
     db.commit()
     db.refresh(rel)
     return rel
 
-# AI Product Assistant
-@router.post("/ai/query", response_model=AIProductAssistantResponse)
-def ask_ai_product_assistant(
-    request: AIProductAssistantRequest,
+# ----------------- DECISIONS & RISKS -----------------
+@router.get("/decisions", response_model=List[ProductDecisionResponse])
+def list_decisions(
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Query Grounded AI Product Assistant for discovery, demand, and roadmap recommendations."""
-    return ProductLifecycleService.answer_ai_product_query(db, request.query, request.context_type)
+    """List product decisions scoped to tenant organization."""
+    org_id = resolve_tenant_org_id(db, current_user, organization_id or x_organization_id)
+    return db.query(ProductDecision).filter(
+        ProductDecision.organization_id == org_id
+    ).order_by(desc(ProductDecision.decision_date)).all()
+
+@router.post("/decisions", response_model=ProductDecisionResponse, status_code=status.HTTP_201_CREATED)
+def create_decision(
+    dec_in: ProductDecisionCreate,
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Record a strategic product decision."""
+    org_id = resolve_tenant_org_id(db, current_user, dec_in.organization_id or organization_id or x_organization_id)
+    data = dec_in.model_dump()
+    data.pop("organization_id", None)
+    decision = ProductDecision(**data, decision_maker_id=current_user.id, organization_id=org_id)
+    db.add(decision)
+    db.commit()
+    db.refresh(decision)
+    return decision
+
+@router.get("/risks", response_model=List[ProductRiskResponse])
+def list_risks(
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List product risks scoped to tenant organization."""
+    org_id = resolve_tenant_org_id(db, current_user, organization_id or x_organization_id)
+    return db.query(ProductRiskRecord).filter(
+        ProductRiskRecord.organization_id == org_id
+    ).order_by(desc(ProductRiskRecord.created_at)).all()
+
+@router.post("/risks", response_model=ProductRiskResponse, status_code=status.HTTP_201_CREATED)
+def create_risk(
+    risk_in: ProductRiskCreate,
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Record a product technical or delivery risk."""
+    org_id = resolve_tenant_org_id(db, current_user, risk_in.organization_id or organization_id or x_organization_id)
+    data = risk_in.model_dump()
+    data.pop("organization_id", None)
+    risk = ProductRiskRecord(**data, owner_id=current_user.id, organization_id=org_id)
+    db.add(risk)
+    db.commit()
+    db.refresh(risk)
+    return risk
+
+# ----------------- AI PRODUCT ASSISTANT -----------------
+@router.post("/ai/query", response_model=AIProductAssistantResponse)
+def ask_ai_product_assistant(
+    request: AIProductAssistantRequest,
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Query Grounded AI Product Assistant scoped to tenant organization."""
+    org_id = resolve_tenant_org_id(db, current_user, organization_id or x_organization_id)
+    return ProductLifecycleService.answer_ai_product_query(
+        db, request.query, request.context_type, organization_id=org_id
+    )
+
+# ----------------- EXPLICIT DEMO SEEDING -----------------
+@router.post("/seed-demo", status_code=status.HTTP_200_OK)
+def seed_demo_data(
+    organization_id: Optional[int] = Query(None),
+    x_organization_id: Optional[int] = Header(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Explicit endpoint to populate initial demo data for a workspace. Never runs automatically in production."""
+    org_id = resolve_tenant_org_id(db, current_user, organization_id or x_organization_id)
+    ProductLifecycleService.seed_initial_product_lifecycle_data(db, organization_id=org_id)
+    return {"status": "seeded", "organization_id": org_id, "message": "Demo product lifecycle records successfully populated."}
