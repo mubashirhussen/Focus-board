@@ -2,7 +2,15 @@
 const DB_NAME = 'focusboard_offline_db';
 const DB_VERSION = 1;
 
+const inMemoryStorage = {
+  tasks: [],
+  syncQueue: [],
+};
+
 function openDB() {
+  if (typeof indexedDB === 'undefined') {
+    return Promise.resolve(null);
+  }
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
     request.onupgradeneeded = (e) => {
@@ -23,6 +31,10 @@ export const offlineStorage = {
   async saveTasks(tasks) {
     try {
       const db = await openDB();
+      if (!db) {
+        inMemoryStorage.tasks = [...tasks];
+        return true;
+      }
       const tx = db.transaction('tasks', 'readwrite');
       const store = tx.objectStore('tasks');
       store.clear();
@@ -37,6 +49,9 @@ export const offlineStorage = {
   async getTasks() {
     try {
       const db = await openDB();
+      if (!db) {
+        return [...inMemoryStorage.tasks];
+      }
       const tx = db.transaction('tasks', 'readonly');
       const store = tx.objectStore('tasks');
       const req = store.getAll();
@@ -52,6 +67,10 @@ export const offlineStorage = {
   async enqueueSync(operation) {
     try {
       const db = await openDB();
+      if (!db) {
+        inMemoryStorage.syncQueue.push({ ...operation, timestamp: Date.now() });
+        return true;
+      }
       const tx = db.transaction('sync_queue', 'readwrite');
       const store = tx.objectStore('sync_queue');
       store.add({ ...operation, timestamp: Date.now() });
@@ -65,6 +84,9 @@ export const offlineStorage = {
   async getSyncQueue() {
     try {
       const db = await openDB();
+      if (!db) {
+        return [...inMemoryStorage.syncQueue];
+      }
       const tx = db.transaction('sync_queue', 'readonly');
       const store = tx.objectStore('sync_queue');
       const req = store.getAll();
@@ -80,6 +102,10 @@ export const offlineStorage = {
   async clearSyncQueue() {
     try {
       const db = await openDB();
+      if (!db) {
+        inMemoryStorage.syncQueue = [];
+        return true;
+      }
       const tx = db.transaction('sync_queue', 'readwrite');
       tx.objectStore('sync_queue').clear();
       return new Promise((resolve) => { tx.oncomplete = () => resolve(true); });

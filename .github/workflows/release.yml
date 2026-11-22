@@ -1,0 +1,37 @@
+name: FocusBoard Semantic Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Generate Versioned Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build Production Assets
+        run: |
+          npm ci
+          npm run build
+
+      - name: Package Release Tarball
+        run: |
+          tar -czf focusboard-frontend-${{ github.ref_name }}.tar.gz dist/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: focusboard-frontend-${{ github.ref_name }}.tar.gz
+          generate_release_notes: true
+          draft: false
+          prerelease: false

@@ -1,0 +1,64 @@
+import os
+from alembic.config import Config
+from alembic import command
+from sqlalchemy import create_engine, inspect
+
+def test_alembic_migrations_lifecycle():
+    """Verify that Alembic migrations execute cleanly from base to head without errors."""
+    test_db_file = "test_migrations_temp.db"
+    if os.path.exists(test_db_file):
+        os.remove(test_db_file)
+
+    try:
+        # Configure Alembic
+        alembic_cfg = Config("backend/alembic.ini")
+        alembic_cfg.set_main_option("sqlalchemy.url", f"sqlite:///{test_db_file}")
+        alembic_cfg.set_main_option("script_location", "backend/alembic")
+
+        # 1. Run migrations upgrade to head
+        command.upgrade(alembic_cfg, "head")
+
+        # 2. Inspect resulting schema
+        engine = create_engine(f"sqlite:///{test_db_file}")
+        inspector = inspect(engine)
+        tables = inspector.get_table_names()
+
+        # Verify key tables across all 5 migrations exist
+        expected_tables = [
+            "users",
+            "tasks",
+            "notifications",
+            "workspaces",
+            "workspace_members",
+            "projects",
+            "task_comments",
+            "activities",
+            "audit_logs",
+            "plans",
+            "subscriptions",
+            "external_integrations",
+            "push_subscriptions",
+            "organization_policies",
+            "custom_roles",
+            "organization_domains",
+            "user_mfa",
+            "intelligence_preferences",
+        ]
+
+        for table in expected_tables:
+            assert table in tables, f"Expected table '{table}' missing after alembic upgrade head"
+
+        # Verify foreign keys and column definitions on tasks
+        columns = [col["name"] for col in inspector.get_columns("tasks")]
+        assert "id" in columns
+        assert "title" in columns
+        assert "user_id" in columns
+        assert "workspace_id" in columns
+        assert "status" in columns
+
+    finally:
+        if os.path.exists(test_db_file):
+            try:
+                os.remove(test_db_file)
+            except Exception:
+                pass

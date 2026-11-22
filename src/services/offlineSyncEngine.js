@@ -1,9 +1,12 @@
-import { offlineStorage } from '../utils/indexedDB';
-import { taskApi } from './taskApi';
+import { offlineStorage } from '../utils/indexedDB.js';
+import { taskApi } from './taskApi.js';
 
 class OfflineSyncEngine {
   constructor() {
-    this.isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
+    this.isOnline =
+      typeof navigator !== 'undefined' && typeof navigator.onLine === 'boolean'
+        ? navigator.onLine
+        : true;
     this.listeners = new Set();
     this.init();
   }

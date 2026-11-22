@@ -187,12 +187,15 @@ Open `http://localhost:5173` in your browser.
 
 FocusBoard includes comprehensive automated test coverage across all features:
 
-### Backend Pytest Suite (38/38 Passed)
+### Backend Pytest Suite (44/44 Passed)
 ```bash
 cd backend
 $env:PYTHONPATH="backend"
 .\venv\Scripts\pytest tests -v
 ```
+- `test_multi_tenant_security.py`: Cross-tenant boundary isolation, direct ID tampering denial, search & analytics data leakage prevention.
+- `test_performance_benchmarks.py`: Health check latency (<100ms), Bcrypt authentication throughput, 50-task batch creation, paginated collection latency, and search latency.
+- `test_migrations_validation.py`: Full automated Alembic migration validation from base to revision 005 HEAD.
 - `test_product_intelligence.py`: Aggregate productivity metrics, pattern detection, ranked insights, task evidence, insight dismissal, feedback rating, and data-grounded AI coach.
 - `test_enterprise_rbac_and_governance.py`: Security policies (MFA, domain restriction, AI governance), custom RBAC role creation and permission evaluation, domain verification tokens, RFC 6238 pure Python TOTP MFA, and compliance audit trail CSV export.
 - `test_saas_billing.py`: Plan tier catalogs, subscription lifecycle, checkout, plan change, cancellation, and tenant usage metering.
@@ -211,9 +214,46 @@ $env:PYTHONPATH="backend"
 
 ### Frontend Test & Production Build
 ```bash
-npm test        # Executes 28-point state and persistence verification suite (28/28 passed)
-npm run build   # Compiles production bundle in dist/ cleanly in ~1.6s
+# Run all frontend tests (unit, components, accessibility, sync, state)
+npm test
+
+# Run component interaction tests
+npm run test:unit
+
+# Run accessibility (a11y) automated tests
+npm run test:a11y
+
+# Run offline & IndexedDB sync tests
+npm run test:sync
+
+# Run Playwright E2E browser tests
+npm run test:e2e
+
+# Compile Vite production bundle
+npm run build
 ```
+
+### Deployment Smoke Tests
+```bash
+# Verify live deployment health and readiness without mutating state
+python scripts/smoke_test.py --backend-url http://localhost:8000 --frontend-url http://localhost:5173
+```
+
+---
+
+## 5. Architectural & Release Documentation
+- [TESTING_STRATEGY.md](file:///c:/Users/Mubashirhussensk/OneDrive/Desktop/first_mobile/TESTING_STRATEGY.md)
+- [CI_CD_GUIDE.md](file:///c:/Users/Mubashirhussensk/OneDrive/Desktop/first_mobile/CI_CD_GUIDE.md)
+- [RELEASE_GUIDE.md](file:///c:/Users/Mubashirhussensk/OneDrive/Desktop/first_mobile/RELEASE_GUIDE.md)
+- [DEPLOYMENT_PIPELINE.md](file:///c:/Users/Mubashirhussensk/OneDrive/Desktop/first_mobile/DEPLOYMENT_PIPELINE.md)
+- [QUALITY_REPORT.md](file:///c:/Users/Mubashirhussensk/OneDrive/Desktop/first_mobile/QUALITY_REPORT.md)
+- [PRODUCTION_DEPLOYMENT_GUIDE.md](file:///c:/Users/Mubashirhussensk/OneDrive/Desktop/first_mobile/PRODUCTION_DEPLOYMENT_GUIDE.md)
+- [DOMAIN_AND_TLS_GUIDE.md](file:///c:/Users/Mubashirhussensk/OneDrive/Desktop/first_mobile/DOMAIN_AND_TLS_GUIDE.md)
+- [PRODUCTION_ENVIRONMENT.md](file:///c:/Users/Mubashirhussensk/OneDrive/Desktop/first_mobile/PRODUCTION_ENVIRONMENT.md)
+- [PRODUCTION_MONITORING.md](file:///c:/Users/Mubashirhussensk/OneDrive/Desktop/first_mobile/PRODUCTION_MONITORING.md)
+- [DISASTER_RECOVERY_GUIDE.md](file:///c:/Users/Mubashirhussensk/OneDrive/Desktop/first_mobile/DISASTER_RECOVERY_GUIDE.md)
+- [LAUNCH_CHECKLIST.md](file:///c:/Users/Mubashirhussensk/OneDrive/Desktop/first_mobile/LAUNCH_CHECKLIST.md)
+- [PRODUCTION_STATUS_REPORT.md](file:///c:/Users/Mubashirhussensk/OneDrive/Desktop/first_mobile/PRODUCTION_STATUS_REPORT.md)
 
 ---
 

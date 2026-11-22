@@ -1,4 +1,4 @@
-import { api, API_BASE_URL } from './api';
+import { api, API_BASE_URL } from './api.js';
 
 export const analyticsApi = {
   getSummary: async () => {
