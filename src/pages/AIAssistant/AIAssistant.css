@@ -1,77 +1,103 @@
 .ai-assistant-page {
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  gap: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
   width: 100%;
+  box-sizing: border-box;
 }
 
-.ai-header {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
+.ai-assistant-page .ai-header {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  text-align: left !important;
+  gap: 14px !important;
+  width: 100% !important;
 }
 
-.ai-sparkle-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--color-primary);
-  background-color: rgba(79, 70, 229, 0.08);
-  padding: 4px 10px;
-  border-radius: var(--radius-full);
-  margin-bottom: var(--space-1);
-  width: fit-content;
+.ai-assistant-page .ai-header-titles {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  text-align: left !important;
+  gap: 6px !important;
+  width: 100% !important;
 }
 
-.ai-title {
-  font-size: var(--font-size-2xl);
-  font-weight: 700;
-  color: var(--text-primary);
-  margin: 0 0 var(--space-1) 0;
+.ai-assistant-page .ai-sparkle-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  align-self: flex-start !important;
+  gap: 6px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  color: #4f46e5 !important;
+  background-color: #eef2ff !important;
+  border: 1px solid #e0e7ff !important;
+  padding: 4px 10px !important;
+  border-radius: 9999px !important;
+  margin-bottom: 2px !important;
+  width: fit-content !important;
 }
 
-.ai-subtitle {
-  font-size: var(--font-size-sm);
-  color: var(--text-secondary);
-  margin: 0;
+.ai-assistant-page .ai-title {
+  font-size: 1.75rem !important;
+  font-weight: 800 !important;
+  color: var(--text-primary, #0f172a) !important;
+  margin: 0 !important;
+  text-align: left !important;
+  letter-spacing: -0.02em !important;
+  line-height: 1.2 !important;
 }
 
-.ai-nav-tabs {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  border-bottom: 1px solid var(--border-subtle);
-  padding-bottom: var(--space-2);
-  overflow-x: auto;
+.ai-assistant-page .ai-subtitle {
+  font-size: 14px !important;
+  color: var(--text-secondary, #64748b) !important;
+  margin: 0 !important;
+  text-align: left !important;
+  line-height: 1.45 !important;
 }
 
-.ai-tab-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 8px 14px;
-  border: none;
-  background: none;
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-xs);
-  font-weight: 600;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  white-space: nowrap;
+.ai-assistant-page .ai-nav-tabs {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 8px !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  padding-bottom: 12px !important;
+  overflow-x: auto !important;
+  width: 100% !important;
 }
 
-.ai-tab-btn:hover {
-  background-color: var(--bg-hover);
-  color: var(--text-primary);
+.ai-assistant-page .ai-tab-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 8px 16px !important;
+  border: 1px solid transparent !important;
+  background: none !important;
+  border-radius: 10px !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  color: #64748b !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  white-space: nowrap !important;
 }
 
-.ai-tab-btn.active {
-  background-color: var(--color-primary);
-  color: white;
+.ai-assistant-page .ai-tab-btn:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+.ai-assistant-page .ai-tab-btn.active {
+  background-color: #4f46e5 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25) !important;
 }
 
 /* Chat Container */

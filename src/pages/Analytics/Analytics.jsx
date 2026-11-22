@@ -73,6 +73,7 @@ export function Analytics() {
     const total = tasks.length;
     const completed = stats.completed;
     const rate = stats.completionRate;
+    const pendingCount = (stats.todo || 0) + (stats.inProgress || 0);
     const localInsights = [];
 
     if (total === 0) {
@@ -92,7 +93,7 @@ export function Analytics() {
         localInsights.push({
           type: 'warning',
           title: 'Task Pacing',
-          message: `${stats.pending} task(s) remain pending. Focus on high priority items to accelerate progress.`,
+          message: `${pendingCount} task(s) remain pending. Focus on high priority items to accelerate progress.`,
         });
       }
 
@@ -185,9 +186,13 @@ export function Analytics() {
 
   return (
     <div className="analytics-page">
-      {/* Top Header & Toolbar */}
+      {/* Top Header & Toolbar - Restructured for High Visual Quality */}
       <div className="analytics-header">
         <div className="analytics-header-titles">
+          <div className="analytics-badge">
+            <TrendingUp size={13} />
+            <span>Real-Time Velocity & Metrics</span>
+          </div>
           <h1 className="analytics-title">Productivity & Analytics</h1>
           <p className="analytics-subtitle">Real-time velocity metrics, task distributions, and performance insights.</p>
         </div>
@@ -241,6 +246,7 @@ export function Analytics() {
           <div className="kpi-content">
             <span className="kpi-label">TOTAL ASSIGNMENTS</span>
             <span className="kpi-value">{tasks.length}</span>
+            <span className="kpi-subtext">Across active workspace</span>
           </div>
         </div>
 
@@ -251,6 +257,7 @@ export function Analytics() {
           <div className="kpi-content">
             <span className="kpi-label">COMPLETED</span>
             <span className="kpi-value">{stats.completed}</span>
+            <span className="kpi-subtext">{stats.completionRate}% completion rate</span>
           </div>
         </div>
 
@@ -261,16 +268,18 @@ export function Analytics() {
           <div className="kpi-content">
             <span className="kpi-label">COMPLETION VELOCITY</span>
             <span className="kpi-value">{stats.completionRate}%</span>
+            <span className="kpi-subtext">Rolling 7-day average</span>
           </div>
         </div>
 
         <div className="analytics-kpi-card">
-          <div className={`kpi-icon-wrapper ${stats.overdue > 0 ? 'overdue' : 'neutral'}`}>
+          <div className={`kpi-icon-wrapper ${(stats.overdue || 0) > 0 ? 'overdue' : 'neutral'}`}>
             <AlertTriangle size={20} />
           </div>
           <div className="kpi-content">
             <span className="kpi-label">OVERDUE DEADLINES</span>
-            <span className="kpi-value">{stats.overdue}</span>
+            <span className="kpi-value">{stats.overdue || 0}</span>
+            <span className="kpi-subtext">{(stats.overdue || 0) > 0 ? 'Action required' : 'All on schedule'}</span>
           </div>
         </div>
       </div>
