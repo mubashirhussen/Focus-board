@@ -39,6 +39,9 @@ from app.api.routes import (
     public_api_routes,
     security_compliance_routes,
     financial_intelligence_routes,
+    strategic_intelligence_routes,
+    innovation_lab_routes,
+    knowledge_intelligence_routes,
 )
 
 # Configure structured logging
@@ -150,6 +153,9 @@ app.include_router(public_api_routes.router, prefix=settings.API_V1_STR)
 app.include_router(public_api_routes.router)  # Direct /public/v1/... access support
 app.include_router(security_compliance_routes.router, prefix=settings.API_V1_STR)
 app.include_router(financial_intelligence_routes.router, prefix=settings.API_V1_STR)
+app.include_router(strategic_intelligence_routes.router, prefix=settings.API_V1_STR)
+app.include_router(innovation_lab_routes.router, prefix=settings.API_V1_STR)
+app.include_router(knowledge_intelligence_routes.router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 def root():

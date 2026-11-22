@@ -22,6 +22,9 @@ import {
   DollarSign,
   ShieldAlert,
   Lock,
+  Compass,
+  Lightbulb,
+  BookOpen,
 } from 'lucide-react';
 import { searchApi } from '../../services/searchApi';
 import { userPrivacyApi } from '../../services/userPrivacyApi';
@@ -165,6 +168,27 @@ export function CommandPalette({
       label: 'Open SaaS Financial Intelligence, MRR & FinOps',
       icon: DollarSign,
       action: () => { onNavigate('finance'); onClose(); },
+    },
+    {
+      id: 'nav-strategy',
+      category: 'Navigation',
+      label: 'Open Strategic Intelligence & Market Decision Engine',
+      icon: Compass,
+      action: () => { onNavigate('strategy'); onClose(); },
+    },
+    {
+      id: 'nav-innovation',
+      category: 'Navigation',
+      label: 'Open Innovation Lab & Feature Validation Pipeline',
+      icon: Lightbulb,
+      action: () => { onNavigate('innovation'); onClose(); },
+    },
+    {
+      id: 'nav-knowledge',
+      category: 'Navigation',
+      label: 'Open Organizational Knowledge Intelligence & Graph Hub',
+      icon: BookOpen,
+      action: () => { onNavigate('knowledge'); onClose(); },
     },
     {
       id: 'nav-trust',

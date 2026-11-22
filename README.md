@@ -288,6 +288,11 @@ python scripts/load_test.py --base-url http://localhost:8000 --requests 100 --co
 - [TRUST_CENTER_GUIDE.md](file:///c:/Users/Mubashirhussensk/OneDrive/Desktop/first_mobile/docs/TRUST_CENTER_GUIDE.md)
 - [FINANCIAL_INTELLIGENCE.md](file:///c:/Users/Mubashirhussensk/OneDrive/Desktop/first_mobile/docs/FINANCIAL_INTELLIGENCE.md)
 
+### Strategic Intelligence, Innovation Lab & Knowledge Graph (Phases 36–38)
+- [STRATEGIC_INTELLIGENCE_GUIDE.md](file:///c:/Users/Mubashirhussensk/OneDrive/Desktop/first_mobile/docs/STRATEGIC_INTELLIGENCE_GUIDE.md): Executive decision support, competitor benchmarking, RICE opportunity prioritization, SWOT, and market sizing (TAM/SAM/SOM).
+- [INNOVATION_LAB_GUIDE.md](file:///c:/Users/Mubashirhussensk/OneDrive/Desktop/first_mobile/docs/INNOVATION_LAB_GUIDE.md): Breakthrough R&D pipeline (Stages: Capture, Hypothesis, Experiment, Prototype, Validation) with one-click roadmap promotion.
+- [KNOWLEDGE_INTELLIGENCE_GUIDE.md](file:///c:/Users/Mubashirhussensk/OneDrive/Desktop/first_mobile/docs/KNOWLEDGE_INTELLIGENCE_GUIDE.md): Organizational knowledge graph, document versioning, hybrid semantic search, and grounded AI assistant citations.
+
 ### CI/CD & Production Infrastructure
 - [TESTING_STRATEGY.md](file:///c:/Users/Mubashirhussensk/OneDrive/Desktop/first_mobile/TESTING_STRATEGY.md)
 - [CI_CD_GUIDE.md](file:///c:/Users/Mubashirhussensk/OneDrive/Desktop/first_mobile/CI_CD_GUIDE.md)

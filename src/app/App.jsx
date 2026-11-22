@@ -22,6 +22,9 @@ import DeveloperPortal from '../pages/Developer/DeveloperPortal';
 import SecurityComplianceDashboard from '../pages/Security/SecurityComplianceDashboard';
 import FinancialDashboard from '../pages/Finance/FinancialDashboard';
 import TrustCenterPage from '../pages/Trust/TrustCenterPage';
+import StrategicIntelligenceDashboard from '../pages/Strategy/StrategicIntelligenceDashboard';
+import InnovationLabDashboard from '../pages/Innovation/InnovationLabDashboard';
+import KnowledgeIntelligenceDashboard from '../pages/Knowledge/KnowledgeIntelligenceDashboard';
 import { I18nProvider, useI18n } from '../i18n/I18nContext';
 import OnboardingModal from '../components/Onboarding/OnboardingModal';
 import FeedbackModal from '../components/FeedbackModal/FeedbackModal';
@@ -93,6 +96,12 @@ function AppContent() {
         return 'Enterprise Security, Compliance & GRC';
       case 'finance':
         return 'SaaS Financial Intelligence, FinOps & Profitability';
+      case 'strategy':
+        return 'SaaS Platform Strategic Intelligence & Decision Engine';
+      case 'innovation':
+        return 'Innovation Lab, R&D & Prototyping Pipeline';
+      case 'knowledge':
+        return 'Organizational Knowledge Intelligence & Graph Hub';
       case 'trust':
         return 'FocusBoard Enterprise Trust Center';
       case 'support':
@@ -135,6 +144,12 @@ function AppContent() {
         return <SecurityComplianceDashboard />;
       case 'finance':
         return <FinancialDashboard />;
+      case 'strategy':
+        return <StrategicIntelligenceDashboard />;
+      case 'innovation':
+        return <InnovationLabDashboard />;
+      case 'knowledge':
+        return <KnowledgeIntelligenceDashboard />;
       case 'trust':
         return <TrustCenterPage />;
       case 'support':

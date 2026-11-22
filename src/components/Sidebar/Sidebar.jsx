@@ -21,6 +21,9 @@ import {
   DollarSign,
   ShieldAlert,
   Lock,
+  Compass,
+  Lightbulb,
+  BookOpen,
 } from 'lucide-react';
 import { useTasks } from '../../hooks/useTasks';
 import { useI18n } from '../../i18n/I18nContext';
@@ -44,6 +47,9 @@ export function Sidebar({ activeTab = 'overview', onTabChange, onOpenFeedback })
     { id: 'enterprise', label: t('nav.enterprise', 'Enterprise Admin'), icon: ShieldCheck, count: null },
     { id: 'compliance', label: t('nav.compliance', 'Compliance & GRC'), icon: ShieldAlert, count: null },
     { id: 'finance', label: t('nav.finance', 'Financial Intelligence'), icon: DollarSign, count: null },
+    { id: 'strategy', label: t('nav.strategy', 'Strategy & Markets'), icon: Compass, count: null },
+    { id: 'innovation', label: t('nav.innovation', 'Innovation Lab'), icon: Lightbulb, count: null },
+    { id: 'knowledge', label: t('nav.knowledge', 'Knowledge Hub'), icon: BookOpen, count: null },
     { id: 'trust', label: t('nav.trust', 'Trust Center'), icon: Lock, count: null },
     { id: 'executive', label: t('nav.executive', 'Executive BI'), icon: TrendingUp, count: null },
     { id: 'developer', label: t('nav.developer', 'Developer Platform'), icon: Code, count: null },

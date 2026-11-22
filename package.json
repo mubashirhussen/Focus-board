@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node test_phase2_verification.js && node tests/frontend/components.test.js && node tests/frontend/accessibility.test.js && node tests/frontend/offline_sync.test.js && node tests/frontend/compliance_and_finance.test.js",
+    "test": "node test_phase2_verification.js && node tests/frontend/components.test.js && node tests/frontend/accessibility.test.js && node tests/frontend/offline_sync.test.js && node tests/frontend/compliance_and_finance.test.js && node tests/frontend/strategic_innovation_knowledge.test.js",
     "test:unit": "node test_phase2_verification.js && node tests/frontend/components.test.js",
     "test:a11y": "node tests/frontend/accessibility.test.js",
     "test:sync": "node tests/frontend/offline_sync.test.js",
