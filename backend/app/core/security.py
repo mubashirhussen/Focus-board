@@ -46,7 +46,11 @@ def create_access_token(
     }
     if data:
         to_encode.update(data)
-    if subject is not None:
+    if isinstance(subject, dict):
+        if "sub" in subject:
+            to_encode["sub"] = str(subject["sub"])
+        to_encode.update(subject)
+    elif subject is not None:
         to_encode["sub"] = str(subject)
     if session_id:
         to_encode["session_id"] = str(session_id)
@@ -75,7 +79,11 @@ def create_refresh_token(
     }
     if data:
         to_encode.update(data)
-    if subject is not None:
+    if isinstance(subject, dict):
+        if "sub" in subject:
+            to_encode["sub"] = str(subject["sub"])
+        to_encode.update(subject)
+    elif subject is not None:
         to_encode["sub"] = str(subject)
     if session_id:
         to_encode["session_id"] = str(session_id)

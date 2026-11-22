@@ -10,7 +10,7 @@ from app.models.organization import (
     OrganizationMember,
     OrganizationInvitation,
 )
-from app.models.task import Task
+from app.models.task import Task, TaskDependency
 from app.models.notification import Notification, NotificationPreference
 from app.models.project import (
     Project,
@@ -199,6 +199,7 @@ from app.models.product_lifecycle import (
 __all__ = [
     "User",
     "Task",
+    "TaskDependency",
     "Notification",
     "NotificationPreference",
     "Workspace",

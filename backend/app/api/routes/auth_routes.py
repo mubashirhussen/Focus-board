@@ -114,11 +114,12 @@ def register(user_in: UserCreate, request: Request, db: Session = Depends(get_db
     allowed_roles = ["member", "user"]
     assigned_role = user_in.role.lower() if user_in.role and user_in.role.lower() in allowed_roles else "member"
     
+    name_val = user_in.username.strip() if user_in.username else (user_in.name or user_in.full_name or user_in.email.split("@")[0])
     user = User(
         email=user_in.email.lower().strip(),
-        name=user_in.username.strip() if user_in.username else (user_in.full_name or user_in.email.split("@")[0]),
+        name=name_val,
         hashed_password=get_password_hash(user_in.password),
-        display_name=user_in.display_name or user_in.full_name or user_in.username or "",
+        display_name=user_in.display_name or user_in.full_name or user_in.name or user_in.username or "",
         role=assigned_role,
         is_active=True,
         is_verified=False,
@@ -142,7 +143,12 @@ def register(user_in: UserCreate, request: Request, db: Session = Depends(get_db
 
     _record_security_event(db, "user_registered", user.id, ip, user_agent, {"email": user.email})
     logger.info("User registered successfully: id=%d email=%s", user.id, user.email)
-    return user
+    
+    # Generate direct access token for backward compatibility
+    access_token = create_access_token(subject=str(user.id), data={"email": user.email, "role": user.role, "type": "access"})
+    resp = UserResponse.model_validate(user)
+    resp.access_token = access_token
+    return resp
 
 
 @router.post("/login", response_model=Token)
