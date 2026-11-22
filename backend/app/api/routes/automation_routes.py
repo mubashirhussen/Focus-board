@@ -22,6 +22,9 @@ from app.schemas.automation import (
     AutomationApprovalResponse,
     ApprovalDecisionRequest,
     TriggerWorkflowRequest,
+    AutomationScheduleCreate,
+    AutomationScheduleResponse,
+    EmitEventRequest,
     AIWorkflowGenerateRequest,
     AIWorkflowGenerateResponse,
     AutomationDashboardOverviewResponse,
@@ -89,6 +92,18 @@ def update_workflow(
     if not updated:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workflow not found")
     return updated
+
+@router.patch("/workflows/{workflow_id}/toggle", response_model=AutomationWorkflowResponse)
+def toggle_workflow(
+    workflow_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Toggle workflow status between ACTIVE and PAUSED."""
+    wf = automation_engine_service.toggle_workflow_status(db, workflow_id)
+    if not wf:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workflow not found")
+    return wf
 
 @router.delete("/workflows/{workflow_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_workflow(
@@ -219,3 +234,91 @@ def generate_workflow_from_prompt(
 ):
     """Generate structured workflow definition from natural language prompt."""
     return automation_engine_service.generate_ai_workflow(payload)
+
+# --- Execution Actions (Retry & Cancel) ---
+@router.post("/executions/{execution_id}/retry", response_model=AutomationExecutionResponse)
+def retry_execution(
+    execution_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Retry a failed or completed execution run."""
+    try:
+        return automation_engine_service.retry_execution(db, execution_id, actor_id=current_user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+@router.post("/executions/{execution_id}/cancel", response_model=AutomationExecutionResponse)
+def cancel_execution(
+    execution_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Cancel a queued, running, or held execution."""
+    cancelled = automation_engine_service.cancel_execution(db, execution_id)
+    if not cancelled:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Execution not found")
+    return cancelled
+
+# --- Schedules ---
+@router.get("/schedules", response_model=List[AutomationScheduleResponse])
+def list_schedules(
+    workflow_id: Optional[str] = Query(None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """List configured automation schedules."""
+    return automation_engine_service.get_schedules(db, workflow_id=workflow_id)
+
+@router.post("/schedules", response_model=AutomationScheduleResponse, status_code=status.HTTP_201_CREATED)
+def create_schedule(
+    payload: AutomationScheduleCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Create a recurring scheduled trigger for an automation workflow."""
+    try:
+        return automation_engine_service.create_schedule(
+            db,
+            workflow_id=payload.workflow_id,
+            cron_expression=payload.cron_expression,
+            timezone_name=payload.timezone,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+@router.delete("/schedules/{schedule_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_schedule(
+    schedule_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Delete an automation schedule."""
+    success = automation_engine_service.delete_schedule(db, schedule_id)
+    if not success:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Schedule not found")
+    return None
+
+@router.post("/schedules/run-due", response_model=List[AutomationExecutionResponse])
+def run_due_schedules(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Run all active schedules that are currently due for execution."""
+    return automation_engine_service.run_due_schedules(db)
+
+# --- Event Ingestion & Emission ---
+@router.post("/events/emit", response_model=List[AutomationExecutionResponse])
+def emit_event(
+    payload: EmitEventRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Manually emit an application event to trigger matching active automation workflows."""
+    return automation_engine_service.dispatch_automation_event(
+        db=db,
+        event_name=payload.event_name,
+        payload=payload.payload,
+        workspace_id=payload.workspace_id,
+        actor_id=current_user.id,
+    )

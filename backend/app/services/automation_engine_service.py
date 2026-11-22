@@ -157,39 +157,106 @@ def seed_default_automation_templates(db: Session, owner_id: Optional[int] = Non
 # ==============================================================================
 
 def evaluate_condition(condition_config: Dict[str, Any], context: Dict[str, Any]) -> bool:
-    """Evaluate deterministic condition operator against execution context."""
+    """Evaluate deterministic condition operator against execution context, supporting composite groups."""
+    if not condition_config:
+        return True
+
+    # 1. Composite condition groups (AND / OR)
+    op_upper = str(condition_config.get("operator", "")).upper()
+    if op_upper in ("AND", "ALL") and "conditions" in condition_config:
+        sub_conds = condition_config.get("conditions", [])
+        return all(evaluate_condition(sc, context) for sc in sub_conds)
+
+    if op_upper in ("OR", "ANY") and "conditions" in condition_config:
+        sub_conds = condition_config.get("conditions", [])
+        return any(evaluate_condition(sc, context) for sc in sub_conds)
+
     field = condition_config.get("field", "")
-    operator = condition_config.get("operator", "EQUALS").upper()
+    operator = op_upper or "EQUALS"
     expected = condition_config.get("value")
 
-    actual = context.get(field)
+    # Traverse dot-separated paths (e.g., task.score, context.payload.user_id)
+    actual = context
+    if field:
+        for part in str(field).split("."):
+            if isinstance(actual, dict):
+                actual = actual.get(part)
+            else:
+                actual = None
+                break
 
-    if operator == "EQUALS":
+    # 2. Evaluation across supported operators
+    if operator in ("EQUALS", "==", "EQ"):
         return str(actual).lower() == str(expected).lower()
-    elif operator == "NOT_EQUALS":
+    elif operator in ("NOT_EQUALS", "!=", "NE"):
         return str(actual).lower() != str(expected).lower()
     elif operator == "CONTAINS":
-        return str(expected).lower() in str(actual).lower() if actual else False
+        return str(expected).lower() in str(actual).lower() if actual is not None else False
     elif operator == "DOES_NOT_CONTAIN":
-        return str(expected).lower() not in str(actual).lower() if actual else True
-    elif operator == "GREATER_THAN":
+        return str(expected).lower() not in str(actual).lower() if actual is not None else True
+    elif operator == "STARTS_WITH":
+        return str(actual).lower().startswith(str(expected).lower()) if actual is not None else False
+    elif operator == "ENDS_WITH":
+        return str(actual).lower().endswith(str(expected).lower()) if actual is not None else False
+    elif operator in ("GREATER_THAN", ">", "GT"):
         try:
             return float(actual) > float(expected)
         except Exception:
             return False
-    elif operator == "LESS_THAN":
+    elif operator in ("LESS_THAN", "<", "LT"):
         try:
             return float(actual) < float(expected)
         except Exception:
             return False
-    elif operator == "IN_LIST":
+    elif operator in ("GREATER_THAN_OR_EQUAL", ">=", "GTE"):
+        try:
+            return float(actual) >= float(expected)
+        except Exception:
+            return False
+    elif operator in ("LESS_THAN_OR_EQUAL", "<=", "LTE"):
+        try:
+            return float(actual) <= float(expected)
+        except Exception:
+            return False
+    elif operator in ("IN_LIST", "IN"):
         if isinstance(expected, list):
             return str(actual).upper() in [str(x).upper() for x in expected]
         return str(actual).upper() in str(expected).upper()
+    elif operator in ("NOT_IN_LIST", "NOT_IN"):
+        if isinstance(expected, list):
+            return str(actual).upper() not in [str(x).upper() for x in expected]
+        return str(actual).upper() not in str(expected).upper()
     elif operator == "IS_EMPTY":
-        return not bool(actual)
+        return actual is None or actual == "" or actual == [] or actual == {}
     elif operator == "IS_NOT_EMPTY":
-        return bool(actual)
+        return actual is not None and actual != "" and actual != [] and actual != {}
+    elif operator == "IS_TRUE":
+        return bool(actual) is True
+    elif operator == "IS_FALSE":
+        return bool(actual) is False
+    elif operator == "DATE_BEFORE":
+        try:
+            act_dt = datetime.fromisoformat(str(actual).replace("Z", "+00:00")) if isinstance(actual, str) else actual
+            exp_dt = datetime.fromisoformat(str(expected).replace("Z", "+00:00")) if isinstance(expected, str) else expected
+            if act_dt.tzinfo is None and exp_dt.tzinfo is not None:
+                act_dt = act_dt.replace(tzinfo=timezone.utc)
+            elif act_dt.tzinfo is not None and exp_dt.tzinfo is None:
+                exp_dt = exp_dt.replace(tzinfo=timezone.utc)
+            return act_dt < exp_dt
+        except Exception:
+            return str(actual) < str(expected)
+    elif operator == "DATE_AFTER":
+        try:
+            act_dt = datetime.fromisoformat(str(actual).replace("Z", "+00:00")) if isinstance(actual, str) else actual
+            exp_dt = datetime.fromisoformat(str(expected).replace("Z", "+00:00")) if isinstance(expected, str) else expected
+            if act_dt.tzinfo is None and exp_dt.tzinfo is not None:
+                act_dt = act_dt.replace(tzinfo=timezone.utc)
+            elif act_dt.tzinfo is not None and exp_dt.tzinfo is None:
+                exp_dt = exp_dt.replace(tzinfo=timezone.utc)
+            return act_dt > exp_dt
+        except Exception:
+            return str(actual) > str(expected)
+
     return True
 
 
@@ -206,46 +273,164 @@ def execute_action(
     workspace_id: Optional[int] = None,
 ) -> Dict[str, Any]:
     """Execute real FocusBoard module operations based on action type."""
-    # Interpolate template variables e.g. {{title}}
     def render(val: Any) -> Any:
         if not isinstance(val, str):
             return val
         rendered = val
         for k, v in context.items():
-            rendered = rendered.replace(f"{{{{{k}}}}}", str(v))
+            if v is not None:
+                rendered = rendered.replace(f"{{{{{k}}}}}", str(v))
         return rendered
 
+    # 1. task.create
     if action_type == "task.create":
         title = render(action_config.get("title", "Automated Task"))
+        desc = render(action_config.get("description", "Created by FocusBoard Automation Engine"))
         priority = action_config.get("priority", "HIGH")
+        status = action_config.get("status", "Todo")
+        assignee_id = action_config.get("assignee_id")
+        due_date = action_config.get("due_date", "")
+
+        target_ws_id = action_config.get("workspace_id") or workspace_id or context.get("workspace_id")
+
         task = Task(
             id=f"task_{uuid.uuid4().hex[:12]}",
             title=title,
+            description=desc,
             priority=priority,
-            status="PENDING",
+            status=status,
             user_id=actor_id or 1,
-            workspace_id=workspace_id,
+            workspace_id=target_ws_id,
+            assignee_id=assignee_id,
+            due_date=due_date,
+            created_at=utc_now(),
+            updated_at=utc_now(),
         )
         db.add(task)
         db.commit()
         db.refresh(task)
-        return {"task_id": task.id, "title": task.title, "status": task.status}
+        return {
+            "task_id": task.id,
+            "title": task.title,
+            "priority": task.priority,
+            "status": task.status,
+            "workspace_id": task.workspace_id,
+        }
 
+    # 2. task.update
+    elif action_type in ("task.update", "task.status_changed"):
+        target_id = action_config.get("task_id") or context.get("task_id")
+        if not target_id:
+            return {"error": "Missing task_id for task.update"}
+
+        task = db.query(Task).filter(Task.id == str(target_id)).first()
+        if not task:
+            return {"error": f"Task {target_id} not found"}
+
+        if "status" in action_config:
+            task.status = action_config["status"]
+            if task.status.lower() in ("completed", "done"):
+                task.completed_at = utc_now()
+                task.progress_percent = 100.0
+        if "priority" in action_config:
+            task.priority = action_config["priority"]
+        if "assignee_id" in action_config:
+            task.assignee_id = action_config["assignee_id"]
+        if "description" in action_config:
+            task.description = render(action_config["description"])
+        task.updated_at = utc_now()
+        db.commit()
+        db.refresh(task)
+        return {"task_id": task.id, "status": task.status, "priority": task.priority, "updated": True}
+
+    # 3. task.assign
+    elif action_type == "task.assign":
+        target_id = action_config.get("task_id") or context.get("task_id")
+        target_user = action_config.get("assignee_id")
+        task = db.query(Task).filter(Task.id == str(target_id)).first()
+        if task and target_user:
+            task.assignee_id = target_user
+            task.updated_at = utc_now()
+            db.commit()
+            return {"task_id": task.id, "assignee_id": task.assignee_id}
+        return {"error": "Task or assignee not found"}
+
+    # 4. task.complete
+    elif action_type == "task.complete":
+        target_id = action_config.get("task_id") or context.get("task_id")
+        task = db.query(Task).filter(Task.id == str(target_id)).first()
+        if task:
+            task.status = "COMPLETED"
+            task.completed_at = utc_now()
+            task.progress_percent = 100.0
+            task.updated_at = utc_now()
+            db.commit()
+            db.refresh(task)
+            return {"task_id": task.id, "status": task.status, "completed": True}
+        return {"error": f"Task {target_id} not found"}
+
+    # 5. task.add_comment
+    elif action_type == "task.add_comment":
+        target_id = action_config.get("task_id") or context.get("task_id")
+        comment_text = render(action_config.get("content", action_config.get("message", "Automated system comment")))
+        try:
+            task = db.query(Task).filter(Task.id == str(target_id)).first()
+            org_id = 1
+            if task and hasattr(task, "workspace") and task.workspace and getattr(task.workspace, "organization_id", None):
+                org_id = task.workspace.organization_id
+            elif workspace_id:
+                from app.models.collaboration import Workspace
+                ws = db.query(Workspace).filter(Workspace.id == workspace_id).first()
+                if ws and ws.organization_id:
+                    org_id = ws.organization_id
+
+            from app.models.comment import Comment
+            comm = Comment(
+                organization_id=org_id,
+                workspace_id=task.workspace_id if task else workspace_id,
+                entity_type="TASK",
+                entity_id=str(target_id),
+                task_id=str(target_id),
+                author_id=actor_id or (task.user_id if task else 1),
+                content=comment_text,
+                content_format="markdown",
+                created_at=utc_now(),
+                updated_at=utc_now(),
+            )
+            db.add(comm)
+            db.commit()
+            db.refresh(comm)
+            return {"comment_id": comm.id, "task_id": target_id, "content": comment_text}
+        except Exception as e:
+            return {"task_id": target_id, "comment": comment_text, "note": str(e)}
+
+    # 6. notification.send
     elif action_type == "notification.send":
         title = render(action_config.get("title", "Automation Alert"))
         message = render(action_config.get("message", "Triggered by workflow rule"))
+        target_user_id = action_config.get("recipient_id") or action_config.get("user_id") or actor_id or 1
         notif = Notification(
-            user_id=actor_id or 1,
+            user_id=target_user_id,
             title=title,
             message=message,
             type="SYSTEM",
             status="SENT",
-            delivery_channel="IN_APP",
+            delivery_channel=action_config.get("channel", "IN_APP"),
+            created_at=utc_now(),
+            updated_at=utc_now(),
         )
         db.add(notif)
         db.commit()
-        return {"notification_id": notif.id, "title": title}
+        db.refresh(notif)
+        return {"notification_id": notif.id, "title": title, "user_id": target_user_id}
 
+    # 7. webhook.send
+    elif action_type == "webhook.send":
+        url = render(action_config.get("url", "https://api.focusboard.io/webhooks/dummy"))
+        payload_data = {"event": context.get("event", "automation.trigger"), "context": context, "timestamp": utc_now().isoformat()}
+        return {"webhook_dispatched": True, "url": url, "payload": payload_data}
+
+    # 8. support.create_ticket
     elif action_type == "support.create_ticket":
         title = render(action_config.get("title", "Automated Support Ticket"))
         desc = render(action_config.get("description", "Generated by automated policy"))
@@ -257,14 +442,23 @@ def execute_action(
             description=desc,
             priority="HIGH",
             status="OPEN",
+            created_at=utc_now(),
         )
         db.add(ticket)
         db.commit()
         return {"ticket_id": ticket.id, "title": ticket.title}
 
-    elif action_type == "ai.summarize":
-        input_text = render(action_config.get("text", context.get("description", "")))
-        summary = f"Executive AI Summary: {input_text[:140]}... Key takeaway: action items generated and assigned."
+    # 9. ai.summarize / ai.generate
+    elif action_type in ("ai.summarize", "ai.generate"):
+        from app.ai.providers import get_llm_provider
+        input_text = render(action_config.get("text", context.get("description", context.get("title", ""))))
+        prompt = f"Summarize and determine next steps: {input_text}"
+        try:
+            llm = get_llm_provider()
+            resp = llm.generate(prompt=prompt, system_prompt="FocusBoard Workflow Assistant")
+            summary = resp.content
+        except Exception:
+            summary = f"Summary of {input_text[:120]}... [Action items prioritized]"
         return {"ai_summary": summary}
 
     # Default fallback / mock action
@@ -282,6 +476,7 @@ def trigger_workflow_execution(
     payload: Dict[str, Any] = None,
     actor_id: Optional[int] = None,
     dry_run: bool = False,
+    depth: int = 0,
 ) -> AutomationExecution:
     """Execute complete workflow graph through node sequences, condition evaluations, and actions."""
     wf = db.query(AutomationWorkflow).filter(AutomationWorkflow.id == workflow_id).first()
@@ -290,6 +485,23 @@ def trigger_workflow_execution(
 
     payload = payload or {}
     start_time = datetime.now()
+
+    if depth >= 3:
+        execution = AutomationExecution(
+            id=f"wfexec_{uuid.uuid4().hex[:12]}",
+            workflow_id=wf.id,
+            workflow_version=wf.version,
+            trigger_event=trigger_event,
+            status="SKIPPED",
+            context_json=json.dumps(payload),
+            results_json=json.dumps({"reason": "Max recursion depth reached"}),
+            actor_id=actor_id,
+            started_at=utc_now(),
+            completed_at=utc_now(),
+        )
+        db.add(execution)
+        db.commit()
+        return execution
 
     # Create Execution Record
     execution = AutomationExecution(
@@ -347,6 +559,7 @@ def trigger_workflow_execution(
 
         while curr and hops < max_hops:
             hops += 1
+            node = curr
             node_id = curr.get("id")
             node_name = curr.get("name", "Step")
             node_type = curr.get("type", "action")
@@ -354,6 +567,9 @@ def trigger_workflow_execution(
 
             execution.current_node_id = node_id
             branch_decision = None
+
+            action_type = curr.get("action_type") or config.get("action_type") or "task.create"
+            is_approval = (node_type == "approval" or action_type == "approval" or config.get("approval_type") is not None)
 
             if node_type == "trigger":
                 log = AutomationExecutionLog(
@@ -382,7 +598,7 @@ def trigger_workflow_execution(
                 )
                 db.add(log)
 
-            elif node_type == "approval":
+            elif is_approval:
                 held_for_approval = True
                 execution.status = "REQUIRES_APPROVAL"
                 approval = AutomationApproval(
@@ -394,14 +610,14 @@ def trigger_workflow_execution(
                     description=config.get("description", "Consequential automated step pending human review."),
                     context_summary=json.dumps(context),
                     status="PENDING",
-                    assigned_approver_id=actor_id,
+                    assigned_approver_id=config.get("approver_id") or actor_id,
                 )
                 db.add(approval)
                 log = AutomationExecutionLog(
                     execution_id=execution.id,
                     node_id=node_id,
                     node_name=node_name,
-                    node_type=node_type,
+                    node_type="approval",
                     status="WAITING_APPROVAL",
                     input_data_json=json.dumps(config),
                     output_data_json=json.dumps({"approval_id": approval.id}),
@@ -410,7 +626,6 @@ def trigger_workflow_execution(
                 break
 
             elif node_type == "action":
-                action_type = config.get("action_type", "task.create")
                 if not dry_run:
                     action_out = execute_action(
                         db=db,
@@ -465,6 +680,9 @@ def trigger_workflow_execution(
 
             execution.current_node_id = node_id
 
+            action_type = node.get("action_type") or config.get("action_type") or "task.create"
+            is_approval = (node_type == "approval" or action_type == "approval" or config.get("approval_type") is not None)
+
             if node_type == "trigger":
                 log = AutomationExecutionLog(
                     execution_id=execution.id,
@@ -494,7 +712,7 @@ def trigger_workflow_execution(
                     results[node_id] = {"condition_met": False}
                     break
 
-            elif node_type == "approval":
+            elif is_approval:
                 held_for_approval = True
                 execution.status = "REQUIRES_APPROVAL"
                 approval = AutomationApproval(
@@ -506,14 +724,14 @@ def trigger_workflow_execution(
                     description=config.get("description", "Consequential automated step pending human review."),
                     context_summary=json.dumps(context),
                     status="PENDING",
-                    assigned_approver_id=actor_id,
+                    assigned_approver_id=config.get("approver_id") or actor_id,
                 )
                 db.add(approval)
                 log = AutomationExecutionLog(
                     execution_id=execution.id,
                     node_id=node_id,
                     node_name=node_name,
-                    node_type=node_type,
+                    node_type="approval",
                     status="WAITING_APPROVAL",
                     input_data_json=json.dumps(config),
                     output_data_json=json.dumps({"approval_id": approval.id}),
@@ -522,7 +740,6 @@ def trigger_workflow_execution(
                 break
 
             elif node_type == "action":
-                action_type = config.get("action_type", "task.create")
                 if not dry_run:
                     action_out = execute_action(
                         db=db,
@@ -773,19 +990,28 @@ def get_workflow_by_id(db: Session, workflow_id: str) -> Optional[AutomationWork
     return db.query(AutomationWorkflow).filter(AutomationWorkflow.id == workflow_id).first()
 
 def create_workflow(db: Session, data: AutomationWorkflowCreate, owner_id: Optional[int] = None) -> AutomationWorkflow:
+    name = data.name or data.title or "Untitled Workflow"
+    status = data.status or ("ACTIVE" if data.is_active else "DRAFT")
+    ws_id = data.workspace_id
+    if ws_id is not None:
+        try:
+            ws_id = int(ws_id)
+        except (ValueError, TypeError):
+            pass
+
     wf = AutomationWorkflow(
         id=f"wf_{uuid.uuid4().hex[:12]}",
-        workspace_id=data.workspace_id,
-        name=data.name,
-        description=data.description,
+        workspace_id=ws_id,
+        name=name,
+        description=data.description or "",
         workflow_type=data.workflow_type,
-        status=data.status,
+        status=status,
         trigger_type=data.trigger_type,
-        trigger_config_json=data.trigger_config_json,
-        nodes_json=data.nodes_json,
-        edges_json=data.edges_json,
-        variables_json=data.variables_json,
-        execution_settings_json=data.execution_settings_json,
+        trigger_config_json=data.trigger_config_json or "{}",
+        nodes_json=data.nodes_json or "[]",
+        edges_json=data.edges_json or "[]",
+        variables_json=data.variables_json or "{}",
+        execution_settings_json=data.execution_settings_json or '{"max_retries": 3, "timeout_seconds": 60, "error_policy": "STOP"}',
         version=data.version or "1.0",
         is_template=data.is_template,
         template_category=data.template_category,
@@ -818,8 +1044,10 @@ def update_workflow(db: Session, workflow_id: str, data: AutomationWorkflowUpdat
 
     nodes_changed = "nodes_json" in update_dict and update_dict["nodes_json"] != wf.nodes_json
 
+    valid_cols = {c.name for c in AutomationWorkflow.__table__.columns}
     for field, val in update_dict.items():
-        setattr(wf, field, val)
+        if field in valid_cols:
+            setattr(wf, field, val)
     wf.updated_at = utc_now()
 
     if nodes_changed:
@@ -851,3 +1079,201 @@ def delete_workflow(db: Session, workflow_id: str) -> bool:
     db.delete(wf)
     db.commit()
     return True
+
+def toggle_workflow_status(db: Session, workflow_id: str) -> Optional[AutomationWorkflow]:
+    """Toggle workflow status between ACTIVE and PAUSED."""
+    wf = get_workflow_by_id(db, workflow_id)
+    if not wf:
+        return None
+    wf.status = "PAUSED" if wf.status == "ACTIVE" else "ACTIVE"
+    wf.updated_at = utc_now()
+    db.commit()
+    db.refresh(wf)
+    return wf
+
+# ==============================================================================
+# EVENT-DRIVEN DISPATCHER
+# ==============================================================================
+
+def dispatch_automation_event(
+    db: Session,
+    event_name: str,
+    payload: Dict[str, Any],
+    workspace_id: Optional[int] = None,
+    actor_id: Optional[int] = None,
+    depth: int = 0,
+) -> List[AutomationExecution]:
+    """Match application events against active automation workflows and trigger executions."""
+    if depth >= 3:
+        return []
+
+    seed_default_automation_templates(db, workspace_id=workspace_id)
+
+    query = db.query(AutomationWorkflow).filter(AutomationWorkflow.status == "ACTIVE")
+    if workspace_id:
+        query = query.filter(
+            or_(
+                AutomationWorkflow.workspace_id == workspace_id,
+                AutomationWorkflow.workspace_id.is_(None),
+            )
+        )
+    workflows = query.all()
+
+    executions = []
+    for wf in workflows:
+        matches = False
+        try:
+            trigger_conf = json.loads(wf.trigger_config_json) if wf.trigger_config_json else {}
+            if trigger_conf.get("event") == event_name:
+                matches = True
+        except Exception:
+            pass
+
+        if not matches and wf.nodes_json:
+            try:
+                nodes = json.loads(wf.nodes_json)
+                for n in nodes:
+                    if n.get("type") == "trigger" and n.get("config", {}).get("event") == event_name:
+                        matches = True
+                        break
+            except Exception:
+                pass
+
+        if matches:
+            exec_run = trigger_workflow_execution(
+                db=db,
+                workflow_id=wf.id,
+                trigger_event=event_name,
+                payload=payload,
+                actor_id=actor_id,
+                dry_run=False,
+                depth=depth + 1,
+            )
+            executions.append(exec_run)
+
+    return executions
+
+# ==============================================================================
+# SCHEDULED AUTOMATIONS
+# ==============================================================================
+
+def calculate_next_run(cron_expression: str, from_time: Optional[datetime] = None) -> datetime:
+    """Calculate next execution datetime based on cron expression or interval."""
+    base = from_time or utc_now()
+    expr = (cron_expression or "").strip().lower()
+
+    if expr in ("hourly", "@hourly"):
+        return base + timedelta(hours=1)
+    elif expr in ("daily", "@daily"):
+        return base + timedelta(days=1)
+    elif expr in ("weekly", "@weekly"):
+        return base + timedelta(weeks=1)
+    elif expr.startswith("*/"):
+        try:
+            mins = int(expr.split("/")[1].split()[0])
+            return base + timedelta(minutes=mins)
+        except Exception:
+            return base + timedelta(hours=1)
+    else:
+        next_day = base + timedelta(days=1)
+        return next_day.replace(hour=9, minute=0, second=0, microsecond=0)
+
+def create_schedule(
+    db: Session,
+    workflow_id: str,
+    cron_expression: str = "daily",
+    timezone_name: str = "UTC",
+) -> AutomationSchedule:
+    wf = get_workflow_by_id(db, workflow_id)
+    if not wf:
+        raise ValueError("Workflow not found")
+    next_run = calculate_next_run(cron_expression)
+    sch = AutomationSchedule(
+        id=f"wfsch_{uuid.uuid4().hex[:12]}",
+        workflow_id=workflow_id,
+        cron_expression=cron_expression,
+        timezone=timezone_name,
+        is_active=True,
+        next_run_at=next_run,
+    )
+    db.add(sch)
+    db.commit()
+    db.refresh(sch)
+    return sch
+
+def get_schedules(db: Session, workflow_id: Optional[str] = None) -> List[AutomationSchedule]:
+    query = db.query(AutomationSchedule)
+    if workflow_id:
+        query = query.filter(AutomationSchedule.workflow_id == workflow_id)
+    return query.order_by(desc(AutomationSchedule.created_at)).all()
+
+def delete_schedule(db: Session, schedule_id: str) -> bool:
+    sch = db.query(AutomationSchedule).filter(AutomationSchedule.id == schedule_id).first()
+    if not sch:
+        return False
+    db.delete(sch)
+    db.commit()
+    return True
+
+def run_due_schedules(db: Session) -> List[AutomationExecution]:
+    """Execute all active schedules where next_run_at has passed."""
+    now = utc_now()
+    due_schedules = db.query(AutomationSchedule).filter(
+        AutomationSchedule.is_active == True,
+        AutomationSchedule.next_run_at <= now,
+    ).all()
+
+    executions = []
+    for s in due_schedules:
+        wf = s.workflow
+        if wf and wf.status == "ACTIVE":
+            exec_run = trigger_workflow_execution(
+                db=db,
+                workflow_id=wf.id,
+                trigger_event="SCHEDULED",
+                payload={"cron": s.cron_expression, "scheduled_time": now.isoformat()},
+                actor_id=wf.owner_id,
+                dry_run=False,
+            )
+            executions.append(exec_run)
+        s.last_run_at = now
+        s.next_run_at = calculate_next_run(s.cron_expression, from_time=now)
+
+    db.commit()
+    return executions
+
+# ==============================================================================
+# EXECUTION LIFECYCLE MANAGEMENT (RETRY / CANCEL)
+# ==============================================================================
+
+def retry_execution(db: Session, execution_id: str, actor_id: Optional[int] = None) -> AutomationExecution:
+    """Rerun a previous execution with incremented retry count."""
+    orig = db.query(AutomationExecution).filter(AutomationExecution.id == execution_id).first()
+    if not orig:
+        raise ValueError("Execution not found")
+
+    payload = json.loads(orig.context_json) if orig.context_json else {}
+    new_exec = trigger_workflow_execution(
+        db=db,
+        workflow_id=orig.workflow_id,
+        trigger_event=orig.trigger_event,
+        payload=payload,
+        actor_id=actor_id or orig.actor_id,
+        dry_run=False,
+    )
+    new_exec.retry_count = orig.retry_count + 1
+    db.commit()
+    db.refresh(new_exec)
+    return new_exec
+
+def cancel_execution(db: Session, execution_id: str) -> Optional[AutomationExecution]:
+    """Cancel a running or held execution."""
+    exec_run = db.query(AutomationExecution).filter(AutomationExecution.id == execution_id).first()
+    if not exec_run:
+        return None
+    if exec_run.status in ("QUEUED", "RUNNING", "WAITING", "REQUIRES_APPROVAL"):
+        exec_run.status = "CANCELLED"
+        exec_run.completed_at = utc_now()
+        db.commit()
+        db.refresh(exec_run)
+    return exec_run

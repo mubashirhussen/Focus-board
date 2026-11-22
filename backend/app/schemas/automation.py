@@ -1,15 +1,21 @@
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field, ConfigDict
+import json
+from pydantic import BaseModel, Field, ConfigDict, model_validator
 
 # --- Workflow Core ---
 class AutomationWorkflowBase(BaseModel):
-    name: str
-    description: str
+    name: Optional[str] = None
+    title: Optional[str] = None
+    description: Optional[str] = ""
     workflow_type: str = Field(default="EVENT_DRIVEN", description="EVENT_DRIVEN, SCHEDULED, MANUAL, APPROVAL_CHAIN")
     status: str = Field(default="DRAFT", description="DRAFT, ACTIVE, PAUSED, DISABLED, ARCHIVED")
     trigger_type: str = Field(default="EVENT", description="EVENT, SCHEDULE, MANUAL, WEBHOOK")
+    trigger_event: Optional[str] = None
+    trigger_config: Optional[Any] = None
     trigger_config_json: str = "{}"
+    nodes: Optional[List[Any]] = None
+    edges: Optional[List[Any]] = None
     nodes_json: str = "[]"
     edges_json: str = "[]"
     variables_json: str = "{}"
@@ -17,33 +23,106 @@ class AutomationWorkflowBase(BaseModel):
     version: str = "1.0"
     is_template: bool = False
     template_category: Optional[str] = None
+    is_active: Optional[bool] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_base_fields(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            # name <-> title
+            if not data.get("name") and data.get("title"):
+                data["name"] = data["title"]
+            elif data.get("name") and not data.get("title"):
+                data["title"] = data["name"]
+            if not data.get("name"):
+                data["name"] = "Untitled Workflow"
+
+            # is_active <-> status
+            if data.get("is_active") is True and data.get("status") in (None, "DRAFT"):
+                data["status"] = "ACTIVE"
+            elif data.get("is_active") is False and data.get("status") in (None, "DRAFT"):
+                data["status"] = "PAUSED"
+            elif data.get("status") == "ACTIVE" and data.get("is_active") is None:
+                data["is_active"] = True
+            elif data.get("status") in ("PAUSED", "DISABLED", "DRAFT") and data.get("is_active") is None:
+                data["is_active"] = False
+
+            # nodes & edges serialization
+            if data.get("nodes") is not None and (data.get("nodes_json") == "[]" or not data.get("nodes_json")):
+                data["nodes_json"] = json.dumps(data["nodes"])
+            if data.get("edges") is not None and (data.get("edges_json") == "[]" or not data.get("edges_json")):
+                data["edges_json"] = json.dumps(data["edges"])
+
+            # trigger config
+            if data.get("trigger_event") and data.get("trigger_config_json") in ("{}", None):
+                data["trigger_config_json"] = json.dumps({"event": data["trigger_event"]})
+            elif data.get("trigger_config") is not None and data.get("trigger_config_json") in ("{}", None):
+                data["trigger_config_json"] = json.dumps(data["trigger_config"]) if isinstance(data["trigger_config"], (dict, list)) else str(data["trigger_config"])
+        return data
 
 class AutomationWorkflowCreate(AutomationWorkflowBase):
-    workspace_id: Optional[int] = None
+    workspace_id: Optional[Any] = None
 
 class AutomationWorkflowUpdate(BaseModel):
     name: Optional[str] = None
+    title: Optional[str] = None
     description: Optional[str] = None
     workflow_type: Optional[str] = None
     status: Optional[str] = None
     trigger_type: Optional[str] = None
+    trigger_event: Optional[str] = None
+    trigger_config: Optional[Any] = None
     trigger_config_json: Optional[str] = None
+    nodes: Optional[List[Any]] = None
+    edges: Optional[List[Any]] = None
     nodes_json: Optional[str] = None
     edges_json: Optional[str] = None
     variables_json: Optional[str] = None
     execution_settings_json: Optional[str] = None
     version: Optional[str] = None
+    is_active: Optional[bool] = None
     change_summary: Optional[str] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_update_fields(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            if not data.get("name") and data.get("title"):
+                data["name"] = data["title"]
+            if data.get("is_active") is True and not data.get("status"):
+                data["status"] = "ACTIVE"
+            elif data.get("is_active") is False and not data.get("status"):
+                data["status"] = "PAUSED"
+            if data.get("nodes") is not None and not data.get("nodes_json"):
+                data["nodes_json"] = json.dumps(data["nodes"])
+            if data.get("edges") is not None and not data.get("edges_json"):
+                data["edges_json"] = json.dumps(data["edges"])
+            if data.get("trigger_event") and not data.get("trigger_config_json"):
+                data["trigger_config_json"] = json.dumps({"event": data["trigger_event"]})
+            elif data.get("trigger_config") is not None and not data.get("trigger_config_json"):
+                data["trigger_config_json"] = json.dumps(data["trigger_config"]) if isinstance(data["trigger_config"], (dict, list)) else str(data["trigger_config"])
+        return data
 
 class AutomationWorkflowResponse(AutomationWorkflowBase):
     id: str
-    workspace_id: Optional[int] = None
+    workspace_id: Optional[Any] = None
     owner_id: Optional[int] = None
     last_executed_at: Optional[datetime] = None
     execution_count: int = 0
     failure_count: int = 0
     created_at: datetime
     updated_at: datetime
+    current_version: Optional[str] = None
+
+    @model_validator(mode="after")
+    def populate_response_aliases(self):
+        if not self.title:
+            self.title = self.name
+        if not self.current_version:
+            self.current_version = self.version
+        if self.is_active is None:
+            self.is_active = (self.status == "ACTIVE")
+        return self
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -124,8 +203,19 @@ class ApprovalDecisionRequest(BaseModel):
 # --- Schedules ---
 class AutomationScheduleBase(BaseModel):
     cron_expression: str = "0 9 * * 1-5"
+    expression: Optional[str] = None
     timezone: str = "UTC"
     is_active: bool = True
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_cron_fields(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            if not data.get("cron_expression") and data.get("expression"):
+                data["cron_expression"] = data["expression"]
+            elif data.get("cron_expression") and not data.get("expression"):
+                data["expression"] = data["cron_expression"]
+        return data
 
 class AutomationScheduleCreate(AutomationScheduleBase):
     workflow_id: str
@@ -136,6 +226,13 @@ class AutomationScheduleResponse(AutomationScheduleBase):
     next_run_at: Optional[datetime] = None
     last_run_at: Optional[datetime] = None
     created_at: datetime
+    expression: Optional[str] = None
+
+    @model_validator(mode="after")
+    def populate_expression(self):
+        if not self.expression:
+            self.expression = self.cron_expression
+        return self
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -180,3 +277,21 @@ class AutomationDashboardOverviewResponse(BaseModel):
     recent_executions: List[AutomationExecutionResponse] = []
     pending_approvals: List[AutomationApprovalResponse] = []
     templates: List[AutomationWorkflowResponse] = []
+
+class EmitEventRequest(BaseModel):
+    event_name: Optional[str] = None
+    event_type: Optional[str] = None
+    payload: Dict[str, Any] = {}
+    workspace_id: Optional[Any] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_event(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            if not data.get("event_name") and data.get("event_type"):
+                data["event_name"] = data["event_type"]
+            elif data.get("event_name") and not data.get("event_type"):
+                data["event_type"] = data["event_name"]
+            if data.get("workspace_id") is not None and str(data.get("workspace_id")).isdigit():
+                data["workspace_id"] = int(data["workspace_id"])
+        return data

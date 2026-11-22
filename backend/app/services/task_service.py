@@ -303,6 +303,27 @@ def create_task(
         rollup_subtask_progress(db, task.parent_task_id)
 
     log_task_activity(db, task, current_user.id, "TASK_CREATED", f"Created task '{task.title}'.")
+
+    try:
+        from app.services.automation_engine_service import dispatch_automation_event
+        dispatch_automation_event(
+            db=db,
+            event_type="task.created",
+            payload={
+                "task_id": task.id,
+                "title": task.title,
+                "status": task.status,
+                "priority": task.priority,
+                "workspace_id": task.workspace_id,
+                "project_id": task.project_id,
+                "assignee_id": task.assignee_id
+            },
+            workspace_id=task.workspace_id,
+            actor_id=current_user.id
+        )
+    except Exception:
+        pass
+
     return build_task_response(task)
 
 def update_task(
@@ -404,6 +425,57 @@ def update_task(
         rollup_subtask_progress(db, task.parent_task_id)
 
     log_task_activity(db, task, current_user.id, "TASK_UPDATED", f"Updated task '{task.title}'.")
+
+    try:
+        from app.services.automation_engine_service import dispatch_automation_event
+        if status_changed:
+            dispatch_automation_event(
+                db=db,
+                event_type="task.status_changed",
+                payload={
+                    "task_id": task.id,
+                    "title": task.title,
+                    "old_status": old_status,
+                    "new_status": task.status,
+                    "status": task.status,
+                    "priority": task.priority,
+                    "workspace_id": task.workspace_id,
+                    "project_id": task.project_id
+                },
+                workspace_id=task.workspace_id,
+                actor_id=current_user.id
+            )
+            if task.status.lower() == "completed":
+                dispatch_automation_event(
+                    db=db,
+                    event_type="task.completed",
+                    payload={
+                        "task_id": task.id,
+                        "title": task.title,
+                        "status": task.status,
+                        "workspace_id": task.workspace_id,
+                        "project_id": task.project_id
+                    },
+                    workspace_id=task.workspace_id,
+                    actor_id=current_user.id
+                )
+        if task_in.assignee_id is not None and task_in.assignee_id != old_assignee:
+            dispatch_automation_event(
+                db=db,
+                event_type="task.assigned",
+                payload={
+                    "task_id": task.id,
+                    "title": task.title,
+                    "assignee_id": task.assignee_id,
+                    "old_assignee": old_assignee,
+                    "workspace_id": task.workspace_id
+                },
+                workspace_id=task.workspace_id,
+                actor_id=current_user.id
+            )
+    except Exception:
+        pass
+
     return build_task_response(task)
 
 def update_status(
@@ -440,6 +512,42 @@ def update_status(
         rollup_subtask_progress(db, task.parent_task_id)
 
     log_task_activity(db, task, current_user.id, "TASK_STATUS_CHANGED", f"Moved '{task.title}' to {task.status}.")
+
+    try:
+        from app.services.automation_engine_service import dispatch_automation_event
+        dispatch_automation_event(
+            db=db,
+            event_type="task.status_changed",
+            payload={
+                "task_id": task.id,
+                "title": task.title,
+                "old_status": old_status,
+                "new_status": task.status,
+                "status": task.status,
+                "priority": task.priority,
+                "workspace_id": task.workspace_id,
+                "project_id": task.project_id
+            },
+            workspace_id=task.workspace_id,
+            actor_id=current_user.id
+        )
+        if task.status.lower() == "completed" and old_status.lower() != "completed":
+            dispatch_automation_event(
+                db=db,
+                event_type="task.completed",
+                payload={
+                    "task_id": task.id,
+                    "title": task.title,
+                    "status": task.status,
+                    "workspace_id": task.workspace_id,
+                    "project_id": task.project_id
+                },
+                workspace_id=task.workspace_id,
+                actor_id=current_user.id
+            )
+    except Exception:
+        pass
+
     return build_task_response(task)
 
 def update_priority(

@@ -19,6 +19,7 @@ export const automationApi = {
   createWorkflow: (data) => apiClient.post('/automation/workflows', data),
   updateWorkflow: (workflowId, data) => apiClient.patch(`/automation/workflows/${workflowId}`, data),
   deleteWorkflow: (workflowId) => apiClient.delete(`/automation/workflows/${workflowId}`),
+  toggleWorkflow: (workflowId) => apiClient.patch(`/automation/workflows/${workflowId}/toggle`, {}),
   getWorkflowVersions: (workflowId) => apiClient.get(`/automation/workflows/${workflowId}/versions`),
 
   triggerWorkflow: (workflowId, data = {}) =>
@@ -40,6 +41,20 @@ export const automationApi = {
 
   getExecution: (executionId) => apiClient.get(`/automation/executions/${executionId}`),
   getExecutionLogs: (executionId) => apiClient.get(`/automation/executions/${executionId}/logs`),
+  retryExecution: (executionId) => apiClient.post(`/automation/executions/${executionId}/retry`, {}),
+  cancelExecution: (executionId) => apiClient.post(`/automation/executions/${executionId}/cancel`, {}),
+
+  listSchedules: (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.workflowId) query.append('workflow_id', params.workflowId);
+    if (params.isActive !== undefined) query.append('is_active', params.isActive);
+    const qs = query.toString();
+    return apiClient.get(`/automation/schedules${qs ? `?${qs}` : ''}`);
+  },
+  createSchedule: (data) => apiClient.post('/automation/schedules', data),
+  deleteSchedule: (scheduleId) => apiClient.delete(`/automation/schedules/${scheduleId}`),
+  runDueSchedules: () => apiClient.post('/automation/schedules/run-due', {}),
+  emitEvent: (data) => apiClient.post('/automation/events/emit', data),
 
   listApprovals: (params = {}) => {
     const query = new URLSearchParams();
