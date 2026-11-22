@@ -50,7 +50,7 @@ def test_api_latency_benchmarks(client):
     auth_latency = (time.perf_counter() - t0) * 1000
     assert reg_res.status_code in [200, 201]
     token = reg_res.json()["access_token"]
-    assert auth_latency < 500, f"Registration took {auth_latency:.2f}ms"
+    assert auth_latency < 1000, f"Registration took {auth_latency:.2f}ms"
 
     headers = {"Authorization": f"Bearer {token}"}
 

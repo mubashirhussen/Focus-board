@@ -65,34 +65,52 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["X-Request-ID", "X-RateLimit-Limit", "X-RateLimit-Remaining", "Retry-After"]
+    expose_headers=["X-Request-ID", "X-Trace-ID", "X-RateLimit-Limit", "X-RateLimit-Remaining", "Retry-After"]
 )
 
 # 3. Rate Limiter Middleware
 app.add_middleware(RateLimiterMiddleware, enabled=True)
 
-# 4. Correlation Request ID and Structured Logging Middleware
+# 4. Correlation Request ID, Distributed Tracing and Structured Logging Middleware
+app_metrics = {
+    "requests_total": 0,
+    "errors_total": 0,
+    "latency_ms_sum": 0.0,
+    "start_time": time.time(),
+}
+
 @app.middleware("http")
 async def correlation_id_and_logging_middleware(request: Request, call_next):
     request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
+    trace_id = request.headers.get("X-Trace-ID") or f"trace-{uuid.uuid4().hex[:16]}"
     request.state.request_id = request_id
+    request.state.trace_id = trace_id
 
     start_time = time.time()
-    logger.info(f"Incoming: {request.method} {request.url.path} (ID: {request_id})")
+    app_metrics["requests_total"] += 1
+    logger.info(f"Incoming: {request.method} {request.url.path} (ID: {request_id}, Trace: {trace_id})")
 
     try:
         response = await call_next(request)
         duration_ms = round((time.time() - start_time) * 1000, 2)
+        app_metrics["latency_ms_sum"] += duration_ms
+
+        if response.status_code >= 500:
+            app_metrics["errors_total"] += 1
+
         response.headers["X-Request-ID"] = request_id
+        response.headers["X-Trace-ID"] = trace_id
         logger.info(f"Completed: {request.method} {request.url.path} -> Status {response.status_code} in {duration_ms}ms (ID: {request_id})")
         return response
     except Exception as exc:
         duration_ms = round((time.time() - start_time) * 1000, 2)
-        logger.error(f"Unhandled Exception: {request.method} {request.url.path} in {duration_ms}ms: {exc} (ID: {request_id})")
+        app_metrics["latency_ms_sum"] += duration_ms
+        app_metrics["errors_total"] += 1
+        logger.error(f"Unhandled Exception: {request.method} {request.url.path} in {duration_ms}ms: {exc} (ID: {request_id}, Trace: {trace_id})")
         return JSONResponse(
             status_code=500,
-            content={"detail": "Internal server error", "request_id": request_id},
-            headers={"X-Request-ID": request_id}
+            content={"detail": "Internal server error", "request_id": request_id, "trace_id": trace_id},
+            headers={"X-Request-ID": request_id, "X-Trace-ID": trace_id}
         )
 
 # Register API Routers
