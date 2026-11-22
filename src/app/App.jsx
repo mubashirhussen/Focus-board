@@ -25,6 +25,8 @@ import TrustCenterPage from '../pages/Trust/TrustCenterPage';
 import StrategicIntelligenceDashboard from '../pages/Strategy/StrategicIntelligenceDashboard';
 import InnovationLabDashboard from '../pages/Innovation/InnovationLabDashboard';
 import KnowledgeIntelligenceDashboard from '../pages/Knowledge/KnowledgeIntelligenceDashboard';
+import AutomationDashboard from '../pages/Automation/AutomationDashboard';
+import IntegrationPlatformDashboard from '../pages/Integrations/IntegrationPlatformDashboard';
 import { I18nProvider, useI18n } from '../i18n/I18nContext';
 import OnboardingModal from '../components/Onboarding/OnboardingModal';
 import FeedbackModal from '../components/FeedbackModal/FeedbackModal';
@@ -80,8 +82,10 @@ function AppContent() {
         return 'Productivity Analytics';
       case 'calendar':
         return 'Calendar Schedule & Google Sync';
+      case 'automation':
+        return 'Automation Intelligence & Workflow Orchestrator';
       case 'integrations':
-        return 'Integrations Hub & Automations';
+        return 'Integrations Ecosystem & Developer Platform';
       case 'billing':
         return 'SaaS Plans & Usage Limits';
       case 'intelligence':
@@ -128,8 +132,10 @@ function AppContent() {
         return <Analytics />;
       case 'calendar':
         return <CalendarView />;
+      case 'automation':
+        return <AutomationDashboard />;
       case 'integrations':
-        return <Integrations />;
+        return <IntegrationPlatformDashboard />;
       case 'billing':
         return <Billing />;
       case 'intelligence':

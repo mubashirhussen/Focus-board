@@ -7,6 +7,7 @@ export const translations = {
     'nav.agents': 'AI Agents',
     'nav.team': 'Team Space',
     'nav.calendar': 'Calendar',
+    'nav.automation': 'Automation Hub',
     'nav.integrations': 'Integrations',
     'nav.billing': 'Plans & Billing',
     'nav.intelligence': 'Intelligence',

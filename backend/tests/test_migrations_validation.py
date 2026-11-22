@@ -106,6 +106,16 @@ def test_alembic_migrations_lifecycle():
             "knowledge_relationships",
             "organizational_memories",
             "knowledge_gaps",
+            "automation_workflows",
+            "automation_workflow_versions",
+            "automation_executions",
+            "automation_execution_logs",
+            "automation_approvals",
+            "automation_schedules",
+            "integration_providers",
+            "marketplace_listings",
+            "marketplace_installations",
+            "oauth_connectors",
         ]
 
         for table in expected_tables:

@@ -24,6 +24,7 @@ import {
   Compass,
   Lightbulb,
   BookOpen,
+  Workflow,
 } from 'lucide-react';
 import { useTasks } from '../../hooks/useTasks';
 import { useI18n } from '../../i18n/I18nContext';
@@ -41,6 +42,7 @@ export function Sidebar({ activeTab = 'overview', onTabChange, onOpenFeedback })
     { id: 'agents', label: t('nav.agents', 'AI Agents'), icon: Bot, count: null },
     { id: 'team', label: t('nav.team', 'Team Space'), icon: Users, count: null },
     { id: 'calendar', label: t('nav.calendar', 'Calendar'), icon: Calendar, count: null },
+    { id: 'automation', label: t('nav.automation', 'Automation Hub'), icon: Workflow, count: null },
     { id: 'integrations', label: t('nav.integrations', 'Integrations'), icon: Layers, count: null },
     { id: 'billing', label: t('nav.billing', 'Plans & Billing'), icon: CreditCard, count: null },
     { id: 'intelligence', label: t('nav.intelligence', 'Intelligence'), icon: Brain, count: null },

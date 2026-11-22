@@ -114,6 +114,13 @@ export function CommandPalette({
       action: () => { onNavigate('calendar'); onClose(); },
     },
     {
+      id: 'nav-automation',
+      category: 'Navigation',
+      label: 'Open Automation Intelligence & Workflow Orchestrator',
+      icon: Briefcase,
+      action: () => { onNavigate('automation'); onClose(); },
+    },
+    {
       id: 'nav-integrations',
       category: 'Navigation',
       label: 'Open Integrations Hub & Automations',

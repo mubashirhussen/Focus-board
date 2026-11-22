@@ -110,6 +110,20 @@ from app.models.knowledge_intelligence import (
     OrganizationalMemory,
     KnowledgeGap,
 )
+from app.models.automation import (
+    AutomationWorkflow,
+    AutomationWorkflowVersion,
+    AutomationExecution,
+    AutomationExecutionLog,
+    AutomationApproval,
+    AutomationSchedule,
+)
+from app.models.integration_marketplace import (
+    IntegrationProvider,
+    MarketplaceListing,
+    MarketplaceInstallation,
+    OAuthConnector,
+)
 
 __all__ = [
     "User",
@@ -205,4 +219,14 @@ __all__ = [
     "KnowledgeRelationship",
     "OrganizationalMemory",
     "KnowledgeGap",
+    "AutomationWorkflow",
+    "AutomationWorkflowVersion",
+    "AutomationExecution",
+    "AutomationExecutionLog",
+    "AutomationApproval",
+    "AutomationSchedule",
+    "IntegrationProvider",
+    "MarketplaceListing",
+    "MarketplaceInstallation",
+    "OAuthConnector",
 ]
