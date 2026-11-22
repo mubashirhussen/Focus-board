@@ -1,14 +1,58 @@
-import React, { createContext, useMemo, useState, useCallback } from 'react';
+import React, { createContext, useMemo, useState, useEffect, useCallback } from 'react';
 import { initialTasks } from '../data/initialTasks';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { calculateStats, filterTasks } from '../utils/taskHelpers';
 import { APP_CONFIG } from '../app/appConfig';
+import { taskApi } from '../services/taskApi';
+import { useAuth } from './AuthContext';
 
 export const TaskContext = createContext(null);
 
 export function TaskProvider({ children }) {
-  // 1. Persistent Task State (Central Single Source of Truth)
-  const [tasks, setTasks] = useLocalStorage(APP_CONFIG.storageKey, initialTasks);
+  const { isAuthenticated, token } = useAuth();
+
+  // 1. Local Persistent Task State (For offline / guest mode)
+  const [localTasks, setLocalTasks] = useLocalStorage(APP_CONFIG.storageKey, initialTasks);
+  
+  // Remote tasks state for authenticated users
+  const [remoteTasks, setRemoteTasks] = useState([]);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  // Active tasks based on authentication mode
+  const tasks = isAuthenticated ? remoteTasks : localTasks;
+
+  // Sync tasks from backend when user logs in
+  const fetchRemoteTasks = useCallback(async () => {
+    if (!isAuthenticated) return;
+    setIsSyncing(true);
+    try {
+      const data = await taskApi.getTasks();
+      // Format backend response with camelCase aliases if needed
+      const formatted = (data || []).map((t) => ({
+        id: t.id,
+        title: t.title,
+        description: t.description || '',
+        category: t.category,
+        status: t.status,
+        priority: t.priority,
+        dueDate: t.due_date || t.dueDate || '',
+        createdAt: t.created_at || t.createdAt,
+        updatedAt: t.updated_at || t.updatedAt,
+        completedAt: t.completed_at || t.completedAt,
+      }));
+      setRemoteTasks(formatted);
+    } catch (err) {
+      console.warn('Failed to fetch remote tasks from API, falling back to local cache:', err);
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchRemoteTasks();
+    }
+  }, [isAuthenticated, fetchRemoteTasks]);
 
   // 2. Filter & Search State
   const [searchQuery, setSearchQuery] = useState('');
@@ -20,7 +64,7 @@ export function TaskProvider({ children }) {
   const [editingTask, setEditingTask] = useState(null);
   const [deletingTask, setDeletingTask] = useState(null);
 
-  // 4. Derived Statistics (Dynamically derived from tasks)
+  // 4. Derived Statistics (Dynamically derived from active tasks)
   const stats = useMemo(() => calculateStats(tasks), [tasks]);
 
   // 5. Derived Filtered Tasks (Single composite filtering mechanism)
@@ -33,7 +77,7 @@ export function TaskProvider({ children }) {
   }, [tasks, searchQuery, statusFilter, priorityFilter]);
 
   // CRUD Operations
-  const addTask = useCallback((taskData) => {
+  const addTask = useCallback(async (taskData) => {
     const rawTitle = taskData.title !== undefined && taskData.title !== null ? String(taskData.title) : '';
     const title = rawTitle.trim();
     if (!title) {
@@ -54,17 +98,31 @@ export function TaskProvider({ children }) {
       updatedAt: now,
     };
 
-    setTasks((prevTasks) => [newTask, ...prevTasks]);
-    return newTask;
-  }, [setTasks]);
+    if (isAuthenticated) {
+      // Optimistic update
+      setRemoteTasks((prev) => [newTask, ...prev]);
+      try {
+        const created = await taskApi.createTask(newTask);
+        setRemoteTasks((prev) =>
+          prev.map((t) => (t.id === newTask.id ? { ...t, id: created.id } : t))
+        );
+      } catch (err) {
+        console.error('API createTask error:', err);
+      }
+    } else {
+      setLocalTasks((prevTasks) => [newTask, ...prevTasks]);
+    }
 
-  const updateTask = useCallback((taskId, updatedData) => {
+    return newTask;
+  }, [isAuthenticated, setLocalTasks]);
+
+  const updateTask = useCallback(async (taskId, updatedData) => {
     if (!taskId) {
       console.warn('updateTask rejected: missing taskId.');
       return;
     }
 
-    setTasks((prevTasks) =>
+    const updateUpdater = (prevTasks) =>
       prevTasks.map((task) => {
         if (task.id !== taskId) return task;
 
@@ -89,16 +147,36 @@ export function TaskProvider({ children }) {
           dueDate: updatedData.dueDate !== undefined ? updatedData.dueDate : task.dueDate,
           updatedAt: new Date().toISOString(),
         };
-      })
-    );
-  }, [setTasks]);
+      });
 
-  const deleteTask = useCallback((taskId) => {
+    if (isAuthenticated) {
+      setRemoteTasks(updateUpdater);
+      try {
+        await taskApi.updateTask(taskId, updatedData);
+      } catch (err) {
+        console.error('API updateTask error:', err);
+      }
+    } else {
+      setLocalTasks(updateUpdater);
+    }
+  }, [isAuthenticated, setLocalTasks]);
+
+  const deleteTask = useCallback(async (taskId) => {
     if (!taskId) return;
-    setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
-  }, [setTasks]);
 
-  const updateTaskStatus = useCallback((taskId, newStatus) => {
+    if (isAuthenticated) {
+      setRemoteTasks((prev) => prev.filter((task) => task.id !== taskId));
+      try {
+        await taskApi.deleteTask(taskId);
+      } catch (err) {
+        console.error('API deleteTask error:', err);
+      }
+    } else {
+      setLocalTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
+    }
+  }, [isAuthenticated, setLocalTasks]);
+
+  const updateTaskStatus = useCallback(async (taskId, newStatus) => {
     if (!taskId) return;
     const validStatuses = ['Todo', 'In Progress', 'Completed'];
     if (!validStatuses.includes(newStatus)) {
@@ -106,23 +184,25 @@ export function TaskProvider({ children }) {
       return;
     }
 
-    setTasks((prevTasks) =>
-      prevTasks.map((task) =>
-        task.id === taskId
-          ? {
-              ...task,
-              status: newStatus,
-              updatedAt: new Date().toISOString(),
-            }
-          : task
-      )
-    );
-  }, [setTasks]);
+    await updateTask(taskId, { status: newStatus });
+  }, [updateTask]);
 
   // Reset to initial sample data helper
   const resetToSampleData = useCallback(() => {
-    setTasks(initialTasks);
-  }, [setTasks]);
+    if (isAuthenticated) {
+      // In authenticated mode, seed initial tasks to user account
+      initialTasks.forEach(async (task) => {
+        try {
+          await taskApi.createTask(task);
+        } catch {
+          // ignore duplicate
+        }
+      });
+      fetchRemoteTasks();
+    } else {
+      setLocalTasks(initialTasks);
+    }
+  }, [isAuthenticated, fetchRemoteTasks, setLocalTasks]);
 
   // Modal open / close handlers
   const openCreateModal = useCallback(() => {
@@ -172,6 +252,8 @@ export function TaskProvider({ children }) {
     deleteTask,
     updateTaskStatus,
     resetToSampleData,
+    isSyncing,
+    fetchRemoteTasks,
     // Modal & Dialog state
     isTaskModalOpen,
     editingTask,

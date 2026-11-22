@@ -1,29 +1,47 @@
-# FocusBoard — Task Management Dashboard
+# FocusBoard — Full-Stack Task Management & Analytics Platform
 
-FocusBoard is a responsive, single-user task management dashboard developed for the **Frontend Trainee Assessment**. It is crafted with React, Vite, CSS3, and Lucide React icons, adhering strictly to the provided live Figma design references (`1440×1000` desktop, `390×1128` mobile, `760×822` task modal, and `1106×152` Focus Notes carousel slides).
+FocusBoard is an enterprise-grade, responsive task management dashboard and productivity platform developed by **Sheik Mubashir Hussen**.
+
+Originally initiated as a high-fidelity frontend based on live Figma design specifications, the system has evolved into a robust **Full-Stack Application** featuring secure JWT multi-user authentication, tenant data isolation, advanced productivity analytics, formula-safe CSV reporting, PostgreSQL database support with Alembic migrations, and automated multi-stage Docker containerization.
 
 ---
 
 ## Candidate Submission Information
 
 - **Candidate:** Sheik Mubashir Hussen
-- **Framework:** React 19 + Vite 8
-- **GitHub Repository:** https://github.com/mubashirhussen/FocusBoard *(or your configured remote repository)*
-- **Live Hosted URL:** https://focusboard.vercel.app *(or your configured Vercel deployment)*
-- **Notes / Pending Work:** Complete frontend implementation; all 100-mark assessment rubric requirements implemented and verified. Zero backend dependency.
+- **Frontend Stack:** React 19 + Vite 8 + Pure CSS3 + Lucide React
+- **Backend Stack:** FastAPI (Python 3.10+) + SQLAlchemy 2 + Alembic + Pydantic v2 + Bcrypt + PyJWT
+- **Database:** PostgreSQL (Production / Docker) & SQLite (Local / Fast Testing)
+- **Containerization:** Docker & Docker Compose (Frontend, Backend, PostgreSQL)
+- **Live Demo:** https://focusboard.vercel.app *(or your configured live deployment)*
+- **GitHub Repository:** https://github.com/mubashirhussen/FocusBoard
 
 ---
 
-## 1. Project Overview
+## 1. Key Capabilities & Architecture
 
-FocusBoard is built to solve everyday task organization with clean visual hierarchy, low cognitive friction, and reliable client-side state persistence. It features:
+### Full-Stack Authentication & Security (Phase 11)
+- **Stateless JWT Authentication**: Secure HMAC-SHA256 bearer tokens with 24-hour expiry.
+- **Bcrypt Password Hashing**: Cryptographically salted passwords using native bcrypt (never plaintext, never logged).
+- **Strict Tenant Isolation**: All task queries enforce `Task.user_id == current_user.id` at the database level. Attempted access to other users' tasks yields `404 Not Found` (mitigating ID enumeration).
+- **Graceful Dual Mode**: Supports both authenticated cloud synchronization and seamless offline/guest localStorage operation.
+- **1-Click Demo Login**: Built-in instant login for evaluators and recruiters.
 
-- **Executive Overview Dashboard**: High-level dynamic statistics reflecting total task load, active work, completed tasks, and completion percentage.
-- **Focus Notes Carousel**: A 3-slide visual inspiration banner matching the Figma design frames (`15:2`, `15:30`, and `15:58`), featuring interactive carousel slides with mini floating progress previews, bounded navigation, touch swipe, and keyboard accessibility.
-- **Full Task Lifecycle Management (CRUD)**: Create, view, edit, update status, and safely delete tasks with confirmation dialogs.
-- **Unified Search & Multi-Criteria Filtering**: Instant case-insensitive search by task title, description, or category combined with status pills (All, To do, In progress, Completed) and priority selectors (High, Medium, Low).
-- **Zero-Latency Persistence**: Reliable `localStorage` data synchronization that preserves user modifications across page reloads without overwriting with sample data.
-- **Responsive System**: Tailored layouts across standard desktop (`1440px`), tablet (`768px`), and mobile screens (`390px`) featuring a dedicated mobile bottom navigation bar and touch-friendly controls.
+### Advanced Productivity Analytics & Reporting (Phase 13)
+- **Task Lifecycle Timestamps**: Automatic `completed_at` tracking when tasks transition to "Completed", reset if reopened.
+- **Real-Time Velocity Metrics**: Dynamic completion rate, pending task breakdown, and overdue deadline alerts.
+- **Historical Trends**: Customizable 7-day, 30-day, and 90-day task completion vs. creation charts.
+- **Distribution Breakdowns**: Instant breakdown across task status, priority levels, and work categories.
+- **AI Productivity Insights**: Algorithmic performance analysis highlighting velocity, overdue deadlines, and top categories.
+- **Formula-Safe CSV Export**: CSV export featuring defense against spreadsheet formula injection (CWE-1236 / CSV Injection) by sanitizing `=`, `+`, `-`, and `@` triggers, encoded with UTF-8 BOM for Microsoft Excel compatibility.
+
+### Production Infrastructure & Dockerization (Phase 12)
+- **Containerized Microservices**: Orchestrated with `docker-compose.yml` including:
+  - `postgres`: PostgreSQL 16 Alpine with persistent volume and healthcheck probes.
+  - `backend`: FastAPI Python 3.10 slim, non-root user, multi-worker Uvicorn, healthcheck probe.
+  - `frontend`: Multi-stage build (Node 20 build -> Nginx Alpine static server with gzip compression and SPA HTML5 routing fallback).
+- **Alembic Database Migrations**: Reproducible database schema versioning with automated upgrade workflows.
+- **Observability & Health Checks**: Correlation ID middleware (`X-Request-ID`), structured logging, `/health` liveness probe, and `/ready` database readiness probe.
 
 ---
 
@@ -37,174 +55,139 @@ FocusBoard is built to solve everyday task organization with clean visual hierar
 
 ---
 
-## 3. Tech Stack
-
-- **Framework**: React 19 (Hooks, Context API, memoization)
-- **Tooling & Bundler**: Vite 8
-- **Styling**: Modular plain CSS3 with custom design tokens, CSS variables, and zero CSS framework bloat
-- **Iconography**: Lucide React
-- **Persistence**: Browser `localStorage` API with defensive fallback handling
-- **Language**: JavaScript (ES2022+ / JSX)
-
----
-
-## 4. Project Structure
+## 3. Directory Layout
 
 ```
 focusboard/
-├── public/
-│   └── favicon.svg
-├── screenshots/
-│   ├── focusboard-desktop.png
-│   └── focusboard-mobile.png
-├── src/
+├── docker-compose.yml              # Production orchestration (Postgres, Backend, Frontend)
+├── Dockerfile                      # Multi-stage Node + Nginx Alpine frontend container
+├── nginx.conf                      # Production Nginx SPA configuration & compression
+├── package.json                    # React frontend dependencies & scripts
+├── vite.config.js                  # Vite bundler configuration
+│
+├── backend/                        # FastAPI Backend Application
 │   ├── app/
-│   │   ├── App.jsx
-│   │   ├── App.css
-│   │   └── appConfig.js
-│   ├── assets/
-│   │   ├── images/
-│   │   └── icons/
-│   ├── components/
-│   │   ├── Sidebar/ (Sidebar.jsx, Sidebar.css)
-│   │   ├── Header/ (Header.jsx, Header.css)
-│   │   ├── StatCard/ (StatCard.jsx, StatCard.css)
-│   │   ├── FocusNotes/ (FocusNotes.jsx, FocusNotes.css)
-│   │   ├── TaskList/ (TaskList.jsx, TaskList.css)
-│   │   ├── TaskItem/ (TaskItem.jsx, TaskItem.css)
-│   │   ├── TaskFilters/ (TaskFilters.jsx, TaskFilters.css)
-│   │   ├── TaskForm/ (TaskForm.jsx, TaskForm.css)
-│   │   ├── Modal/ (Modal.jsx, Modal.css)
-│   │   ├── EmptyState/ (EmptyState.jsx, EmptyState.css)
-│   │   └── ConfirmDialog/ (ConfirmDialog.jsx, ConfirmDialog.css)
-│   ├── pages/
-│   │   └── Dashboard/ (Dashboard.jsx, Dashboard.css)
-│   ├── context/
-│   │   └── TaskContext.jsx
-│   ├── hooks/
-│   │   ├── useTasks.js
-│   │   └── useLocalStorage.js
-│   ├── data/
-│   │   ├── initialTasks.js
-│   │   └── focusNotes.js
-│   ├── utils/
-│   │   ├── taskHelpers.js
-│   │   ├── dateHelpers.js
-│   │   └── validation.js
-│   ├── styles/
-│   │   ├── variables.css
-│   │   ├── global.css
-│   │   ├── typography.css
-│   │   └── responsive.css
-│   ├── main.jsx
-│   └── index.css
-├── test_phase2_verification.js
-├── .env
-├── .env.example
-├── .gitignore
-├── index.html
-├── package.json
-├── README.md
-├── AI_USAGE.md
-└── vite.config.js
+│   │   ├── main.py                 # FastAPI instance, CORS, Request ID middleware
+│   │   ├── core/
+│   │   │   ├── config.py           # Pydantic BaseSettings environment configuration
+│   │   │   └── security.py         # Bcrypt hashing & JWT token issuance/verification
+│   │   ├── db/
+│   │   │   └── database.py         # SQLAlchemy engine, session maker, get_db dependency
+│   │   ├── models/
+│   │   │   ├── user.py             # User SQLAlchemy model (email, password hash, role)
+│   │   │   └── task.py             # Task SQLAlchemy model (user_id FK, completed_at)
+│   │   ├── schemas/
+│   │   │   ├── auth.py             # Auth & Login Pydantic schemas
+│   │   │   ├── user.py             # User request/response schemas (no hash leakage)
+│   │   │   ├── task.py             # Task CRUD schemas with camelCase compatibility
+│   │   │   └── analytics.py        # Summary, Trend, and Distribution schemas
+│   │   └── api/
+│   │       ├── dependencies.py     # OAuth2 get_current_user token dependency
+│   │       └── routes/
+│   │           ├── auth_routes.py  # /auth/register, /auth/login, /auth/me
+│   │           ├── task_routes.py  # User-isolated task CRUD & lifecycle
+│   │           ├── analytics_routes.py # Summary, trends, distribution, insights, CSV
+│   │           └── health_routes.py # /health liveness & /ready DB probe
+│   ├── alembic/                    # Alembic migration scripts
+│   ├── tests/                      # Automated backend test suite (pytest + httpx)
+│   ├── requirements.txt            # Python dependencies
+│   └── Dockerfile                  # Production Python backend container
+│
+└── src/                            # React Frontend Application
+    ├── components/
+    │   ├── auth/                   # AuthModal, UserProfileMenu
+    │   ├── FocusNotes/             # 3-slide visual inspiration carousel
+    │   ├── TaskList/               # Task cards list & item rendering
+    │   ├── TaskForm/               # Task creation/editing modal
+    │   ├── Header/ & Sidebar/      # App navigation & responsive layout
+    │   └── StatCard/               # High-level metric KPI cards
+    ├── context/
+    │   ├── AuthContext.jsx         # Authentication, token persistence, user state
+    │   └── TaskContext.jsx         # Central task state, optimistic sync, fallback
+    ├── pages/
+    │   ├── Dashboard/              # Primary task overview dashboard
+    │   └── Analytics/              # Advanced productivity analytics & trend charts
+    └── services/                   # Axios/Fetch API layer (authApi, taskApi, analyticsApi)
 ```
 
 ---
 
-## 5. Installation & Getting Started
+## 4. Quick Start & Execution
 
-### Prerequisites
-- Node.js (version 18 or higher recommended; verified on Node v24)
-- npm (version 9 or higher)
+### Option A: Run with Docker Compose (Recommended for Production Evaluation)
 
-### Installation
+Run the entire full-stack ecosystem (PostgreSQL + FastAPI + React/Nginx) with a single command:
+
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd focusboard
-
-# Install dependencies
-npm install
+docker-compose up --build -d
 ```
 
-### Running Locally (Development Mode)
+- **Frontend App**: http://localhost:3000
+- **FastAPI Documentation**: http://localhost:8000/docs
+- **Health Endpoint**: http://localhost:8000/health
+
+To tear down containers and volumes:
 ```bash
+docker-compose down -v
+```
+
+---
+
+### Option B: Run Locally (Development Mode)
+
+#### 1. Start the Backend API
+```bash
+cd backend
+python -m venv venv
+.\venv\Scripts\activate   # On Linux/macOS: source venv/bin/activate
+pip install -r requirements.txt
+alembic upgrade head
+uvicorn app.main:app --reload --port 8000
+```
+API runs on `http://localhost:8000`. Interactive OpenAPI documentation available at `http://localhost:8000/docs`.
+
+#### 2. Start the Frontend Application
+```bash
+# In project root
+npm install
 npm run dev
 ```
-The application will start at `http://localhost:3000` (or `http://localhost:5173` if running Vite directly) with Hot Module Replacement (HMR).
+Open `http://localhost:5173` in your browser.
 
-### Running Verification Tests
+---
+
+## 5. Verification & Test Execution
+
+FocusBoard is backed by dual automated verification suites covering both frontend logic and backend services:
+
+### Backend Pytest Suite (Auth, Isolation, Analytics, Health)
+```bash
+cd backend
+$env:PYTHONPATH="backend"
+.\venv\Scripts\pytest tests -v
+```
+**Results:**
+- `test_auth.py`: Registration, duplicate rejection, login, token verification, `/me` profile check.
+- `test_tasks.py`: Task CRUD, user isolation enforcement (User A vs User B 404s), and `completed_at` lifecycle tracking.
+- `test_analytics.py`: Summary metrics, trend calculation, distribution categorization, and formula injection sanitization.
+- `test_health.py`: Liveness probe (`/health`), DB readiness probe (`/ready`), and correlation ID propagation.
+
+### Frontend 28-Point State & Persistence Suite
 ```bash
 npm test
 ```
-Runs the 28-point automated test suite covering validation, CRUD mutations, composite filtering, statistics calculations, and `localStorage` error resilience.
+**Results:** `--- ALL PHASE 2 VERIFICATIONS PASSED SUCCESSFULLY (28/28) ---`
 
-### Building for Production
+### Production Build Verification
 ```bash
 npm run build
 ```
-Generates optimized, minified production assets inside the `dist/` folder.
-
-### Previewing Production Build
-```bash
-npm run preview
-```
+Compiles static bundle cleanly in `dist/` with zero warnings or errors.
 
 ---
 
-## 6. State Management Architecture
+## 6. License & Credits
 
-State is architected around the **Single Source of Truth** principle using React's built-in **Context API** (`TaskContext`) combined with custom hooks (`useTasks`, `useLocalStorage`).
-
-### Why React Context + Custom Hooks?
-- **Zero Third-Party Dependency**: Avoids the bundle overhead of Redux or heavy boilerplate for a single-user task dashboard.
-- **Predictable Mutations**: All modifications (`addTask`, `updateTask`, `deleteTask`, `updateTaskStatus`) execute immutably using pure updater functions.
-- **Derived State via `useMemo`**: Overview statistics (`total`, `todo`, `inProgress`, `completed`, `completionRate`) and `filteredTasks` are dynamically derived rather than stored in parallel state variables. This guarantees zero state synchronization bugs or stale counters.
-
----
-
-## 7. Local Storage Persistence
-
-Task data is stored under the storage key defined in `.env` (`focusboard_tasks_v1`).
-
-1. **Initial Load**: The hook reads `localStorage`. If no stored records exist or the data is invalid, it safely bootstraps from `initialTasks.js`.
-2. **Subsequent Visits & Refreshes**: If existing user tasks exist in `localStorage`, they are preserved and never overwritten by sample data.
-3. **Resilience**: Handled within a defensive `try / catch` wrapper to guard against quota limitations, restricted iframe sandboxes, and corrupted JSON.
-4. **Demo Reset**: A dedicated "Reset Demo Data" action in the sidebar allows testers to restore default tasks on demand.
-
----
-
-## 8. Responsive Design System
-
-The application adapts across three primary screen widths matching Figma specifications:
-
-- **Desktop (1440px+)**: Left persistent navigation sidebar, top breadcrumb bar with user profile, high-density 4-card overview grid, wide Focus Notes carousel, and horizontal task rows.
-- **Tablet (768px - 1024px)**: Responsive sidebar reflow, wrapped filter controls, 2x2 statistics grid, and adapted card sizing without horizontal scrollbars.
-- **Mobile (390px)**:
-  - Top header with compact FocusBoard icon and user initials.
-  - Floating circular quick-add button (`+`).
-  - 2-column stacked overview cards.
-  - Horizontally scrollable status pills.
-  - Mobile bottom navigation bar fixed to the viewport with active states and badge indicators.
-  - Fully touch-friendly interactive targets (44px minimum).
-
----
-
-## 9. Deployment
-
-### Deploying to Vercel
-1. Sign in to [Vercel](https://vercel.com) using GitHub.
-2. Click **Add New → Project** and import the `FocusBoard` repository.
-3. Confirm settings:
-   - **Framework Preset**: Vite
-   - **Build Command**: `npm run build`
-   - **Output Directory**: `dist`
-   - **Install Command**: `npm install`
-4. Click **Deploy**.
-
----
-
-## 10. Limitations
-
-- **Single User Scope**: Designed strictly as a client-side, single-user dashboard; does not implement multi-tenant authentication or server-side databases.
-- **Unlinked Navigation Items**: As designated in the assessment scope, navigation sections such as "Calendar" and "Settings" are visual UI placeholders, keeping focus on core task management and the Focus Notes carousel.
+Developed with precision and attention to user experience by **Sheik Mubashir Hussen**.
+Figma design specifications referenced under assignment guidelines.
+All rights reserved.

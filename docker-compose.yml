@@ -1,0 +1,58 @@
+services:
+  # PostgreSQL Database Service
+  postgres:
+    image: postgres:16-alpine
+    container_name: focusboard-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-focusboard}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-focusboard123}
+      POSTGRES_DB: ${POSTGRES_DB:-focusboard_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-focusboard} -d ${POSTGRES_DB:-focusboard_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI Backend Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: focusboard-backend
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-focusboard}:${POSTGRES_PASSWORD:-focusboard123}@postgres:5432/${POSTGRES_DB:-focusboard_db}
+      SECRET_KEY: ${SECRET_KEY:-focusboard_production_super_secret_jwt_key_change_in_production}
+      CORS_ORIGINS: '["http://localhost:3000","http://localhost:5173","http://127.0.0.1:3000"]'
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # React Frontend Service
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: focusboard-frontend
+    restart: always
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "3000:80"
+
+volumes:
+  postgres_data:
+    driver: local

@@ -7,7 +7,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Node modules
+# Node modules & build
 node_modules
 dist
 dist-ssr
@@ -24,9 +24,20 @@ dist-ssr
 *.sln
 *.sw?
 
+# Python & Backend virtualenv
+venv/
+backend/venv/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+*.db
+*.sqlite3
+
 # Environment files
 .env
 .env*.local
+backend/.env
 
 # Temporary inspection files
 figma_thumbnail.png

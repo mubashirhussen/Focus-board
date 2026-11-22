@@ -1,5 +1,6 @@
 import React from 'react';
 import { APP_CONFIG } from '../../app/appConfig';
+import { UserProfileMenu } from '../auth/UserProfileMenu';
 import './Header.css';
 
 export function Header({ title = 'Overview' }) {
@@ -23,16 +24,9 @@ export function Header({ title = 'Overview' }) {
         <span className="brand-title">{APP_CONFIG.appName}</span>
       </div>
 
-      {/* User profile avatar */}
+      {/* User profile avatar and session menu */}
       <div className="header-actions">
-        <button
-          type="button"
-          className="user-avatar-btn"
-          title={`${APP_CONFIG.user.name} (${APP_CONFIG.user.role})`}
-          aria-label={`User profile for ${APP_CONFIG.user.name}`}
-        >
-          <span className="user-initials">{APP_CONFIG.user.initials}</span>
-        </button>
+        <UserProfileMenu />
       </div>
     </header>
   );

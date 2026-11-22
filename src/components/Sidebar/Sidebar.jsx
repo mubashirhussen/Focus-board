@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   LayoutGrid,
   CheckSquare,
+  BarChart2,
   Calendar,
   Settings,
   RotateCcw,
@@ -16,6 +17,7 @@ export function Sidebar({ activeTab = 'overview', onTabChange }) {
   const navItems = [
     { id: 'overview', label: 'Overview', icon: LayoutGrid, count: null },
     { id: 'tasks', label: 'My Tasks', icon: CheckSquare, count: stats.total },
+    { id: 'analytics', label: 'Analytics', icon: BarChart2, count: null },
     { id: 'calendar', label: 'Calendar', icon: Calendar, count: null },
     { id: 'settings', label: 'Settings', icon: Settings, count: null },
   ];
