@@ -38,20 +38,22 @@
 }
 
 .brand-logo-small {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   background-color: var(--color-primary);
   border-radius: 7px;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   padding: 5px;
   gap: 3px;
+  box-shadow: 0 1px 3px rgba(79, 70, 229, 0.2);
 }
 
 .brand-title {
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
   color: var(--color-text-primary);
+  letter-spacing: -0.015em;
 }
 
 .header-actions {
@@ -70,6 +72,7 @@
   color: var(--color-primary);
   font-weight: var(--font-weight-bold);
   font-size: var(--font-size-sm);
+  cursor: pointer;
   transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
@@ -80,6 +83,7 @@
 
 @media (max-width: 768px) {
   .app-header {
+    height: 60px;
     padding: 0 var(--space-md);
   }
 

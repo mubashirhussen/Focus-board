@@ -5,7 +5,6 @@ import {
   Calendar,
   Settings,
   RotateCcw,
-  Sparkles,
 } from 'lucide-react';
 import { useTasks } from '../../hooks/useTasks';
 import { APP_CONFIG } from '../../app/appConfig';
@@ -13,7 +12,6 @@ import './Sidebar.css';
 
 export function Sidebar({ activeTab = 'overview', onTabChange }) {
   const { stats, resetToSampleData } = useTasks();
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const navItems = [
     { id: 'overview', label: 'Overview', icon: LayoutGrid, count: null },
@@ -30,7 +28,7 @@ export function Sidebar({ activeTab = 'overview', onTabChange }) {
 
   return (
     <>
-      {/* Desktop & Tablet Sidebar */}
+      {/* Desktop & Tablet Navigation Sidebar */}
       <aside className="sidebar desktop-sidebar" aria-label="Main Navigation">
         {/* Brand Header */}
         <div className="sidebar-brand">
@@ -88,7 +86,7 @@ export function Sidebar({ activeTab = 'overview', onTabChange }) {
         </div>
       </aside>
 
-      {/* Mobile Bottom Navigation Bar (Matches Figma Mobile Spec) */}
+      {/* Mobile Bottom Navigation Bar (Matches Figma Mobile Spec 390px) */}
       <nav className="mobile-bottom-nav" aria-label="Mobile Navigation">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -109,6 +107,7 @@ export function Sidebar({ activeTab = 'overview', onTabChange }) {
                 )}
               </div>
               <span className="mobile-label">{item.label}</span>
+              {isActive && <span className="mobile-active-indicator" aria-hidden="true" />}
             </button>
           );
         })}

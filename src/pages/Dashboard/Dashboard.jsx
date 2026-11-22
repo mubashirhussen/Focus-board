@@ -34,7 +34,7 @@ export function Dashboard() {
   return (
     <div className="dashboard-page">
       {/* 1. Dashboard Page Title & New Task CTA Header */}
-      <section className="dashboard-hero">
+      <section className="dashboard-hero" aria-label="Dashboard title and primary action">
         <div className="hero-text-content">
           <h1 className="hero-title">{APP_CONFIG.tagline}</h1>
           <p className="hero-subtitle">{APP_CONFIG.subtitle}</p>
@@ -56,6 +56,7 @@ export function Dashboard() {
 
       {/* 3. Overview Statistics Cards (Derived dynamically from task state) */}
       <section className="overview-stats-section" aria-label="Task statistics overview">
+        <h2 className="stats-section-title">Overview</h2>
         <div className="stats-grid">
           <StatCard
             icon={Layers}
@@ -102,7 +103,7 @@ export function Dashboard() {
       {/* 4. My Tasks Section */}
       <section className="my-tasks-section" aria-label="My tasks list and filters">
         <div className="section-header">
-          <div>
+          <div className="section-header-text">
             <h2 className="section-title">My tasks</h2>
             <p className="section-subtitle">
               Manage, prioritize and stay on top of your work
@@ -115,7 +116,7 @@ export function Dashboard() {
             onClick={openCreateModal}
             aria-label="Create new task"
           >
-            <Plus size={20} />
+            <Plus size={20} strokeWidth={2.5} />
           </button>
         </div>
 

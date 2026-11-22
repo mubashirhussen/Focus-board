@@ -9,6 +9,7 @@
   box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.3), 0 8px 10px -6px rgba(79, 70, 229, 0.2);
   outline: none;
   transition: box-shadow var(--transition-normal);
+  user-select: none;
 }
 
 .focus-notes-carousel:focus-visible {
@@ -28,6 +29,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .focus-notes-meta {
@@ -42,8 +44,8 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.85);
-  background-color: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.9);
+  background-color: rgba(255, 255, 255, 0.16);
   padding: 3px 8px;
   border-radius: var(--radius-sm);
   backdrop-filter: blur(4px);
@@ -52,7 +54,7 @@
 .focus-notes-counter {
   font-size: 0.75rem;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.75);
   letter-spacing: 0.04em;
 }
 
@@ -62,13 +64,46 @@
   color: #ffffff;
   margin-bottom: 4px;
   letter-spacing: -0.015em;
+  line-height: 1.25;
 }
 
 .focus-notes-subtitle {
   font-size: var(--font-size-base);
-  color: rgba(255, 255, 255, 0.82);
+  color: rgba(255, 255, 255, 0.84);
   margin-bottom: var(--space-lg);
   font-weight: 400;
+  line-height: 1.4;
+}
+
+/* Mobile-only inline progress bar (hidden on desktop) */
+.mobile-focus-progress {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: var(--space-md);
+  width: 100%;
+}
+
+.mobile-progress-track {
+  flex: 1;
+  height: 6px;
+  background-color: rgba(255, 255, 255, 0.25);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.mobile-progress-fill {
+  height: 100%;
+  background-color: #ffffff;
+  border-radius: var(--radius-full);
+  transition: width var(--transition-normal);
+}
+
+.mobile-progress-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #ffffff;
+  min-width: 32px;
 }
 
 /* Indicators */
@@ -85,10 +120,11 @@
   border-radius: var(--radius-full);
   transition: all var(--transition-normal);
   padding: 0;
+  cursor: pointer;
 }
 
 .indicator-bar:hover {
-  background-color: rgba(255, 255, 255, 0.6);
+  background-color: rgba(255, 255, 255, 0.65);
 }
 
 .indicator-bar.active {
@@ -131,11 +167,16 @@
   width: 18px;
   height: 18px;
   border-radius: var(--radius-full);
-  background-color: #ecfdf5;
-  color: #059669;
+  background-color: #eff6ff;
+  color: #2563eb;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.floating-check-icon.is-done {
+  background-color: #ecfdf5;
+  color: #059669;
 }
 
 .floating-card-tag {
@@ -201,13 +242,19 @@
   transition: all var(--transition-fast);
 }
 
-.carousel-nav-btn:hover {
+.carousel-nav-btn:hover:not(:disabled) {
   background-color: rgba(255, 255, 255, 0.35);
   transform: scale(1.05);
 }
 
-.carousel-nav-btn:active {
+.carousel-nav-btn:active:not(:disabled) {
   transform: scale(0.95);
+}
+
+.carousel-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 /* Responsive adjustments */
@@ -231,9 +278,9 @@
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 540px) {
   .focus-notes-carousel {
-    padding: 18px 16px;
+    padding: 20px 18px;
   }
 
   .focus-notes-heading {
@@ -242,15 +289,25 @@
 
   .focus-notes-subtitle {
     font-size: var(--font-size-sm);
-    margin-bottom: var(--space-md);
+    margin-bottom: var(--space-sm);
   }
 
   .floating-task-card {
     display: none;
   }
 
+  .mobile-focus-progress {
+    display: flex;
+  }
+
   .focus-notes-right {
+    width: 100%;
     justify-content: flex-end;
-    margin-top: 0;
+    margin-top: var(--space-xs);
+  }
+
+  .carousel-nav-btn {
+    width: 34px;
+    height: 34px;
   }
 }

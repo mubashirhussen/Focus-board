@@ -80,6 +80,7 @@
   gap: var(--space-sm);
   justify-content: flex-start;
   transition: all var(--transition-fast);
+  cursor: pointer;
 }
 
 .nav-button:hover {
@@ -133,6 +134,7 @@
   justify-content: center;
   border: 1px dashed var(--color-border);
   transition: all var(--transition-fast);
+  cursor: pointer;
 }
 
 .sidebar-reset-btn:hover {
@@ -141,7 +143,7 @@
   border-color: #cbd5e1;
 }
 
-/* Mobile Bottom Navigation (Visible only on <= 768px) */
+/* Mobile Bottom Navigation (Matches Figma Mobile Spec 390px) */
 .mobile-bottom-nav {
   display: none;
   position: fixed;
@@ -160,14 +162,18 @@
 
 .mobile-nav-btn {
   flex: 1;
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 3px;
   height: 100%;
+  min-height: 48px;
   color: var(--color-text-muted);
-  padding: 6px 0;
+  padding: 8px 0;
+  cursor: pointer;
+  transition: color var(--transition-fast);
 }
 
 .mobile-icon-wrapper {
@@ -205,6 +211,15 @@
 
 .mobile-nav-btn.active .mobile-label {
   font-weight: var(--font-weight-semibold);
+}
+
+.mobile-active-indicator {
+  position: absolute;
+  bottom: 0;
+  width: 24px;
+  height: 3px;
+  background-color: var(--color-primary);
+  border-radius: var(--radius-full) var(--radius-full) 0 0;
 }
 
 @media (max-width: 768px) {
