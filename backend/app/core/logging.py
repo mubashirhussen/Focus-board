@@ -57,3 +57,5 @@ def setup_logging(level: str = "INFO") -> logging.Logger:
         
     logger.propagate = False
     return logger
+
+logger = logging.getLogger("focusboard")

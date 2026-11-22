@@ -2,24 +2,37 @@ from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 
-class UserBase(BaseModel):
-    name: str = Field(..., min_length=2, max_length=100)
+class UserCreate(BaseModel):
     email: EmailStr
-
-class UserCreate(UserBase):
     password: str = Field(..., min_length=6, max_length=128)
-    role: Optional[str] = "Member"
+    username: Optional[str] = None
+    full_name: Optional[str] = None
+    display_name: Optional[str] = None
+    role: Optional[str] = "member"
+    timezone: Optional[str] = "UTC"
+    locale: Optional[str] = "en"
 
 class UserUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=2, max_length=100)
     email: Optional[EmailStr] = None
+    username: Optional[str] = None
+    full_name: Optional[str] = None
+    display_name: Optional[str] = None
     role: Optional[str] = None
 
-class UserResponse(UserBase):
+class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    role: str
-    is_active: bool
-    created_at: datetime
-    updated_at: datetime
+    email: str
+    username: Optional[str] = None
+    full_name: Optional[str] = None
+    display_name: Optional[str] = None
+    role: str = "member"
+    is_active: bool = True
+    is_verified: bool = False
+    status: str = "active"
+    timezone: Optional[str] = "UTC"
+    locale: Optional[str] = "en"
+    avatar_url: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
