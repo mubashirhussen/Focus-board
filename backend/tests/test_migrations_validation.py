@@ -10,10 +10,12 @@ def test_alembic_migrations_lifecycle():
         os.remove(test_db_file)
 
     try:
-        # Configure Alembic
-        alembic_cfg = Config("backend/alembic.ini")
+        # Configure Alembic dynamically whether run from root or backend/
+        ini_path = "backend/alembic.ini" if os.path.exists("backend/alembic.ini") else "alembic.ini"
+        script_loc = "backend/alembic" if os.path.exists("backend/alembic") else "alembic"
+        alembic_cfg = Config(ini_path)
         alembic_cfg.set_main_option("sqlalchemy.url", f"sqlite:///{test_db_file}")
-        alembic_cfg.set_main_option("script_location", "backend/alembic")
+        alembic_cfg.set_main_option("script_location", script_loc)
 
         # 1. Run migrations upgrade to head
         command.upgrade(alembic_cfg, "head")
@@ -134,6 +136,37 @@ def test_alembic_migrations_lifecycle():
             "analytics_custom_reports",
             "data_quality_rules",
             "data_quality_issues",
+            # Phase 43: Security Intelligence & SOC
+            "security_events",
+            "security_detection_rules",
+            "security_detection_results",
+            "security_alerts",
+            "identity_risk_records",
+            "access_review_campaigns",
+            "access_review_records",
+            "vulnerability_records",
+            "security_posture_assessments",
+            "security_posture_findings",
+            "security_remediations",
+            # Phase 45: Product Lifecycle Intelligence
+            "product_discoveries",
+            "product_ideas",
+            "product_feature_requests",
+            "product_opportunities",
+            "product_prioritization_items",
+            "product_initiatives",
+            "lifecycle_roadmap_items",
+            "roadmap_dependencies",
+            "product_validations",
+            "product_experiments",
+            "experiment_variants",
+            "experiment_assignments",
+            "experiment_events",
+            "product_releases",
+            "product_retrospectives",
+            "product_event_records",
+            "product_decisions",
+            "product_risk_records",
         ]
 
         for table in expected_tables:

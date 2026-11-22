@@ -29,6 +29,8 @@ import AutomationDashboard from '../pages/Automation/AutomationDashboard';
 import IntegrationPlatformDashboard from '../pages/Integrations/IntegrationPlatformDashboard';
 import OperationsConsole from '../pages/Operations/OperationsConsole';
 import DataIntelligenceDashboard from '../pages/DataIntelligence/DataIntelligenceDashboard';
+import SecurityOperationsCenter from '../pages/SecurityOperations/SecurityOperationsCenter';
+import ProductLifecycleWorkspace from '../pages/ProductLifecycle/ProductLifecycleWorkspace';
 import { I18nProvider, useI18n } from '../i18n/I18nContext';
 import OnboardingModal from '../components/Onboarding/OnboardingModal';
 import FeedbackModal from '../components/FeedbackModal/FeedbackModal';
@@ -92,6 +94,10 @@ function AppContent() {
         return 'Platform Observability & Operations Console';
       case 'data-intelligence':
         return 'Data Intelligence, BI & Enterprise Insights';
+      case 'soc':
+        return 'Security Operations Center (SOC) & Zero-Trust Intelligence';
+      case 'product-lifecycle':
+        return 'Product Lifecycle Intelligence & Discovery Platform';
       case 'billing':
         return 'SaaS Plans & Usage Limits';
       case 'intelligence':
@@ -146,6 +152,10 @@ function AppContent() {
         return <OperationsConsole />;
       case 'data-intelligence':
         return <DataIntelligenceDashboard />;
+      case 'soc':
+        return <SecurityOperationsCenter />;
+      case 'product-lifecycle':
+        return <ProductLifecycleWorkspace />;
       case 'billing':
         return <Billing />;
       case 'intelligence':

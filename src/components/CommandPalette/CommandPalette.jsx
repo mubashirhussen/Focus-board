@@ -142,6 +142,20 @@ export function CommandPalette({
       action: () => { onNavigate('data-intelligence'); onClose(); },
     },
     {
+      id: 'nav-soc',
+      category: 'Navigation',
+      label: 'Open Security Operations Center (SOC) & Zero-Trust Intelligence',
+      icon: ShieldAlert,
+      action: () => { onNavigate('soc'); onClose(); },
+    },
+    {
+      id: 'nav-product-lifecycle',
+      category: 'Navigation',
+      label: 'Open Product Lifecycle Intelligence & Demand Hub',
+      icon: Briefcase,
+      action: () => { onNavigate('product-lifecycle'); onClose(); },
+    },
+    {
       id: 'nav-billing',
       category: 'Navigation',
       label: 'View Subscription Plans & Quota Limits',

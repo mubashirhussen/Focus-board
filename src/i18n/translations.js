@@ -11,6 +11,8 @@ export const translations = {
     'nav.integrations': 'Integrations',
     'nav.operations': 'Platform Ops',
     'nav.data_intelligence': 'Data Intelligence',
+    'nav.soc': 'Security SOC',
+    'nav.product_lifecycle': 'Product Lifecycle',
     'nav.billing': 'Plans & Billing',
     'nav.intelligence': 'Intelligence',
     'nav.enterprise': 'Enterprise Admin',

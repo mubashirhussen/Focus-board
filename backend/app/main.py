@@ -46,6 +46,8 @@ from app.api.routes import (
     integration_platform_routes,
     observability_routes,
     data_intelligence_routes,
+    security_intelligence_routes,
+    product_lifecycle_routes,
 )
 
 # Configure structured logging
@@ -164,6 +166,8 @@ app.include_router(automation_routes.router, prefix=settings.API_V1_STR)
 app.include_router(integration_platform_routes.router, prefix=settings.API_V1_STR)
 app.include_router(observability_routes.router, prefix=settings.API_V1_STR)
 app.include_router(data_intelligence_routes.router, prefix=settings.API_V1_STR)
+app.include_router(security_intelligence_routes.router, prefix=f"{settings.API_V1_STR}/security-intelligence")
+app.include_router(product_lifecycle_routes.router, prefix=f"{settings.API_V1_STR}/product-lifecycle")
 
 @app.get("/")
 def root():
