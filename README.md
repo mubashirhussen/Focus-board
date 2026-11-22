@@ -187,17 +187,25 @@ Open `http://localhost:5173` in your browser.
 
 FocusBoard includes comprehensive automated test coverage across all features:
 
-### Backend Pytest Suite (11/11 Passed)
+### Backend Pytest Suite (38/38 Passed)
 ```bash
 cd backend
 $env:PYTHONPATH="backend"
 .\venv\Scripts\pytest tests -v
 ```
-- `test_ai.py`: Priority scoring, daily schedule generation, task breakdown, workload analysis, chat assistant, proposal approval, and prompt injection defense.
-- `test_notifications.py`: Reminder creation, unread count, mark read, preferences, deduplication, and cancellation hooks.
-- `test_collaboration.py`: Workspace creation, cross-workspace security isolation, invitations, project milestones, task assignment, comments, activity feed, and team analytics.
-- `test_tasks.py`: Task CRUD, user isolation enforcement, and `completed_at` lifecycle tracking.
-- `test_auth.py`: Registration, duplicate rejection, login, and profile validation.
+- `test_product_intelligence.py`: Aggregate productivity metrics, pattern detection, ranked insights, task evidence, insight dismissal, feedback rating, and data-grounded AI coach.
+- `test_enterprise_rbac_and_governance.py`: Security policies (MFA, domain restriction, AI governance), custom RBAC role creation and permission evaluation, domain verification tokens, RFC 6238 pure Python TOTP MFA, and compliance audit trail CSV export.
+- `test_saas_billing.py`: Plan tier catalogs, subscription lifecycle, checkout, plan change, cancellation, and tenant usage metering.
+- `test_integrations_and_workflows.py`: Integrations catalog, Google Calendar OAuth connect, workflow trigger/action lifecycle.
+- `test_calendar_sync.py`: Task scheduling, calendar events synchronization, and conflict detection.
+- `test_push_and_pwa.py`: VAPID push keys, browser push subscriptions, and background sync.
+- `test_security_hardening.py`: OWASP headers, audit logging, rate limiting, and GDPR data export/deletion.
+- `test_search.py`: Multi-tenant unified full-text search across tasks, workspaces, and projects.
+- `test_ai.py`: Priority scoring, daily schedule generation, task breakdown, workload analysis, chat assistant, and proposal approval.
+- `test_notifications.py`: Reminder creation, unread count, mark read, preferences, and deduplication.
+- `test_collaboration.py`: Workspace creation, cross-workspace security isolation, invitations, project milestones, and comments.
+- `test_tasks.py`: Task CRUD, user isolation enforcement, and lifecycle tracking.
+- `test_auth.py`: Registration, duplicate rejection, and login.
 - `test_analytics.py`: Aggregate statistics, completion trends, and formula injection sanitization.
 - `test_health.py`: Liveness probe (`/health`), readiness probe (`/ready`), and correlation ID propagation.
 

@@ -12,6 +12,8 @@ import { TeamWorkspace } from '../pages/TeamWorkspace/TeamWorkspace';
 import { CalendarView } from '../pages/Calendar/CalendarView';
 import { Integrations } from '../pages/Integrations/Integrations';
 import { Billing } from '../pages/Billing/Billing';
+import { Intelligence } from '../pages/Intelligence/Intelligence';
+import { Enterprise } from '../pages/Enterprise/Enterprise';
 import { MobileBottomNav } from '../components/Navigation/MobileBottomNav';
 import { AuthModal } from '../components/auth/AuthModal';
 import { CommandPalette } from '../components/CommandPalette/CommandPalette';
@@ -55,6 +57,10 @@ function AppContent() {
         return 'Integrations Hub & Automations';
       case 'billing':
         return 'SaaS Plans & Usage Limits';
+      case 'intelligence':
+        return 'Product Intelligence & Behavioral Insights';
+      case 'enterprise':
+        return 'Enterprise Governance & Security RBAC';
       case 'tasks':
         return 'Task Management';
       case 'settings':
@@ -79,6 +85,10 @@ function AppContent() {
         return <Integrations />;
       case 'billing':
         return <Billing />;
+      case 'intelligence':
+        return <Intelligence />;
+      case 'enterprise':
+        return <Enterprise />;
       default:
         return <Dashboard activeTab={activeTab} />;
     }

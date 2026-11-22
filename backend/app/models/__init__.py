@@ -19,6 +19,14 @@ from app.models.integration import (
 )
 from app.models.workflow import Workflow, WorkflowExecution
 from app.models.push import PushSubscriptionRecord
+from app.models.intelligence import ProductivityEvent, IntelligencePreference, InsightFeedback
+from app.models.enterprise import (
+    OrganizationPolicy,
+    CustomRole,
+    OrganizationDomain,
+    EnterpriseInvitation,
+    UserMFA,
+)
 
 __all__ = [
     "User",
@@ -43,4 +51,12 @@ __all__ = [
     "Workflow",
     "WorkflowExecution",
     "PushSubscriptionRecord",
+    "ProductivityEvent",
+    "IntelligencePreference",
+    "InsightFeedback",
+    "OrganizationPolicy",
+    "CustomRole",
+    "OrganizationDomain",
+    "EnterpriseInvitation",
+    "UserMFA",
 ]

@@ -11,6 +11,8 @@ import {
   HelpCircle,
   Folder,
   Briefcase,
+  Brain,
+  ShieldCheck,
   X,
   ArrowRight,
 } from 'lucide-react';
@@ -114,6 +116,20 @@ export function CommandPalette({
       label: 'View Subscription Plans & Quota Limits',
       icon: Download,
       action: () => { onNavigate('billing'); onClose(); },
+    },
+    {
+      id: 'nav-intelligence',
+      category: 'Navigation',
+      label: 'Open Product Intelligence & AI Insights',
+      icon: Brain,
+      action: () => { onNavigate('intelligence'); onClose(); },
+    },
+    {
+      id: 'nav-enterprise',
+      category: 'Navigation',
+      label: 'Open Enterprise Governance & Security RBAC',
+      icon: ShieldCheck,
+      action: () => { onNavigate('enterprise'); onClose(); },
     },
     {
       id: 'nav-analytics',

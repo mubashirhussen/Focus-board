@@ -28,6 +28,8 @@ from app.api.routes import (
     calendar_routes,
     workflow_routes,
     push_routes,
+    intelligence_routes,
+    enterprise_routes,
 )
 
 # Configure structured logging
@@ -109,6 +111,8 @@ app.include_router(integration_routes.router, prefix=settings.API_V1_STR)
 app.include_router(calendar_routes.router, prefix=settings.API_V1_STR)
 app.include_router(workflow_routes.router, prefix=settings.API_V1_STR)
 app.include_router(push_routes.router, prefix=settings.API_V1_STR)
+app.include_router(intelligence_routes.router, prefix=settings.API_V1_STR)
+app.include_router(enterprise_routes.router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 def root():

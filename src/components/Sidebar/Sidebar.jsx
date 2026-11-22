@@ -8,6 +8,8 @@ import {
   Calendar,
   Layers,
   CreditCard,
+  Brain,
+  ShieldCheck,
   Settings,
   RotateCcw,
 } from 'lucide-react';
@@ -26,6 +28,8 @@ export function Sidebar({ activeTab = 'overview', onTabChange }) {
     { id: 'calendar', label: 'Calendar', icon: Calendar, count: null },
     { id: 'integrations', label: 'Integrations', icon: Layers, count: null },
     { id: 'billing', label: 'Plans & Billing', icon: CreditCard, count: null },
+    { id: 'intelligence', label: 'Intelligence', icon: Brain, count: null },
+    { id: 'enterprise', label: 'Enterprise Admin', icon: ShieldCheck, count: null },
     { id: 'analytics', label: 'Analytics', icon: BarChart2, count: null },
   ];
 

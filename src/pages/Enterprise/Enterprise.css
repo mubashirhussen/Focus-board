@@ -1,0 +1,511 @@
+/* Enterprise Administration & Governance Styles */
+.enterprise-page {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.enterprise-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.enterprise-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #f1f5f9;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  width: fit-content;
+  border: 1px solid #cbd5e1;
+}
+
+.enterprise-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.enterprise-subtitle {
+  margin: 0;
+  font-size: 15px;
+  color: #64748b;
+  max-width: 800px;
+  line-height: 1.5;
+}
+
+.enterprise-alert {
+  padding: 12px 16px;
+  background-color: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Nav Tabs */
+.enterprise-nav-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 8px;
+  overflow-x: auto;
+}
+
+.policies-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.policy-card {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.policy-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.policy-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.policy-icon.mfa {
+  background-color: #fef2f2;
+  color: #ef4444;
+}
+
+.policy-icon.domain {
+  background-color: #eff6ff;
+  color: #3b82f6;
+}
+
+.policy-icon.ai {
+  background-color: #ede9fe;
+  color: #8b5cf6;
+}
+
+.policy-name {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.policy-desc {
+  margin: 6px 0 0 0;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.policy-toggle-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 16px;
+}
+
+.toggle-switch {
+  width: 48px;
+  height: 24px;
+  background-color: #cbd5e1;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.2s ease;
+  padding: 2px;
+}
+
+.toggle-switch.enabled {
+  background-color: #10b981;
+}
+
+.toggle-slider {
+  display: block;
+  width: 20px;
+  height: 20px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+}
+
+.toggle-switch.enabled .toggle-slider {
+  transform: translateX(24px);
+}
+
+.toggle-state {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+}
+
+/* Custom RBAC Roles Layout */
+.roles-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 900px) {
+  .roles-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.roles-list-section,
+.role-form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.roles-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.role-card {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.role-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.role-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.role-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: #4f46e5;
+  background-color: #eef2ff;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.role-desc {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.permissions-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.perm-chip {
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  font-size: 11px;
+  color: #334155;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.role-create-form {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.perm-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 10px;
+}
+
+.perm-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #334155;
+  cursor: pointer;
+}
+
+.perm-checkbox-item code {
+  color: #64748b;
+  font-size: 11px;
+}
+
+/* Domains */
+.domains-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.domain-add-form {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.domain-input-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.domain-input-group input {
+  flex: 1;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 14px;
+}
+
+.domains-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.domain-row {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.domain-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.domain-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.token-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.token-code {
+  background-color: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #475569;
+}
+
+.copy-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+}
+
+.verified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #10b981;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.verify-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* MFA Card */
+.mfa-container {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mfa-setup-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 20px;
+}
+
+.secret-display {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  padding: 10px 14px;
+  border-radius: 6px;
+  width: fit-content;
+}
+
+.recovery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+}
+
+.recovery-code {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  padding: 6px 10px;
+  border-radius: 4px;
+  text-align: center;
+  font-size: 12px;
+}
+
+.mfa-verify-form {
+  display: flex;
+  gap: 10px;
+}
+
+.mfa-verify-form input {
+  width: 140px;
+  font-size: 18px;
+  letter-spacing: 0.2em;
+  text-align: center;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.mfa-enabled-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background-color: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  padding: 20px;
+  border-radius: 10px;
+}
+
+/* Audit Log Card */
+.audit-export-card {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.audit-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #b45309;
+  margin-top: 8px;
+}
+
+.export-audit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #0f172a;
+  color: #ffffff;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.export-audit-btn:hover {
+  background-color: #1e293b;
+}
+
+.primary-btn {
+  background-color: #0f172a;
+  color: #ffffff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primary-btn:hover {
+  background-color: #1e293b;
+}
