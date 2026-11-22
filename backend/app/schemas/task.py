@@ -9,6 +9,9 @@ class TaskBase(BaseModel):
     status: Optional[str] = "Todo"
     priority: Optional[str] = "Medium"
     due_date: Optional[str] = ""
+    start_date: Optional[str] = ""
+    is_all_day: Optional[bool] = False
+    timezone_name: Optional[str] = "UTC"
     scheduled_start: Optional[datetime] = None
     scheduled_end: Optional[datetime] = None
     estimated_duration_minutes: Optional[int] = 30
@@ -31,6 +34,9 @@ class TaskUpdate(BaseModel):
     status: Optional[str] = None
     priority: Optional[str] = None
     due_date: Optional[str] = None
+    start_date: Optional[str] = None
+    is_all_day: Optional[bool] = None
+    timezone_name: Optional[str] = None
     scheduled_start: Optional[datetime] = None
     scheduled_end: Optional[datetime] = None
     estimated_duration_minutes: Optional[int] = None
@@ -112,6 +118,9 @@ class TaskResponse(BaseModel):
     status: str
     priority: str
     due_date: Optional[str] = ""
+    start_date: Optional[str] = ""
+    is_all_day: Optional[bool] = False
+    timezone_name: Optional[str] = "UTC"
     scheduled_start: Optional[datetime] = None
     scheduled_end: Optional[datetime] = None
     estimated_duration_minutes: Optional[int] = 30

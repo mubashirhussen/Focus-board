@@ -18,6 +18,8 @@ from app.schemas.task import (
     TaskReorderRequest,
     TaskSummaryResponse,
 )
+from app.schemas.calendar import TaskDateUpdateRequest, RescheduleTaskRequest
+from app.services.calendar_service import calendar_service
 from app.api.dependencies import get_current_user
 from app.services import task_service
 
@@ -331,3 +333,43 @@ def delete_task_dependency(
         current_user=current_user
     )
     return None
+
+@router.patch("/{task_id}/schedule", response_model=TaskResponse)
+def update_task_schedule(
+    task_id: str,
+    date_req: TaskDateUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Schedule or reschedule a task with start/end time and duration."""
+    req = RescheduleTaskRequest(
+        task_id=task_id,
+        new_start=date_req.scheduled_start,
+        new_end=date_req.scheduled_end,
+        new_due_date=date_req.due_date,
+        new_start_date=date_req.start_date,
+        is_all_day=date_req.is_all_day,
+        duration_minutes=date_req.estimated_duration_minutes,
+        timezone=date_req.timezone or "UTC"
+    )
+    try:
+        calendar_service.reschedule_task(db, current_user, req)
+        task = task_service.get_task_or_404(db, task_id, current_user)
+        return task_service.build_task_response(task)
+    except ValueError as e:
+        msg = str(e)
+        if "not found" in msg.lower():
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=msg)
+        elif "unauthorized" in msg.lower():
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=msg)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=msg)
+
+@router.patch("/{task_id}/dates", response_model=TaskResponse)
+def update_task_dates(
+    task_id: str,
+    date_req: TaskDateUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Update task due date, start date, and all-day setting."""
+    return update_task_schedule(task_id, date_req, db, current_user)

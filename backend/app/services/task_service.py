@@ -182,6 +182,9 @@ def build_task_response(task: Task) -> TaskResponse:
         status=task.status,
         priority=task.priority,
         due_date=task.due_date or "",
+        start_date=getattr(task, "start_date", "") or "",
+        is_all_day=getattr(task, "is_all_day", False) or False,
+        timezone_name=getattr(task, "timezone_name", "UTC") or "UTC",
         scheduled_start=task.scheduled_start,
         scheduled_end=task.scheduled_end,
         estimated_duration_minutes=task.estimated_duration_minutes or 30,
@@ -259,6 +262,9 @@ def create_task(
         status=task_in.status or "Todo",
         priority=task_in.priority or "Medium",
         due_date=task_in.due_date or "",
+        start_date=getattr(task_in, "start_date", "") or "",
+        is_all_day=getattr(task_in, "is_all_day", False) or False,
+        timezone_name=getattr(task_in, "timezone_name", "UTC") or "UTC",
         scheduled_start=task_in.scheduled_start,
         scheduled_end=task_in.scheduled_end,
         estimated_duration_minutes=task_in.estimated_duration_minutes or 30,
@@ -339,6 +345,12 @@ def update_task(
         task.scheduled_end = task_in.scheduled_end
     if task_in.estimated_duration_minutes is not None:
         task.estimated_duration_minutes = task_in.estimated_duration_minutes
+    if getattr(task_in, "is_all_day", None) is not None:
+        task.is_all_day = task_in.is_all_day
+    if getattr(task_in, "start_date", None) is not None:
+        task.start_date = task_in.start_date
+    if getattr(task_in, "timezone_name", None) is not None:
+        task.timezone_name = task_in.timezone_name
 
     # Reassignments & project linkage
     if task_in.project_id is not None:

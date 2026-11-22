@@ -14,6 +14,9 @@ class Task(Base):
     status = Column(String(50), default="Todo", nullable=False, index=True) # Todo, In Progress, Review, Completed, Blocked
     priority = Column(String(50), default="Medium", nullable=False, index=True) # Low, Medium, High, Critical
     due_date = Column(String(50), nullable=True)
+    start_date = Column(String(50), nullable=True)
+    is_all_day = Column(Boolean, default=False, nullable=False)
+    timezone_name = Column(String(50), default="UTC", nullable=True)
     
     # Task Scheduling & Time Blocking (Phase 20)
     scheduled_start = Column(DateTime, nullable=True, index=True)
@@ -52,6 +55,8 @@ class Task(Base):
     assignee = relationship("User", foreign_keys=[assignee_id])
     project = relationship("Project", foreign_keys=[project_id], back_populates="tasks")
     comments = relationship("TaskComment", cascade="all, delete-orphan")
+    reminders = relationship("Reminder", back_populates="task", cascade="all, delete-orphan")
+    recurrence_rule = relationship("TaskRecurrenceRule", back_populates="task", uselist=False, cascade="all, delete-orphan")
     
     # Subtasks hierarchy
     subtasks = relationship(
