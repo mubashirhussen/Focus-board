@@ -51,10 +51,8 @@ export function Sidebar({ activeTab = 'tasks', onTabChange, onOpenFeedback }) {
     { id: 'data-intelligence', label: t('nav.data_intelligence', 'Data Intelligence'), icon: Database, count: null },
     { id: 'soc', label: t('nav.soc', 'Security SOC'), icon: Shield, count: null },
     { id: 'product-lifecycle', label: t('nav.product_lifecycle', 'Product Lifecycle'), icon: Sliders, count: null },
-    { id: 'billing', label: t('nav.billing', 'Plans & Billing'), icon: CreditCard, count: null },
     { id: 'intelligence', label: t('nav.intelligence', 'Intelligence'), icon: Brain, count: null },
     { id: 'enterprise', label: t('nav.enterprise', 'Enterprise Admin'), icon: ShieldCheck, count: null },
-    { id: 'compliance', label: t('nav.compliance', 'Compliance & GRC'), icon: ShieldAlert, count: null },
     { id: 'finance', label: t('nav.finance', 'Financial Intelligence'), icon: DollarSign, count: null },
     { id: 'strategy', label: t('nav.strategy', 'Strategy & Markets'), icon: Compass, count: null },
     { id: 'innovation', label: t('nav.innovation', 'Innovation Lab'), icon: Lightbulb, count: null },
@@ -63,6 +61,7 @@ export function Sidebar({ activeTab = 'tasks', onTabChange, onOpenFeedback }) {
     { id: 'executive', label: t('nav.executive', 'Executive BI'), icon: TrendingUp, count: null },
     { id: 'developer', label: t('nav.developer', 'Developer Platform'), icon: Code, count: null },
     { id: 'analytics', label: t('nav.analytics', 'Analytics'), icon: BarChart2, count: null },
+    { id: 'billing', label: t('nav.billing', 'Plans & Billing'), icon: CreditCard, count: null },
     { id: 'support', label: t('nav.support', 'Support & Help'), icon: HelpCircle, count: null },
   ];
 

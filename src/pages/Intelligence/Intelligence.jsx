@@ -235,10 +235,6 @@ export function Intelligence() {
       {/* Header */}
       <div className="intelligence-header">
         <div className="intelligence-hero">
-          <div className="intelligence-badge">
-            <Brain size={16} />
-            <span>Product Intelligence Engine</span>
-          </div>
           <h1 className="intelligence-title">Adaptive Productivity & Behavioral Analytics</h1>
           <p className="intelligence-subtitle">
             Explainable AI insights, velocity pattern tracking, and grounded coaching powered by your actual task data.

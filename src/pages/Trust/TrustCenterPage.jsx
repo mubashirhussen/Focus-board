@@ -63,9 +63,6 @@ export default function TrustCenterPage() {
       {/* Hero Banner */}
       <div className="trust-hero-section">
         <div className="trust-hero-content">
-          <div className="status-live-badge">
-            <span className="live-dot" /> All Security Controls Operational
-          </div>
           <h1 className="trust-hero-title">FocusBoard Trust Center</h1>
           <p className="trust-hero-desc">
             Continuous enterprise security verification, compliance readiness frameworks (SOC 2, ISO 27001, GDPR), and zero-trust multi-tenant isolation.

@@ -184,13 +184,6 @@ export function CommandPalette({
       action: () => { onNavigate('developer'); onClose(); },
     },
     {
-      id: 'nav-compliance',
-      category: 'Navigation',
-      label: 'Open Security Compliance, SOC 2 / ISO Controls & Risks',
-      icon: ShieldAlert,
-      action: () => { onNavigate('compliance'); onClose(); },
-    },
-    {
       id: 'nav-finance',
       category: 'Navigation',
       label: 'Open SaaS Financial Intelligence, MRR & FinOps',

@@ -324,10 +324,6 @@ export function AIAssistant() {
       {/* Top Header */}
       <div className="ai-header">
         <div className="ai-header-titles">
-          <span className="ai-sparkle-badge">
-            <Sparkles size={13} />
-            <span>AI PRODUCTIVITY INTELLIGENCE</span>
-          </span>
           <h1 className="ai-title">Task Planning & Productivity Assistant</h1>
           <p className="ai-subtitle">
             Intelligent daily workload planning, transparent priority scoring, and proposal-based workflow execution.
@@ -577,8 +573,8 @@ export function AIAssistant() {
       {activeTab === 'priorities' && (
         <div className="ai-priorities-view">
           <div className="priorities-header">
-            <h3>Deterministic Priority Scoring</h3>
-            <p>
+            <h3 className="priorities-heading">Deterministic Priority Scoring</h3>
+            <p className="priorities-subheading">
               Scores are calculated transparently (0–100) using Base Priority + Overdue/Due-Date Urgency + Active Momentum.
             </p>
           </div>
@@ -592,36 +588,49 @@ export function AIAssistant() {
               <table className="priorities-table">
                 <thead>
                   <tr>
-                    <th>Task Assignment</th>
-                    <th>Score</th>
-                    <th>Urgency</th>
-                    <th>Current</th>
-                    <th>Suggested</th>
-                    <th>Rationale & Suggested Action</th>
+                    <th className="th-task">Task Assignment</th>
+                    <th className="th-score">Score</th>
+                    <th className="th-urgency">Urgency</th>
+                    <th className="th-priority">Current</th>
+                    <th className="th-priority">Suggested</th>
+                    <th className="th-rationale">Rationale & Suggested Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {priorities.map((item) => (
                     <tr key={item.task_id}>
                       <td className="task-title-cell">
-                        <strong>{item.title}</strong>
-                        {item.due_date && <span className="due-tag">Due: {item.due_date}</span>}
+                        <span className="priority-task-title">{item.title}</span>
+                        {item.due_date && (
+                          <span className="priority-due-pill">
+                            <Clock size={11} />
+                            <span>Due: {item.due_date}</span>
+                          </span>
+                        )}
                       </td>
-                      <td>
-                        <span className="score-badge">{item.priority_score}/100</span>
+                      <td className="score-cell">
+                        <span className={`score-badge ${item.priority_score >= 70 ? 'score-high' : item.priority_score >= 40 ? 'score-med' : 'score-low'}`}>
+                          {item.priority_score}/100
+                        </span>
                       </td>
-                      <td>
+                      <td className="urgency-cell">
                         <span className={`urgency-pill ${item.urgency.toLowerCase()}`}>{item.urgency}</span>
                       </td>
-                      <td>{item.current_priority}</td>
-                      <td>
-                        <strong className={item.suggested_priority === 'High' ? 'text-urgent' : ''}>
+                      <td className="current-cell">
+                        <span className={`priority-text-badge ${item.current_priority.toLowerCase()}`}>
+                          {item.current_priority}
+                        </span>
+                      </td>
+                      <td className="suggested-cell">
+                        <span className={`suggested-text-badge ${item.suggested_priority.toLowerCase()}`}>
                           {item.suggested_priority}
-                        </strong>
+                        </span>
                       </td>
                       <td className="rationale-cell">
-                        <p>{item.reason}</p>
-                        <span className="action-hint">Action: {item.suggested_action}</span>
+                        <div className="rationale-text">{item.reason}</div>
+                        <div className="action-hint">
+                          <span className="action-hint-label">Action:</span> {item.suggested_action}
+                        </div>
                       </td>
                     </tr>
                   ))}

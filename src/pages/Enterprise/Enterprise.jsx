@@ -300,10 +300,6 @@ export function Enterprise() {
     <div className="enterprise-page">
       {/* Hero Header */}
       <div className="enterprise-header">
-        <div className="enterprise-badge">
-          <ShieldCheck size={16} />
-          <span>Enterprise Administration & Governance</span>
-        </div>
         <h1 className="enterprise-title">Security Policies, Custom RBAC & Compliance</h1>
         <p className="enterprise-subtitle">
           Manage organizational security guardrails, fine-grained access control, verified corporate domains, and immutable compliance audit logs.
