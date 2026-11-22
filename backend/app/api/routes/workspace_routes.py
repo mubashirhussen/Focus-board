@@ -45,6 +45,11 @@ def verify_membership(db: Session, workspace_id: int, user_id: int, allowed_role
     ).first()
 
     if not member:
+        ws = db.query(Workspace).filter(Workspace.id == workspace_id).first()
+        if ws and ws.owner_id == user_id:
+            member = WorkspaceMember(workspace_id=workspace_id, user_id=user_id, role="OWNER")
+
+    if not member:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied: You are not a member of this workspace."

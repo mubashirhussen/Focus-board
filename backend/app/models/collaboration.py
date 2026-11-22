@@ -53,21 +53,12 @@ class WorkspaceInvitation(Base):
     workspace = relationship("Workspace")
     inviter = relationship("User", foreign_keys=[inviter_id])
 
-class Project(Base):
-    __tablename__ = "projects"
-
-    id = Column(Integer, primary_key=True, index=True)
-    workspace_id = Column(Integer, ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False, index=True)
-    name = Column(String(100), nullable=False)
-    description = Column(Text, nullable=True)
-    status = Column(String(20), default="ACTIVE", nullable=False)  # ACTIVE, COMPLETED, ARCHIVED
-    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
-    deadline = Column(String(50), nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
-    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
-
-    workspace = relationship("Workspace", back_populates="projects")
-    creator = relationship("User", foreign_keys=[created_by])
+from app.models.project import (
+    Project,
+    ProjectMember,
+    ProjectTemplate,
+    ProjectDependency,
+)
 
 class TaskComment(Base):
     __tablename__ = "task_comments"

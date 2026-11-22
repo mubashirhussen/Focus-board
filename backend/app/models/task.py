@@ -33,6 +33,7 @@ class Task(Base):
     # Relationships
     user = relationship("User", foreign_keys=[user_id], back_populates="tasks")
     assignee = relationship("User", foreign_keys=[assignee_id])
+    project = relationship("Project", foreign_keys=[project_id], back_populates="tasks")
     comments = relationship("TaskComment", cascade="all, delete-orphan")
 
     # Composite indexes for multi-tenant query performance

@@ -17,7 +17,7 @@ from app.api.routes.auth_routes import get_current_user
 from app.core.logging import logger
 from app.core.security import generate_secure_token, hash_token
 from app.db.session import get_db
-from app.models.collaboration import Workspace
+from app.models.collaboration import Workspace, WorkspaceMember
 from app.models.organization import Organization, OrganizationMember, OrganizationInvitation
 from app.models.user import User
 from app.schemas.organization import (
@@ -563,6 +563,15 @@ def create_organization_workspace(
         is_active=True,
     )
     db.add(ws)
+    db.flush()
+
+    ws_member = WorkspaceMember(
+        workspace_id=ws.id,
+        user_id=current_user.id,
+        role="OWNER",
+        joined_at=datetime.utcnow(),
+    )
+    db.add(ws_member)
     db.commit()
     db.refresh(ws)
 

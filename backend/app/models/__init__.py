@@ -12,11 +12,16 @@ from app.models.organization import (
 )
 from app.models.task import Task
 from app.models.notification import Notification, NotificationPreference
+from app.models.project import (
+    Project,
+    ProjectMember,
+    ProjectTemplate,
+    ProjectDependency,
+)
 from app.models.collaboration import (
     Workspace,
     WorkspaceMember,
     WorkspaceInvitation,
-    Project,
     TaskComment,
     Activity,
 )
