@@ -37,6 +37,8 @@ from app.api.routes import (
     enterprise_analytics_routes,
     developer_routes,
     public_api_routes,
+    security_compliance_routes,
+    financial_intelligence_routes,
 )
 
 # Configure structured logging
@@ -146,6 +148,8 @@ app.include_router(enterprise_analytics_routes.router, prefix=settings.API_V1_ST
 app.include_router(developer_routes.router, prefix=settings.API_V1_STR)
 app.include_router(public_api_routes.router, prefix=settings.API_V1_STR)
 app.include_router(public_api_routes.router)  # Direct /public/v1/... access support
+app.include_router(security_compliance_routes.router, prefix=settings.API_V1_STR)
+app.include_router(financial_intelligence_routes.router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 def root():

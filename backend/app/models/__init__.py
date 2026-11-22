@@ -61,6 +61,24 @@ from app.models.developer_platform import (
     APIUsageRecord,
     IdempotencyRecord,
 )
+from app.models.security_compliance import (
+    ComplianceControl,
+    ComplianceEvidence,
+    SecurityPolicy,
+    PolicyAcknowledgment,
+    SecurityRiskItem,
+    SecurityIncident,
+    SecurityVendor,
+    PrivacyRequest,
+    TrustCenterDocument,
+)
+from app.models.financial_intelligence import (
+    FinancialTransaction,
+    FinancialMetricSnapshot,
+    CostRecord,
+    FinancialBudget,
+    FinancialForecast,
+)
 
 __all__ = [
     "User",
@@ -117,4 +135,18 @@ __all__ = [
     "WebhookDelivery",
     "APIUsageRecord",
     "IdempotencyRecord",
+    "ComplianceControl",
+    "ComplianceEvidence",
+    "SecurityPolicy",
+    "PolicyAcknowledgment",
+    "SecurityRiskItem",
+    "SecurityIncident",
+    "SecurityVendor",
+    "PrivacyRequest",
+    "TrustCenterDocument",
+    "FinancialTransaction",
+    "FinancialMetricSnapshot",
+    "CostRecord",
+    "FinancialBudget",
+    "FinancialForecast",
 ]

@@ -19,6 +19,9 @@ import {
   Globe,
   TrendingUp,
   Code,
+  DollarSign,
+  ShieldAlert,
+  Lock,
 } from 'lucide-react';
 import { searchApi } from '../../services/searchApi';
 import { userPrivacyApi } from '../../services/userPrivacyApi';
@@ -148,6 +151,27 @@ export function CommandPalette({
       label: 'Open Developer Platform, Public API & Webhooks',
       icon: Code,
       action: () => { onNavigate('developer'); onClose(); },
+    },
+    {
+      id: 'nav-compliance',
+      category: 'Navigation',
+      label: 'Open Security Compliance, SOC 2 / ISO Controls & Risks',
+      icon: ShieldAlert,
+      action: () => { onNavigate('compliance'); onClose(); },
+    },
+    {
+      id: 'nav-finance',
+      category: 'Navigation',
+      label: 'Open SaaS Financial Intelligence, MRR & FinOps',
+      icon: DollarSign,
+      action: () => { onNavigate('finance'); onClose(); },
+    },
+    {
+      id: 'nav-trust',
+      category: 'Navigation',
+      label: 'Open FocusBoard Public Trust Center',
+      icon: Lock,
+      action: () => { onNavigate('trust'); onClose(); },
     },
     {
       id: 'nav-analytics',

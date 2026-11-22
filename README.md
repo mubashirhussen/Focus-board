@@ -26,6 +26,8 @@ Originally initiated as a high-fidelity frontend based on Figma design specifica
 - **Phase 31**: Global SaaS Platform, Internationalization (i18n), Localization (l10n), Multi-Currency, Timezones & RTL Layouts
 - **Phase 32**: Enterprise Intelligence, Business Analytics, Executive Dashboards, Predictive Insights & Decision Systems
 - **Phase 33**: SaaS Developer Platform, Scoped API Keys, Versioned Public API, Webhooks Engine & Python/TS SDKs
+- **Phase 34**: Enterprise Security, Compliance Readiness, SOC 2 / ISO 27001 Controls, Privacy Governance & Trust Center
+- **Phase 35**: SaaS Financial Intelligence, Normalized MRR/ARR, Customer Churn/Retention, Unit Economics & FinOps Direct Costs
 
 ---
 
@@ -280,6 +282,11 @@ python scripts/load_test.py --base-url http://localhost:8000 --requests 100 --co
 - [PERFORMANCE_REPORT.md](file:///c:/Users/Mubashirhussensk/OneDrive/Desktop/first_mobile/PERFORMANCE_REPORT.md)
 - [RELIABILITY_REPORT.md](file:///c:/Users/Mubashirhussensk/OneDrive/Desktop/first_mobile/RELIABILITY_REPORT.md)
 - Operational Runbooks in [RUNBOOKS/](file:///c:/Users/Mubashirhussensk/OneDrive/Desktop/first_mobile/RUNBOOKS/)
+
+### Enterprise Security, Governance & Financial Intelligence
+- [SECURITY_GOVERNANCE.md](file:///c:/Users/Mubashirhussensk/OneDrive/Desktop/first_mobile/docs/SECURITY_GOVERNANCE.md)
+- [TRUST_CENTER_GUIDE.md](file:///c:/Users/Mubashirhussensk/OneDrive/Desktop/first_mobile/docs/TRUST_CENTER_GUIDE.md)
+- [FINANCIAL_INTELLIGENCE.md](file:///c:/Users/Mubashirhussensk/OneDrive/Desktop/first_mobile/docs/FINANCIAL_INTELLIGENCE.md)
 
 ### CI/CD & Production Infrastructure
 - [TESTING_STRATEGY.md](file:///c:/Users/Mubashirhussensk/OneDrive/Desktop/first_mobile/TESTING_STRATEGY.md)

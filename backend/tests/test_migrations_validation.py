@@ -67,6 +67,20 @@ def test_alembic_migrations_lifecycle():
             "webhook_deliveries",
             "api_usage_records",
             "idempotency_records",
+            "compliance_controls",
+            "compliance_evidences",
+            "security_policies",
+            "policy_acknowledgments",
+            "security_risk_items",
+            "security_incidents",
+            "security_vendors",
+            "privacy_requests",
+            "trust_center_documents",
+            "financial_transactions",
+            "financial_metric_snapshots",
+            "cost_records",
+            "financial_budgets",
+            "financial_forecasts",
         ]
 
         for table in expected_tables:

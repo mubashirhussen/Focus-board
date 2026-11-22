@@ -19,6 +19,9 @@ import AIAgentWorkspace from '../pages/AIAgents/AIAgentWorkspace';
 import RegionalSettingsPage from '../pages/Settings/RegionalSettingsPage';
 import ExecutiveDashboard from '../pages/Executive/ExecutiveDashboard';
 import DeveloperPortal from '../pages/Developer/DeveloperPortal';
+import SecurityComplianceDashboard from '../pages/Security/SecurityComplianceDashboard';
+import FinancialDashboard from '../pages/Finance/FinancialDashboard';
+import TrustCenterPage from '../pages/Trust/TrustCenterPage';
 import { I18nProvider, useI18n } from '../i18n/I18nContext';
 import OnboardingModal from '../components/Onboarding/OnboardingModal';
 import FeedbackModal from '../components/FeedbackModal/FeedbackModal';
@@ -86,6 +89,12 @@ function AppContent() {
         return 'Executive Business Intelligence & Portfolio Analytics';
       case 'developer':
         return 'Developer Platform, Public API & Webhooks';
+      case 'compliance':
+        return 'Enterprise Security, Compliance & GRC';
+      case 'finance':
+        return 'SaaS Financial Intelligence, FinOps & Profitability';
+      case 'trust':
+        return 'FocusBoard Enterprise Trust Center';
       case 'support':
         return 'Customer Operations & Support';
       case 'tasks':
@@ -122,6 +131,12 @@ function AppContent() {
         return <ExecutiveDashboard />;
       case 'developer':
         return <DeveloperPortal />;
+      case 'compliance':
+        return <SecurityComplianceDashboard />;
+      case 'finance':
+        return <FinancialDashboard />;
+      case 'trust':
+        return <TrustCenterPage />;
       case 'support':
         return <SupportPortal />;
       case 'settings':
