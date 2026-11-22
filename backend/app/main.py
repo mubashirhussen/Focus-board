@@ -56,6 +56,7 @@ from app.api.routes import (
     view_routes,
     filter_routes,
     reminder_routes,
+    team_routes,
 )
 
 # Configure structured, sensitive-data-safe logging
@@ -182,6 +183,7 @@ app.include_router(board_routes.router, prefix=settings.API_V1_STR)
 app.include_router(view_routes.router, prefix=settings.API_V1_STR)
 app.include_router(filter_routes.router, prefix=settings.API_V1_STR)
 app.include_router(reminder_routes.router, prefix=settings.API_V1_STR)
+app.include_router(team_routes.router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 def root():
