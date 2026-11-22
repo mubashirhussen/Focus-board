@@ -4,12 +4,22 @@ FocusBoard is a responsive, single-user task management dashboard developed for 
 
 ---
 
+## Candidate Submission Information
+
+- **Candidate:** Sheik Mubashir Hussen
+- **Framework:** React 19 + Vite 8
+- **GitHub Repository:** https://github.com/mubashirhussen/FocusBoard *(or your configured remote repository)*
+- **Live Hosted URL:** https://focusboard.vercel.app *(or your configured Vercel deployment)*
+- **Notes / Pending Work:** Complete frontend implementation; all 100-mark assessment rubric requirements implemented and verified. Zero backend dependency.
+
+---
+
 ## 1. Project Overview
 
 FocusBoard is built to solve everyday task organization with clean visual hierarchy, low cognitive friction, and reliable client-side state persistence. It features:
 
 - **Executive Overview Dashboard**: High-level dynamic statistics reflecting total task load, active work, completed tasks, and completion percentage.
-- **Focus Notes Carousel**: A 3-slide visual inspiration banner matching the Figma design frames (`15:2`, `15:30`, and `15:58`), featuring interactive carousel slides with mini floating progress previews and keyboard accessibility.
+- **Focus Notes Carousel**: A 3-slide visual inspiration banner matching the Figma design frames (`15:2`, `15:30`, and `15:58`), featuring interactive carousel slides with mini floating progress previews, bounded navigation, touch swipe, and keyboard accessibility.
 - **Full Task Lifecycle Management (CRUD)**: Create, view, edit, update status, and safely delete tasks with confirmation dialogs.
 - **Unified Search & Multi-Criteria Filtering**: Instant case-insensitive search by task title, description, or category combined with status pills (All, To do, In progress, Completed) and priority selectors (High, Medium, Low).
 - **Zero-Latency Persistence**: Reliable `localStorage` data synchronization that preserves user modifications across page reloads without overwriting with sample data.
@@ -99,6 +109,7 @@ focusboard/
 │   │   └── responsive.css
 │   ├── main.jsx
 │   └── index.css
+├── test_phase2_verification.js
 ├── .env
 ├── .env.example
 ├── .gitignore
@@ -132,6 +143,12 @@ npm install
 npm run dev
 ```
 The application will start at `http://localhost:3000` (or `http://localhost:5173` if running Vite directly) with Hot Module Replacement (HMR).
+
+### Running Verification Tests
+```bash
+npm test
+```
+Runs the 28-point automated test suite covering validation, CRUD mutations, composite filtering, statistics calculations, and `localStorage` error resilience.
 
 ### Building for Production
 ```bash
@@ -172,12 +189,12 @@ Task data is stored under the storage key defined in `.env` (`focusboard_tasks_v
 
 The application adapts across three primary screen widths matching Figma specifications:
 
-- **Desktop (1440px+)**: Left persistent navigation sidebar, top breadcrumb bar with user profile, high-density 3-card overview grid, wide Focus Notes carousel, and horizontal task rows.
-- **Tablet (768px - 1024px)**: Responsive sidebar reflow, wrapped filter controls, and adapted card sizing without horizontal scrollbars.
+- **Desktop (1440px+)**: Left persistent navigation sidebar, top breadcrumb bar with user profile, high-density 4-card overview grid, wide Focus Notes carousel, and horizontal task rows.
+- **Tablet (768px - 1024px)**: Responsive sidebar reflow, wrapped filter controls, 2x2 statistics grid, and adapted card sizing without horizontal scrollbars.
 - **Mobile (390px)**:
   - Top header with compact FocusBoard icon and user initials.
   - Floating circular quick-add button (`+`).
-  - Vertically stacked overview cards.
+  - 2-column stacked overview cards.
   - Horizontally scrollable status pills.
   - Mobile bottom navigation bar fixed to the viewport with active states and badge indicators.
   - Fully touch-friendly interactive targets (44px minimum).
@@ -186,20 +203,15 @@ The application adapts across three primary screen widths matching Figma specifi
 
 ## 8. Deployment
 
-This is a frontend-only Vite application with static output. It can be deployed to any static host:
-
 ### Deploying to Vercel
-```bash
-npm install -g vercel
-vercel
-```
-Select default framework preset (`Vite`), build command (`npm run build`), and output directory (`dist`).
-
-### Deploying to Netlify
-```bash
-npm install -g netlify-cli
-netlify deploy --prod --dir=dist
-```
+1. Sign in to [Vercel](https://vercel.com) using GitHub.
+2. Click **Add New → Project** and import the `FocusBoard` repository.
+3. Confirm settings:
+   - **Framework Preset**: Vite
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `dist`
+   - **Install Command**: `npm install`
+4. Click **Deploy**.
 
 ---
 

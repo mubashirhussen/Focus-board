@@ -1,5 +1,11 @@
 # AI Usage Disclosure & Code Understanding
 
+**Candidate:** Sheik Mubashir Hussen  
+**Project:** FocusBoard — Responsive Task Management Dashboard  
+**Framework:** React 19 + Vite 8  
+
+---
+
 ## 1. AI Tools Used
 - **Antigravity AI Assistant** (powered by Google DeepMind Gemini models)
 
@@ -9,13 +15,15 @@
 1. *"Act as a senior frontend engineer and product UI developer. Implement a complete, polished, responsive, functional frontend for FocusBoard, based on the provided Frontend Trainee Assignment PDF and the linked live Figma design references."*
 2. *"Inspect the live Figma thumbnail and extract exact copy, active indicator styling, progress bars, and floating card treatments for Focus Notes slides 1, 2, and 3."*
 3. *"Construct a robust React Context and custom useLocalStorage hook that avoids stale derived states and never overrides existing user tasks on page refresh."*
+4. *"Implement composite task filtering where title/description search, status tabs, and priority dropdown compose conjunctively without duplicating state."*
 
 ---
 
 ## 3. AI-Assisted Areas
-- **Asset & Layout Extraction**: Parsing the Figma thumbnail and PDF specifications to extract exact card dimensions, color palettes (`#4F46E5`, `#6366F1`, `#ECFDF5`, `#FEF3C7`), typography scales, and slide copy.
+- **Asset & Layout Extraction**: Parsing the Figma thumbnail and assignment PDF specifications to extract exact card dimensions, color palettes (`#4F46E5`, `#6366F1`, `#ECFDF5`, `#FEF3C7`), typography scales, and slide copy.
 - **Boilerplate & CSS System Architecture**: Generating modular, well-structured CSS design variables (`variables.css`, `typography.css`, `global.css`, `responsive.css`) with consistent 8pt-based spacing.
 - **Form Validation & Keyboard Accessibility**: Writing ARIA attributes, modal focus trapping, Escape key handlers, and live input validation for the task creation and edit dialog.
+- **Automated Verification Suite**: Generating the 28-point automated test script (`test_phase2_verification.js`) ensuring mathematical safety, storage fallback handling, and immutable state updates.
 
 ---
 
@@ -34,3 +42,4 @@ The application follows a unidirectional data flow:
 2. Any component can dispatch atomic actions (`addTask`, `updateTask`, `deleteTask`, `updateTaskStatus`).
 3. Derived states (`stats`, `filteredTasks`) compute synchronously on every state transition, ensuring cards and rows remain in sync.
 4. UI components are purely presentational or connected through clean custom hooks (`useTasks`), keeping JSX clean, accessible, and easily testable.
+5. All 28 automated verification tests were personally inspected and confirmed passing via `npm test`.
