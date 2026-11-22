@@ -468,3 +468,371 @@
     align-items: flex-start;
   }
 }
+
+/* Upgrade Modal Backdrop & Dialog */
+.billing-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background-color: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: billingFadeIn 0.2s ease-out;
+}
+
+@keyframes billingFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.billing-modal-card {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  max-width: 580px;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  animation: billingSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes billingSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.billing-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.modal-subtitle {
+  display: block;
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.btn-modal-close {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  padding: 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.btn-modal-close:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+/* Modal Form & Plan Pill Banner */
+.billing-modal-form {
+  padding: 20px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.upgrade-plan-pill-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.pill-banner-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pill-banner-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #4f46e5;
+  letter-spacing: 0.5px;
+}
+
+.pill-banner-name {
+  font-size: 16px;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.pill-banner-price {
+  text-align: right;
+}
+
+.pill-price-val {
+  font-size: 20px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.pill-price-sub {
+  font-size: 12px;
+  color: #64748b;
+  margin-left: 2px;
+}
+
+/* Payment Method Tabs */
+.payment-method-selector-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  background: #f8fafc;
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.pay-tab-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.pay-tab-btn.active {
+  background: #ffffff;
+  color: #4f46e5;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Payment Form Fields */
+.payment-fields-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px;
+}
+
+.form-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.form-field-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.modal-text-input,
+.modal-select-input {
+  width: 100%;
+  padding: 10px 13px;
+  font-size: 13px;
+  color: #0f172a;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  outline: none;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+}
+
+.modal-text-input:focus,
+.modal-select-input:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+
+.form-field-row-split {
+  display: flex;
+  gap: 12px;
+}
+
+.field-hint-text {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* Security Guarantee Footer Notice */
+.modal-security-guarantee {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 12px 14px;
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 9px;
+  font-size: 12px;
+  color: #166534;
+  line-height: 1.45;
+}
+
+/* Modal Actions Footer */
+.modal-actions-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 6px;
+}
+
+.btn-modal-cancel {
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #475569;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-modal-cancel:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+.btn-modal-primary {
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  background-color: #4f46e5;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-modal-primary:hover:not(:disabled) {
+  background-color: #4338ca;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+}
+
+.btn-modal-primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Success View */
+.upgrade-success-view {
+  padding: 28px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 14px;
+}
+
+.success-icon-wrap {
+  width: 68px;
+  height: 68px;
+  background-color: #ecfdf5;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.success-heading {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #065f46;
+}
+
+.success-subtext {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+  max-width: 440px;
+  line-height: 1.5;
+}
+
+.success-receipt-box {
+  width: 100%;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  margin: 8px 0;
+  box-sizing: border-box;
+}
+
+.receipt-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: #334155;
+}
+
+.receipt-label {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.receipt-val {
+  color: #0f172a;
+}
+
+.receipt-val.code-font {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  background: #e2e8f0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+}

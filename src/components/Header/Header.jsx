@@ -6,9 +6,6 @@ import { NotificationBell } from '../notifications/NotificationBell';
 import './Header.css';
 
 export function Header({ title = 'Task Management', onOpenCommandPalette }) {
-  const isMac = typeof navigator !== 'undefined' && navigator.platform?.toUpperCase().indexOf('MAC') >= 0;
-  const shortcutLabel = isMac ? '⌘K' : 'Ctrl+K';
-
   return (
     <header className="app-header" role="banner">
       {/* Desktop breadcrumb */}
@@ -36,11 +33,10 @@ export function Header({ title = 'Task Management', onOpenCommandPalette }) {
           type="button"
           className="header-cmd-trigger"
           onClick={onOpenCommandPalette}
-          aria-label={`Open Command Palette (${shortcutLabel})`}
+          aria-label="Open Command Palette"
         >
           <Search size={14} className="cmd-trigger-icon" />
           <span className="cmd-trigger-text">Search & commands...</span>
-          <kbd className="cmd-trigger-badge">{shortcutLabel}</kbd>
         </button>
 
         <NotificationBell />
