@@ -1,6 +1,7 @@
 import { api } from './api.js';
 
 export const aiApi = {
+  // Existing / Assistant Core Methods
   getPriorities: async () => {
     return api.get('/ai/priorities');
   },
@@ -27,10 +28,15 @@ export const aiApi = {
     return api.get('/ai/workload-analysis');
   },
 
-  chat: async (message, history = []) => {
+  chat: async (message, history = [], options = {}) => {
     return api.post('/ai/chat', {
       message,
       history,
+      conversation_id: options.conversationId,
+      workspace_id: options.workspaceId,
+      project_id: options.projectId,
+      provider: options.provider,
+      model: options.model,
     });
   },
 
@@ -40,5 +46,72 @@ export const aiApi = {
       task_id: taskId,
       payload,
     });
+  },
+
+  // Conversation Management Methods (Phase B13)
+  createConversation: async (data = {}) => {
+    return api.post('/ai/conversations', data);
+  },
+
+  getConversations: async (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return api.get(`/ai/conversations${q ? `?${q}` : ''}`);
+  },
+
+  getConversation: async (conversationId) => {
+    return api.get(`/ai/conversations/${conversationId}`);
+  },
+
+  updateConversation: async (conversationId, data) => {
+    return api.patch(`/ai/conversations/${conversationId}`, data);
+  },
+
+  deleteConversation: async (conversationId) => {
+    return api.delete(`/ai/conversations/${conversationId}`);
+  },
+
+  getMessages: async (conversationId, params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return api.get(`/ai/conversations/${conversationId}/messages${q ? `?${q}` : ''}`);
+  },
+
+  // Task Intelligence Methods (Phase B13)
+  generateTaskDescription: async (data) => {
+    return api.post('/ai/tasks/generate-description', data);
+  },
+
+  decomposeTask: async (data) => {
+    return api.post('/ai/tasks/decompose', data);
+  },
+
+  planTask: async (data) => {
+    return api.post('/ai/tasks/plan', data);
+  },
+
+  createTaskAssist: async (data) => {
+    return api.post('/ai/tasks/create-assist', data);
+  },
+
+  // Project Intelligence Methods (Phase B13)
+  getProjectSummary: async (projectId) => {
+    return api.get(`/ai/projects/${projectId}/summary`);
+  },
+
+  planProject: async (data) => {
+    return api.post('/ai/projects/plan', data);
+  },
+
+  getProjectRiskAnalysis: async (projectId) => {
+    return api.get(`/ai/projects/${projectId}/risk-analysis`);
+  },
+
+  // Analytics & Usage Methods (Phase B13)
+  interpretAnalytics: async (data = {}) => {
+    return api.post('/ai/analytics/interpret', data);
+  },
+
+  getUsage: async (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return api.get(`/ai/usage${q ? `?${q}` : ''}`);
   },
 };

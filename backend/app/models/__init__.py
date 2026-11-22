@@ -67,6 +67,11 @@ from app.models.ai_agent import (
     AIAgentApproval,
     AIPersistentPreference,
 )
+from app.models.ai_conversation import (
+    AIConversation,
+    AIMessage,
+    AIUsageLog,
+)
 from app.models.regional_settings import UserRegionalSetting
 from app.models.enterprise_analytics import (
     ProjectMilestone,
@@ -255,6 +260,9 @@ __all__ = [
     "AIAgentExecutionStep",
     "AIAgentApproval",
     "AIPersistentPreference",
+    "AIConversation",
+    "AIMessage",
+    "AIUsageLog",
     "UserRegionalSetting",
     "ProjectMilestone",
     "ProjectRisk",

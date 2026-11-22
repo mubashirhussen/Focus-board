@@ -51,12 +51,25 @@ class Settings(BaseSettings):
         "http://127.0.0.1:3000",
     ]
 
-    # AI Configuration (Phase 14)
-    AI_PROVIDER: str = "mock"  # "mock" | "gemini" | "openai"
+    # AI Configuration (Phase 14 & B13)
+    AI_PROVIDER: str = "mock"  # "mock" | "gemini" | "openai" | "anthropic"
     AI_API_KEY: Optional[str] = None
     AI_MODEL: str = "gemini-1.5-flash"
     AI_TIMEOUT_SECONDS: int = 30
     AI_MAX_OUTPUT_TOKENS: int = 2048
+    AI_TEMPERATURE: float = 0.3
+    
+    OPENAI_API_KEY: Optional[str] = None
+    OPENAI_MODEL: str = "gpt-4o-mini"
+    
+    GEMINI_API_KEY: Optional[str] = None
+    GEMINI_MODEL: str = "gemini-1.5-flash"
+    
+    ANTHROPIC_API_KEY: Optional[str] = None
+    ANTHROPIC_MODEL: str = "claude-3-5-sonnet-20241022"
+    
+    AI_COST_PER_1K_INPUT_CENTS: float = 0.015
+    AI_COST_PER_1K_OUTPUT_CENTS: float = 0.06
 
     # Email & Notifications Configuration (Phase 15)
     SMTP_HOST: str = "localhost"

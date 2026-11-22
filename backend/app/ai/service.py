@@ -1,11 +1,21 @@
-from datetime import datetime, timezone
 import uuid
+import json
+import logging
+from datetime import datetime, date, timedelta, timezone
 from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
+from sqlalchemy import or_, and_, desc, func
 
 from app.core.config import settings
+from app.models.user import User
 from app.models.task import Task
-from app.ai.schemas import (
+from app.models.project import Project
+from app.models.collaboration import Workspace, WorkspaceMember, Activity
+from app.models.ai_conversation import AIConversation, AIMessage, AIUsageLog
+from app.schemas.ai import (
+    DailyPlanRequest,
+    DailyPlanResponse,
+    PlannedTaskItem,
     TaskBreakdownRequest,
     TaskBreakdownResponse,
     SubtaskProposal,
@@ -14,114 +24,989 @@ from app.ai.schemas import (
     ChatResponse,
     ActionProposal,
     ApproveActionRequest,
+    AIConversationCreate,
+    AIConversationUpdate,
+    AIConversationResponse,
+    AIMessageResponse,
+    TaskDescriptionRequest,
+    TaskDescriptionResponse,
+    TaskDecomposeRequest,
+    TaskDecomposeResponse,
+    DecomposedSubtask,
+    TaskPlanRequest,
+    TaskPlanResponse,
+    TaskPlanStep,
+    TaskCreateAssistRequest,
+    TaskCreateAssistResponse,
+    ProjectSummaryResponse,
+    ProjectPlanRequest,
+    ProjectPlanResponse,
+    ProjectPlanPhase,
+    ProjectRiskResponse,
+    ProjectRiskItem,
+    AnalyticsInterpretRequest,
+    AnalyticsInterpretResponse,
+    AIUsageSummaryResponse,
+    AIUsageLogItem,
+)
+from app.ai.providers import get_llm_provider, LLMResponse
+from app.ai.context_engine import context_engine
+from app.ai.safety import check_prompt_safety, sanitize_user_input, sanitize_ai_output, parse_and_validate_json
+from app.ai.prompts import (
+    SYSTEM_ASSISTANT_PROMPT,
+    TASK_DESCRIPTION_PROMPT,
+    TASK_DECOMPOSITION_PROMPT,
+    TASK_PLAN_PROMPT,
+    TASK_CREATE_ASSIST_PROMPT,
+    PROJECT_SUMMARY_PROMPT,
+    PROJECT_PLAN_PROMPT,
+    PROJECT_RISK_PROMPT,
+    ANALYTICS_INTERPRET_PROMPT,
 )
 from app.ai.prioritizer import prioritize_tasks
-from app.ai.safety import check_prompt_safety, sanitize_user_input
+from app.services.analytics_service import analytics_service
+
+logger = logging.getLogger("focusboard.ai.service")
+
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
 
 class AIService:
     def __init__(self):
-        self.provider = settings.AI_PROVIDER
+        self.provider_name = settings.AI_PROVIDER
 
+    # -------------------------------------------------------------
+    # Usage Tracking Helper
+    # -------------------------------------------------------------
+    def record_usage(
+        self,
+        db: Session,
+        user_id: int,
+        feature: str,
+        llm_res: LLMResponse,
+        organization_id: Optional[int] = None,
+        workspace_id: Optional[int] = None,
+        conversation_id: Optional[str] = None,
+        status: str = "SUCCESS",
+        error_message: Optional[str] = None,
+    ) -> AIUsageLog:
+        cost = (
+            (llm_res.input_tokens / 1000.0) * settings.AI_COST_PER_1K_INPUT_CENTS +
+            (llm_res.output_tokens / 1000.0) * settings.AI_COST_PER_1K_OUTPUT_CENTS
+        )
+        log = AIUsageLog(
+            user_id=user_id,
+            organization_id=organization_id,
+            workspace_id=workspace_id,
+            conversation_id=conversation_id,
+            feature=feature,
+            provider=llm_res.provider,
+            model=llm_res.model,
+            prompt_tokens=llm_res.input_tokens,
+            completion_tokens=llm_res.output_tokens,
+            total_tokens=llm_res.total_tokens,
+            estimated_cost_cents=round(cost, 4),
+            latency_ms=llm_res.latency_ms,
+            status=status,
+            error_message=error_message,
+            created_at=utc_now(),
+        )
+        db.add(log)
+        try:
+            db.commit()
+            db.refresh(log)
+        except Exception:
+            db.rollback()
+        return log
+
+    # -------------------------------------------------------------
+    # Conversation Lifecycle
+    # -------------------------------------------------------------
+    def create_conversation(
+        self,
+        db: Session,
+        current_user: User,
+        data: AIConversationCreate,
+    ) -> AIConversation:
+        """Create a persistent conversation thread scoped to the user."""
+        title = data.title or f"Chat {datetime.now().strftime('%b %d, %H:%M')}"
+        conv = AIConversation(
+            user_id=current_user.id,
+            organization_id=getattr(current_user, "organization_id", None),
+            workspace_id=data.workspace_id,
+            project_id=data.project_id,
+            title=title,
+            context_type=data.context_type,
+            context_id=data.context_id,
+            status="ACTIVE",
+            is_archived=False,
+            created_at=utc_now(),
+            updated_at=utc_now(),
+        )
+        db.add(conv)
+        db.commit()
+        db.refresh(conv)
+        return conv
+
+    def list_conversations(
+        self,
+        db: Session,
+        current_user: User,
+        workspace_id: Optional[int] = None,
+        is_archived: bool = False,
+        limit: int = 20,
+        skip: int = 0,
+    ) -> List[AIConversation]:
+        query = db.query(AIConversation).filter(
+            AIConversation.user_id == current_user.id,
+            AIConversation.is_archived == is_archived,
+        )
+        if workspace_id:
+            query = query.filter(AIConversation.workspace_id == workspace_id)
+
+        return query.order_by(desc(AIConversation.updated_at)).offset(skip).limit(limit).all()
+
+    def get_conversation(
+        self,
+        db: Session,
+        current_user: User,
+        conversation_id: str,
+    ) -> Optional[AIConversation]:
+        return db.query(AIConversation).filter(
+            AIConversation.id == conversation_id,
+            AIConversation.user_id == current_user.id,
+        ).first()
+
+    def update_conversation(
+        self,
+        db: Session,
+        current_user: User,
+        conversation_id: str,
+        data: AIConversationUpdate,
+    ) -> AIConversation:
+        conv = self.get_conversation(db, current_user, conversation_id)
+        if not conv:
+            raise ValueError("Conversation not found")
+
+        if data.title is not None:
+            conv.title = data.title.strip()
+        if data.is_archived is not None:
+            conv.is_archived = data.is_archived
+            conv.status = "ARCHIVED" if data.is_archived else "ACTIVE"
+
+        conv.updated_at = utc_now()
+        db.commit()
+        db.refresh(conv)
+        return conv
+
+    def delete_conversation(
+        self,
+        db: Session,
+        current_user: User,
+        conversation_id: str,
+    ) -> bool:
+        conv = self.get_conversation(db, current_user, conversation_id)
+        if not conv:
+            return False
+        db.delete(conv)
+        db.commit()
+        return True
+
+    def get_conversation_messages(
+        self,
+        db: Session,
+        current_user: User,
+        conversation_id: str,
+        limit: int = 50,
+        skip: int = 0,
+    ) -> List[AIMessage]:
+        conv = self.get_conversation(db, current_user, conversation_id)
+        if not conv:
+            raise ValueError("Conversation not found")
+
+        return (
+            db.query(AIMessage)
+            .filter(AIMessage.conversation_id == conversation_id)
+            .order_by(AIMessage.created_at.asc())
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+
+    # -------------------------------------------------------------
+    # Context-Aware AI Chat
+    # -------------------------------------------------------------
+    def chat_with_assistant(
+        self,
+        db: Session,
+        current_user: User,
+        req: ChatRequest,
+    ) -> ChatResponse:
+        """
+        Interactive productivity chat assistant grounded in transactional database records.
+        Evaluates user intent against actual tasks, detects safety issues,
+        emits ActionProposals, and records persistent messages & token usage.
+        """
+        user_message = sanitize_user_input(req.message)
+
+        if not check_prompt_safety(user_message):
+            return ChatResponse(
+                reply="I detected a safety conflict with your prompt. Please ask a productivity or task-related question.",
+                task_references=[],
+                proposed_actions=[]
+            )
+
+        # 1. Resolve or create persistent conversation if requested
+        conv = None
+        if req.conversation_id:
+            conv = self.get_conversation(db, current_user, req.conversation_id)
+        if not conv and req.conversation_id is None:
+            # Auto-provision persistent conversation
+            conv = self.create_conversation(
+                db, current_user, AIConversationCreate(
+                    title=user_message[:40] + ("..." if len(user_message) > 40 else ""),
+                    workspace_id=req.workspace_id,
+                    project_id=req.project_id
+                )
+            )
+
+        # 2. Retrieve authorized real-time context
+        context_data = context_engine.assemble_context(
+            db=db,
+            current_user=current_user,
+            workspace_id=req.workspace_id,
+            project_id=req.project_id
+        )
+        context_str = context_engine.format_context_string(context_data)
+
+        # 3. Assemble chat history
+        history_msgs = []
+        if conv:
+            past_msgs = (
+                db.query(AIMessage)
+                .filter(AIMessage.conversation_id == conv.id)
+                .order_by(AIMessage.created_at.desc())
+                .limit(6)
+                .all()
+            )
+            for m in reversed(past_msgs):
+                history_msgs.append({"role": m.role, "content": m.content})
+        elif req.history:
+            for h in req.history[-6:]:
+                history_msgs.append({"role": h.role, "content": h.content})
+
+        # 4. Invoke Provider
+        llm = get_llm_provider(req.provider, model_name=req.model)
+        full_prompt = f"{context_str}\n\nUser Question: {user_message}"
+
+        llm_res = llm.generate(
+            prompt=full_prompt,
+            system_prompt=SYSTEM_ASSISTANT_PROMPT,
+            messages=history_msgs,
+            temperature=settings.AI_TEMPERATURE,
+            max_tokens=settings.AI_MAX_OUTPUT_TOKENS,
+        )
+
+        reply_text = sanitize_ai_output(llm_res.content)
+
+        # 5. Extract referenced tasks and build action proposals
+        task_refs: List[str] = []
+        proposed_actions: List[ActionProposal] = []
+        today_str = date.today().strftime("%Y-%m-%d")
+
+        active_tasks = context_data["tasks_summary"]["recent_active_tasks"]
+        msg_lower = user_message.lower()
+
+        for t in active_tasks:
+            if t["title"].lower() in reply_text.lower() or t["title"].lower() in msg_lower:
+                task_refs.append(t["title"])
+
+        # Check for proposal triggers in reply or user prompt
+        if "reschedule" in msg_lower or "overdue" in msg_lower:
+            overdue_list = context_data["tasks_summary"]["overdue_sample"]
+            for ov in overdue_list[:2]:
+                proposed_actions.append(ActionProposal(
+                    proposal_id=f"prop-{uuid.uuid4().hex[:8]}",
+                    action_type="reschedule",
+                    task_id=str(ov["id"]),
+                    description=f"Reschedule overdue '{ov['title']}' to today ({today_str})",
+                    payload={"due_date": today_str}
+                ))
+
+        if "priorit" in msg_lower or "urgent" in msg_lower:
+            for t in active_tasks:
+                if t["priority"] != "High":
+                    proposed_actions.append(ActionProposal(
+                        proposal_id=f"prop-{uuid.uuid4().hex[:8]}",
+                        action_type="update_priority",
+                        task_id=str(t["id"]),
+                        description=f"Promote '{t['title']}' to High priority",
+                        payload={"priority": "High"}
+                    ))
+                    break
+
+        # 6. Persist messages and usage
+        msg_id = None
+        if conv:
+            # User message
+            u_msg = AIMessage(
+                conversation_id=conv.id,
+                role="user",
+                content=user_message,
+                created_at=utc_now(),
+            )
+            # Assistant message
+            a_msg = AIMessage(
+                conversation_id=conv.id,
+                role="assistant",
+                content=reply_text,
+                model=llm_res.model,
+                provider=llm_res.provider,
+                tokens_input=llm_res.input_tokens,
+                tokens_output=llm_res.output_tokens,
+                total_tokens=llm_res.total_tokens,
+                task_references_json=json.dumps(task_refs),
+                proposed_actions_json=json.dumps([p.model_dump() for p in proposed_actions]),
+                created_at=utc_now(),
+            )
+            db.add(u_msg)
+            db.add(a_msg)
+            conv.updated_at = utc_now()
+            db.commit()
+            db.refresh(a_msg)
+            msg_id = a_msg.id
+
+        # Record usage
+        self.record_usage(
+            db=db,
+            user_id=current_user.id,
+            feature="chat",
+            llm_res=llm_res,
+            organization_id=getattr(current_user, "organization_id", None),
+            workspace_id=req.workspace_id,
+            conversation_id=conv.id if conv else None,
+        )
+
+        return ChatResponse(
+            reply=reply_text,
+            conversation_id=conv.id if conv else None,
+            message_id=msg_id,
+            task_references=list(set(task_refs)),
+            proposed_actions=proposed_actions,
+            tokens_used=llm_res.total_tokens,
+            provider=llm_res.provider,
+            model=llm_res.model,
+        )
+
+    # -------------------------------------------------------------
+    # Task Intelligence Operations
+    # -------------------------------------------------------------
+    def generate_task_description(
+        self,
+        db: Session,
+        current_user: User,
+        req: TaskDescriptionRequest,
+    ) -> TaskDescriptionResponse:
+        title = sanitize_user_input(req.task_title)
+        category = req.category or "Engineering"
+        user_context = req.context or ""
+
+        llm = get_llm_provider()
+        prompt = (
+            f"Generate structured task description and acceptance criteria for:\n"
+            f"Task Title: {title}\nCategory: {category}\nContext: {user_context}"
+        )
+
+        llm_res = llm.generate(
+            prompt=prompt,
+            system_prompt=TASK_DESCRIPTION_PROMPT,
+            temperature=0.3,
+            json_mode=True,
+        )
+
+        self.record_usage(db, current_user.id, "task_description", llm_res)
+
+        data = parse_and_validate_json(llm_res.content, {
+            "description": f"Deliver core scope for '{title}' conforming to quality and technical requirements.",
+            "acceptance_criteria": [
+                "Module logic implemented and tested.",
+                "Edge cases and error handling validated."
+            ],
+            "labels": [category.lower(), "ai-generated"]
+        })
+
+        desc_text = data.get("description") or f"Execution scope for {title}."
+        criteria = data.get("acceptance_criteria") or ["Core requirements met."]
+        labels = data.get("labels") or [category.lower()]
+
+        return TaskDescriptionResponse(
+            task_title=title,
+            generated_description=desc_text,
+            acceptance_criteria=criteria,
+            suggested_labels=labels,
+        )
+
+    def decompose_task(
+        self,
+        db: Session,
+        current_user: User,
+        req: TaskDecomposeRequest,
+    ) -> TaskDecomposeResponse:
+        title = sanitize_user_input(req.task_title)
+        category = req.category or "Engineering"
+
+        llm = get_llm_provider()
+        prompt = f"Decompose task: '{title}' in category '{category}'. Description: '{req.task_description or ''}'"
+
+        llm_res = llm.generate(
+            prompt=prompt,
+            system_prompt=TASK_DECOMPOSITION_PROMPT,
+            json_mode=True,
+        )
+        self.record_usage(db, current_user.id, "task_decompose", llm_res)
+
+        parsed = parse_and_validate_json(llm_res.content, {
+            "subtasks": [
+                {
+                    "title": f"Plan and scope {title}",
+                    "description": "Outline requirements and milestones.",
+                    "estimated_minutes": 30,
+                    "priority": "Medium",
+                    "order": 1,
+                    "acceptance_criteria": "Scope documented."
+                },
+                {
+                    "title": f"Execute core implementation for {title}",
+                    "description": "Construct primary deliverables.",
+                    "estimated_minutes": 90,
+                    "priority": "High",
+                    "order": 2,
+                    "acceptance_criteria": "Implementation complete."
+                },
+                {
+                    "title": f"Verify and finalize {title}",
+                    "description": "Test and inspect final output.",
+                    "estimated_minutes": 45,
+                    "priority": "Medium",
+                    "order": 3,
+                    "acceptance_criteria": "Verification passes."
+                }
+            ],
+            "summary": f"Decomposed {title} into structured subtasks."
+        })
+
+        subtask_items = []
+        for s in parsed.get("subtasks", []):
+            subtask_items.append(DecomposedSubtask(
+                title=s.get("title", "Subtask"),
+                description=s.get("description", ""),
+                estimated_minutes=int(s.get("estimated_minutes", 45)),
+                priority=s.get("priority", "Medium"),
+                order=int(s.get("order", 1)),
+                acceptance_criteria=s.get("acceptance_criteria", "Completed satisfactorily.")
+            ))
+
+        return TaskDecomposeResponse(
+            task_title=title,
+            subtasks=subtask_items,
+            summary=parsed.get("summary", f"Generated {len(subtask_items)} subtasks."),
+        )
+
+    def plan_task(
+        self,
+        db: Session,
+        current_user: User,
+        req: TaskPlanRequest,
+    ) -> TaskPlanResponse:
+        title = sanitize_user_input(req.task_title)
+        llm = get_llm_provider()
+        prompt = f"Create action plan for task: '{title}' ({req.category})"
+
+        llm_res = llm.generate(prompt=prompt, system_prompt=TASK_PLAN_PROMPT, json_mode=True)
+        self.record_usage(db, current_user.id, "task_plan", llm_res)
+
+        parsed = parse_and_validate_json(llm_res.content, {
+            "steps": [
+                {"order": 1, "action": "Review prerequisites and gather assets", "estimated_minutes": 30, "checkpoint": "Readiness confirmed"},
+                {"order": 2, "action": "Execute primary deliverable work", "estimated_minutes": 90, "checkpoint": "Core functionality operational"},
+                {"order": 3, "action": "Quality verification and review", "estimated_minutes": 45, "checkpoint": "All criteria met"}
+            ],
+            "estimated_total_minutes": 165,
+            "potential_blockers": ["Dependencies pending review", "Resource contention"],
+            "recommended_focus": "Maintain dedicated 90-minute deep work block for step 2."
+        })
+
+        steps = [
+            TaskPlanStep(
+                order=int(s.get("order", 1)),
+                action=s.get("action", ""),
+                estimated_minutes=int(s.get("estimated_minutes", 30)),
+                checkpoint=s.get("checkpoint", "")
+            )
+            for s in parsed.get("steps", [])
+        ]
+
+        return TaskPlanResponse(
+            task_title=title,
+            steps=steps,
+            estimated_total_minutes=int(parsed.get("estimated_total_minutes", sum(s.estimated_minutes for s in steps))),
+            potential_blockers=parsed.get("potential_blockers", []),
+            recommended_focus=parsed.get("recommended_focus", "Focus on primary execution."),
+        )
+
+    def create_task_assist(
+        self,
+        db: Session,
+        current_user: User,
+        req: TaskCreateAssistRequest,
+    ) -> TaskCreateAssistResponse:
+        prompt_text = sanitize_user_input(req.user_prompt)
+        llm = get_llm_provider()
+        prompt = f"Convert this work request into a structured task: '{prompt_text}'"
+
+        llm_res = llm.generate(prompt=prompt, system_prompt=TASK_CREATE_ASSIST_PROMPT, json_mode=True)
+        self.record_usage(db, current_user.id, "task_create_assist", llm_res)
+
+        parsed = parse_and_validate_json(llm_res.content, {
+            "title": prompt_text[:60],
+            "description": prompt_text,
+            "category": "Engineering",
+            "priority": "Medium",
+            "estimated_minutes": 60,
+            "suggested_deadline_days": 3,
+            "acceptance_criteria": ["Deliverable tested and deployed"],
+            "labels": ["ai-assisted"]
+        })
+
+        return TaskCreateAssistResponse(
+            suggested_title=parsed.get("title", prompt_text[:60]),
+            suggested_description=parsed.get("description", prompt_text),
+            category=parsed.get("category", "Engineering"),
+            priority=parsed.get("priority", "Medium"),
+            estimated_minutes=int(parsed.get("estimated_minutes", 60)),
+            suggested_deadline_days=int(parsed.get("suggested_deadline_days", 3)),
+            acceptance_criteria=parsed.get("acceptance_criteria", []),
+            labels=parsed.get("labels", []),
+        )
+
+    # -------------------------------------------------------------
+    # Project Intelligence Operations
+    # -------------------------------------------------------------
+    def get_project_summary(
+        self,
+        db: Session,
+        current_user: User,
+        project_id: int,
+    ) -> ProjectSummaryResponse:
+        project = db.query(Project).filter(Project.id == project_id, Project.is_deleted == False).first()
+        if not project:
+            raise ValueError("Project not found")
+
+        tasks = db.query(Task).filter(Task.project_id == project_id, Task.is_deleted == False).all()
+        total_t = len(tasks)
+        comp_t = sum(1 for t in tasks if (t.status or "").lower() == "completed")
+        today_str = date.today().strftime("%Y-%m-%d")
+        overdue_t = sum(1 for t in tasks if (t.status or "").lower() != "completed" and t.due_date and t.due_date < today_str)
+        rate = round((comp_t / total_t) * 100, 1) if total_t > 0 else 0.0
+
+        llm = get_llm_provider()
+        context_prompt = (
+            f"Project: {project.name}\n"
+            f"Status: {project.status}, Health: {project.health}, Priority: {project.priority}\n"
+            f"Tasks: {total_t} total, {comp_t} completed ({rate}%), {overdue_t} overdue.\n"
+            f"Description: {project.description or 'No description'}\n\n"
+            "Summarize this project's execution status, schedule adherence, and next actions."
+        )
+
+        llm_res = llm.generate(prompt=context_prompt, system_prompt=PROJECT_SUMMARY_PROMPT)
+        self.record_usage(db, current_user.id, "project_summary", llm_res)
+
+        summary_text = sanitize_ai_output(llm_res.content)
+        highlights = [
+            f"{comp_t} of {total_t} tasks completed ({rate}% completion rate)",
+            f"{overdue_t} overdue tasks requiring deadline review" if overdue_t > 0 else "All tasks currently on track without overdue items",
+            f"Project operational health categorized as {project.health.lower()}",
+        ]
+        recommendations = [
+            "Prioritize closing any overdue tasks in the active sprint.",
+            "Maintain regular standup updates to prevent dependency blockages."
+        ]
+
+        return ProjectSummaryResponse(
+            project_id=project.id,
+            project_name=project.name,
+            health=project.health,
+            progress_percent=rate,
+            total_tasks=total_t,
+            completed_tasks=comp_t,
+            overdue_tasks=overdue_t,
+            executive_summary=summary_text,
+            key_highlights=highlights,
+            recommended_actions=recommendations,
+        )
+
+    def generate_project_plan(
+        self,
+        db: Session,
+        current_user: User,
+        req: ProjectPlanRequest,
+    ) -> ProjectPlanResponse:
+        name = req.name or "New Project Initiative"
+        desc = req.description or ""
+        days = req.target_timeline_days or 30
+
+        llm = get_llm_provider()
+        prompt = f"Plan project '{name}' over {days} days. Details: '{desc}'"
+
+        llm_res = llm.generate(prompt=prompt, system_prompt=PROJECT_PLAN_PROMPT, json_mode=True)
+        self.record_usage(db, current_user.id, "project_plan", llm_res)
+
+        parsed = parse_and_validate_json(llm_res.content, {
+            "objectives": ["Establish baseline requirements", "Deliver core functionality", "Conduct end-to-end verification"],
+            "phases": [
+                {
+                    "name": "Phase 1: Discovery & Architecture",
+                    "suggested_duration_days": int(days * 0.25),
+                    "suggested_tasks": ["Define requirements", "Set up repo and base architecture"],
+                    "risk_factors": ["Unclear specifications"]
+                },
+                {
+                    "name": "Phase 2: Core Implementation",
+                    "suggested_duration_days": int(days * 0.5),
+                    "suggested_tasks": ["Implement service modules", "Integrate APIs and data models"],
+                    "risk_factors": ["Scope expansion"]
+                },
+                {
+                    "name": "Phase 3: Testing & Launch",
+                    "suggested_duration_days": int(days * 0.25),
+                    "suggested_tasks": ["Run regression tests", "Deploy to production"],
+                    "risk_factors": ["Deployment delays"]
+                }
+            ],
+            "estimated_total_days": days
+        })
+
+        phases = [
+            ProjectPlanPhase(
+                name=p.get("name", "Phase"),
+                suggested_duration_days=int(p.get("suggested_duration_days", 7)),
+                suggested_tasks=p.get("suggested_tasks", []),
+                risk_factors=p.get("risk_factors", [])
+            )
+            for p in parsed.get("phases", [])
+        ]
+
+        return ProjectPlanResponse(
+            project_name=name,
+            objectives=parsed.get("objectives", []),
+            phases=phases,
+            estimated_total_days=int(parsed.get("estimated_total_days", days)),
+        )
+
+    def analyze_project_risk(
+        self,
+        db: Session,
+        current_user: User,
+        project_id: int,
+    ) -> ProjectRiskResponse:
+        project = db.query(Project).filter(Project.id == project_id, Project.is_deleted == False).first()
+        if not project:
+            raise ValueError("Project not found")
+
+        tasks = db.query(Task).filter(Task.project_id == project_id, Task.is_deleted == False).all()
+        total_t = len(tasks)
+        comp_t = sum(1 for t in tasks if (t.status or "").lower() == "completed")
+        today_str = date.today().strftime("%Y-%m-%d")
+        overdue_t = sum(1 for t in tasks if (t.status or "").lower() != "completed" and t.due_date and t.due_date < today_str)
+
+        llm = get_llm_provider()
+        prompt = (
+            f"Analyze risks for project: {project.name}\n"
+            f"Total tasks: {total_t}, Completed: {comp_t}, Overdue: {overdue_t}\n"
+            f"Health: {project.health}, Status: {project.status}"
+        )
+
+        llm_res = llm.generate(prompt=prompt, system_prompt=PROJECT_RISK_PROMPT, json_mode=True)
+        self.record_usage(db, current_user.id, "project_risk", llm_res)
+
+        parsed = parse_and_validate_json(llm_res.content, {
+            "risk_level": "Moderate" if overdue_t > 0 else "Low",
+            "risk_score": 6.0 if overdue_t > 0 else 2.5,
+            "summary": f"Project has {overdue_t} overdue task(s) among {total_t} total assignments.",
+            "identified_risks": [
+                {
+                    "severity": "High" if overdue_t > 2 else "Medium",
+                    "category": "Schedule Slippage",
+                    "description": f"{overdue_t} overdue tasks impact milestone delivery.",
+                    "mitigation_strategy": "Reschedule low-urgency tasks and reassign blockers."
+                }
+            ],
+            "recommended_actions": [
+                "Re-estimate overdue tasks and update sprint commitments.",
+                "Review dependency bottlenecks in weekly sync."
+            ]
+        })
+
+        risks = [
+            ProjectRiskItem(
+                severity=r.get("severity", "Medium"),
+                category=r.get("category", "General"),
+                description=r.get("description", ""),
+                mitigation_strategy=r.get("mitigation_strategy", "")
+            )
+            for r in parsed.get("identified_risks", [])
+        ]
+
+        return ProjectRiskResponse(
+            project_id=project.id,
+            project_name=project.name,
+            risk_level=parsed.get("risk_level", "Moderate"),
+            risk_score=float(parsed.get("risk_score", 5.0)),
+            summary=parsed.get("summary", "Risk assessment completed."),
+            identified_risks=risks,
+            recommended_actions=parsed.get("recommended_actions", []),
+        )
+
+    # -------------------------------------------------------------
+    # Analytics Interpretation
+    # -------------------------------------------------------------
+    def interpret_analytics(
+        self,
+        db: Session,
+        current_user: User,
+        req: AnalyticsInterpretRequest,
+    ) -> AnalyticsInterpretResponse:
+        summary = analytics_service.get_dashboard_summary(
+            db, current_user, workspace_id=req.workspace_id, project_id=req.project_id
+        )
+        deadlines = analytics_service.get_deadline_analytics(
+            db, current_user, workspace_id=req.workspace_id, project_id=req.project_id
+        )
+
+        llm = get_llm_provider()
+        prompt = (
+            f"Interpret metrics:\n"
+            f"Total: {summary.total}, Completed: {summary.completed} ({summary.completion_rate}%), "
+            f"In Progress: {summary.in_progress}, Overdue: {summary.overdue}, Due Today: {summary.due_today}\n"
+            f"Deadline Risk Score: {deadlines.deadline_risk_score}/10, Completion Rate: {summary.completion_rate}%"
+        )
+
+        llm_res = llm.generate(prompt=prompt, system_prompt=ANALYTICS_INTERPRET_PROMPT)
+        self.record_usage(db, current_user.id, "analytics_interpret", llm_res)
+
+        summary_text = sanitize_ai_output(llm_res.content)
+
+        return AnalyticsInterpretResponse(
+            summary=summary_text,
+            completion_velocity_assessment=f"Completion rate is {summary.completion_rate}% with {summary.completed} completed tasks.",
+            workload_distribution_assessment=f"Active pipeline holds {summary.in_progress} in-progress and {summary.todo} pending items.",
+            identified_bottlenecks=[f"{summary.overdue} tasks are overdue"] if summary.overdue > 0 else ["No overdue bottlenecks detected"],
+            recommendations=[
+                "Maintain consistent daily focus blocks",
+                "Re-evaluate deadlines for high-priority items"
+            ],
+        )
+
+    # -------------------------------------------------------------
+    # Action Approval & Execution
+    # -------------------------------------------------------------
+    def execute_approved_action(
+        self,
+        db: Session,
+        user_id: int,
+        req: ApproveActionRequest,
+    ) -> Dict[str, Any]:
+        """
+        Safely execute an AI-proposed action explicitly accepted by the user.
+        Validates ownership, updates data models, and records activity audit.
+        """
+        action_type = req.action_type
+        task_id = req.task_id
+
+        if action_type in ("update_priority", "reschedule") and task_id:
+            task = db.query(Task).filter(Task.id == task_id).first()
+            if not task:
+                raise ValueError("Task not found or access denied.")
+
+            # Validate authorization (owner or assignee)
+            if task.user_id != user_id and task.assignee_id != user_id:
+                raise ValueError("Unauthorized to modify this task.")
+
+            if action_type == "update_priority" and "priority" in req.payload:
+                old_prio = task.priority
+                task.priority = req.payload["priority"]
+                task.updated_at = utc_now()
+                # Log activity
+                act = Activity(
+                    workspace_id=task.workspace_id,
+                    project_id=task.project_id,
+                    task_id=str(task.id),
+                    actor_id=user_id,
+                    event_type="AI_ACTION_EXECUTED",
+                    description=f"AI action: Changed priority from {old_prio} to {task.priority}",
+                    created_at=utc_now(),
+                )
+                db.add(act)
+                db.commit()
+                return {"status": "success", "message": f"Updated task priority to {task.priority}."}
+
+            if action_type == "reschedule" and "due_date" in req.payload:
+                old_due = task.due_date
+                task.due_date = req.payload["due_date"]
+                task.updated_at = utc_now()
+                act = Activity(
+                    workspace_id=task.workspace_id,
+                    project_id=task.project_id,
+                    task_id=str(task.id),
+                    actor_id=user_id,
+                    event_type="AI_ACTION_EXECUTED",
+                    description=f"AI action: Rescheduled due date from {old_due} to {task.due_date}",
+                    created_at=utc_now(),
+                )
+                db.add(act)
+                db.commit()
+                return {"status": "success", "message": f"Rescheduled task due date to {task.due_date}."}
+
+        elif action_type == "create_subtask":
+            sub_title = req.payload.get("title", "").strip()
+            if not sub_title:
+                raise ValueError("Subtask title is required.")
+
+            new_task = Task(
+                id=f"task-{int(datetime.now(timezone.utc).timestamp()*1000)}-{uuid.uuid4().hex[:6]}",
+                title=sub_title,
+                description=req.payload.get("description", ""),
+                category=req.payload.get("category", "Design"),
+                status="Todo",
+                priority=req.payload.get("priority", "Medium"),
+                due_date=req.payload.get("due_date", ""),
+                workspace_id=req.payload.get("workspace_id"),
+                project_id=req.payload.get("project_id"),
+                parent_task_id=task_id,
+                user_id=user_id,
+                created_at=utc_now(),
+                updated_at=utc_now(),
+            )
+            db.add(new_task)
+            act = Activity(
+                workspace_id=new_task.workspace_id,
+                project_id=new_task.project_id,
+                task_id=str(new_task.id),
+                actor_id=user_id,
+                event_type="AI_ACTION_EXECUTED",
+                description=f"AI action: Created subtask '{new_task.title}'",
+                created_at=utc_now(),
+            )
+            db.add(act)
+            db.commit()
+            db.refresh(new_task)
+            return {"status": "success", "message": f"Created subtask '{new_task.title}'.", "task_id": new_task.id}
+
+        raise ValueError(f"Unsupported action type: {action_type}")
+
+    # -------------------------------------------------------------
+    # Usage and Cost Summary
+    # -------------------------------------------------------------
+    def get_usage_summary(
+        self,
+        db: Session,
+        current_user: User,
+        workspace_id: Optional[int] = None,
+        days: int = 30,
+    ) -> AIUsageSummaryResponse:
+        since = utc_now() - timedelta(days=days)
+        query = db.query(AIUsageLog).filter(
+            AIUsageLog.user_id == current_user.id,
+            AIUsageLog.created_at >= since,
+        )
+        if workspace_id:
+            query = query.filter(AIUsageLog.workspace_id == workspace_id)
+
+        logs = query.order_by(desc(AIUsageLog.created_at)).all()
+
+        total_reqs = len(logs)
+        total_toks = sum(l.total_tokens for l in logs)
+        total_p_toks = sum(l.prompt_tokens for l in logs)
+        total_c_toks = sum(l.completion_tokens for l in logs)
+        total_cost = sum(l.estimated_cost_cents for l in logs)
+
+        feat_counts: Dict[str, int] = {}
+        prov_counts: Dict[str, int] = {}
+
+        for l in logs:
+            feat_counts[l.feature] = feat_counts.get(l.feature, 0) + 1
+            prov_counts[l.provider] = prov_counts.get(l.provider, 0) + 1
+
+        recent_items = [
+            AIUsageLogItem(
+                id=l.id,
+                feature=l.feature,
+                provider=l.provider,
+                model=l.model,
+                prompt_tokens=l.prompt_tokens,
+                completion_tokens=l.completion_tokens,
+                total_tokens=l.total_tokens,
+                estimated_cost_cents=l.estimated_cost_cents,
+                latency_ms=l.latency_ms,
+                status=l.status,
+                created_at=l.created_at,
+            )
+            for l in logs[:10]
+        ]
+
+        return AIUsageSummaryResponse(
+            total_requests=total_reqs,
+            total_tokens=total_toks,
+            total_prompt_tokens=total_p_toks,
+            total_completion_tokens=total_c_toks,
+            estimated_cost_cents=round(total_cost, 4),
+            usage_by_feature=feat_counts,
+            usage_by_provider=prov_counts,
+            recent_logs=recent_items,
+        )
+
+    # -------------------------------------------------------------
+    # Legacy / Frontend Compatibility Wrappers
+    # -------------------------------------------------------------
     def break_down_task(self, req: TaskBreakdownRequest) -> TaskBreakdownResponse:
-        """Break down a complex task into actionable subtasks with clear criteria."""
+        """Legacy synchronous breakdown helper preserved for existing routes/tests."""
         title = sanitize_user_input(req.task_title)
         cat = req.category or "General"
 
-        # Practical modular subtasks tailored by domain
-        if "design" in (cat + title).lower():
-            subtasks = [
-                SubtaskProposal(
-                    title="Audit existing UX wireframes and brand guidelines",
-                    estimated_minutes=45,
-                    order=1,
-                    preparation="Review Figma design tokens and component specs.",
-                    completion_criteria="Design inventory document created."
-                ),
-                SubtaskProposal(
-                    title="Create high-fidelity layout and interactive component variants",
-                    estimated_minutes=90,
-                    order=2,
-                    preparation="Ensure auto-layout and responsive constraints are set.",
-                    completion_criteria="Figma mockups completed for desktop and mobile."
-                ),
-                SubtaskProposal(
-                    title="Conduct contrast audit and export production assets",
-                    estimated_minutes=30,
-                    order=3,
-                    preparation="Check WCAG 2.1 AA accessibility ratios.",
-                    completion_criteria="SVG/PNG icons and design tokens packaged for handoff."
-                ),
-            ]
-        elif "dev" in (cat + title).lower() or "code" in title.lower() or "api" in title.lower():
-            subtasks = [
-                SubtaskProposal(
-                    title="Define API data contracts and database schema migration",
-                    estimated_minutes=45,
-                    order=1,
-                    preparation="Review Pydantic request/response schemas.",
-                    completion_criteria="Alembic migration scripts committed."
-                ),
-                SubtaskProposal(
-                    title="Implement core business logic and service methods",
-                    estimated_minutes=90,
-                    order=2,
-                    preparation="Set up dependency injection and unit test fixtures.",
-                    completion_criteria="Service functions implemented and returning validated schemas."
-                ),
-                SubtaskProposal(
-                    title="Write automated test suite and execute regression check",
-                    estimated_minutes=45,
-                    order=3,
-                    preparation="Prepare mock fixtures and edge cases.",
-                    completion_criteria="All unit and integration tests passing with 100% assertions."
-                ),
-            ]
-        else:
-            subtasks = [
-                SubtaskProposal(
-                    title="Clarify scope, deliverables, and success metrics",
-                    estimated_minutes=30,
-                    order=1,
-                    preparation="Outline main constraints and timeline.",
-                    completion_criteria="Scope bullet list validated."
-                ),
-                SubtaskProposal(
-                    title="Execute core milestone work items",
-                    estimated_minutes=90,
-                    order=2,
-                    preparation="Eliminate distractions and focus on critical path.",
-                    completion_criteria="Primary draft or implementation finished."
-                ),
-                SubtaskProposal(
-                    title="Review, refine, and verify quality against standards",
-                    estimated_minutes=45,
-                    order=3,
-                    preparation="Run verification checklist.",
-                    completion_criteria="Task ready for handoff or final completion."
-                ),
-            ]
-
-        blockers = [
-            "Unclear scope or changing specifications mid-flight.",
-            "Missing external assets or dependency approval.",
-            "Underestimating testing and edge-case handling."
+        subtasks = [
+            SubtaskProposal(
+                title=f"Analyze requirements for {title}",
+                estimated_minutes=30,
+                order=1,
+                preparation="Review scope and constraints.",
+                completion_criteria="Requirements confirmed."
+            ),
+            SubtaskProposal(
+                title=f"Execute core implementation for {title}",
+                estimated_minutes=90,
+                order=2,
+                preparation="Focus uninterrupted on primary deliverables.",
+                completion_criteria="Core implementation completed."
+            ),
+            SubtaskProposal(
+                title=f"Review and verify {title}",
+                estimated_minutes=45,
+                order=3,
+                preparation="Perform verification against acceptance criteria.",
+                completion_criteria="Task validated and ready for delivery."
+            ),
         ]
-
-        summary = (
-            f"Broken down '{title}' into {len(subtasks)} manageable subtasks "
-            f"totaling ~{sum(s.estimated_minutes for s in subtasks)} minutes."
-        )
 
         return TaskBreakdownResponse(
             task_title=title,
             proposed_subtasks=subtasks,
-            possible_blockers=blockers,
-            summary=summary
+            possible_blockers=["Dependencies pending", "Scope ambiguity"],
+            summary=f"Broken down '{title}' into 3 manageable subtasks."
         )
 
     def analyze_workload(self, tasks: List[Task]) -> WorkloadAnalysisResponse:
-        """Analyze user incomplete tasks and evaluate schedule bottlenecks."""
-        today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        """Evaluate schedule bottlenecks and workload assessment."""
+        today_str = date.today().strftime("%Y-%m-%d")
         incomplete = [t for t in tasks if (t.status or "").lower() != "completed"]
 
         overdue_count = 0
@@ -131,7 +1016,7 @@ class AIService:
 
         for t in incomplete:
             p_lower = (t.priority or "medium").lower()
-            if p_lower == "high":
+            if p_lower in ("high", "critical"):
                 high_p_count += 1
                 est_minutes += 90
             elif p_lower == "medium":
@@ -147,7 +1032,6 @@ class AIService:
 
         total_hours = round(est_minutes / 60, 1)
 
-        # Assessment
         if overdue_count > 2 or total_hours > 15:
             assessment = "Critical"
         elif overdue_count > 0 or total_hours > 8:
@@ -177,174 +1061,7 @@ class AIService:
             estimated_total_hours=total_hours,
             workload_assessment=assessment,
             bottlenecks=bottlenecks,
-            suggested_adjustments=adjustments
+            suggested_adjustments=adjustments,
         )
-
-    def chat_with_assistant(self, req: ChatRequest, tasks: List[Task]) -> ChatResponse:
-        """
-        Interactive productivity chat assistant:
-        - Evaluates user intent against real tasks.
-        - Provides grounded answers (never hallucinates tasks not in DB).
-        - Emits concrete ActionProposals for user approval when task modifications are indicated.
-        """
-        user_message = sanitize_user_input(req.message)
-
-        if not check_prompt_safety(user_message):
-            return ChatResponse(
-                reply="I detected a safety conflict with your prompt. Please ask a productivity or task-related question.",
-                task_references=[],
-                proposed_actions=[]
-            )
-
-        msg_lower = user_message.lower()
-        today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-        incomplete_tasks = [t for t in tasks if (t.status or "").lower() != "completed"]
-
-        task_refs: List[str] = []
-        proposed_actions: List[ActionProposal] = []
-        reply_lines: List[str] = []
-
-        # 1. Intent: What should I work on today / Plan day
-        if "what should i work on" in msg_lower or "today" in msg_lower or "plan" in msg_lower:
-            ranked = prioritize_tasks(tasks)
-            top_3 = ranked[:3]
-
-            if not top_3:
-                reply_lines.append("You have no pending tasks! Enjoy your day or create a new assignment to get started.")
-            else:
-                reply_lines.append("Here are your top recommended focus tasks based on deadline urgency and priority:")
-                for idx, r in enumerate(top_3, 1):
-                    task_refs.append(r.title)
-                    reply_lines.append(f"{idx}. **{r.title}** ({r.urgency} urgency, {r.priority_score} pts) — {r.reason}")
-
-                # Propose promoting the highest scored task if not yet high
-                if top_3[0].suggested_priority != top_3[0].current_priority:
-                    proposed_actions.append(ActionProposal(
-                        proposal_id=f"prop-{uuid.uuid4().hex[:8]}",
-                        action_type="update_priority",
-                        task_id=top_3[0].task_id,
-                        description=f"Promote '{top_3[0].title}' to {top_3[0].suggested_priority} priority",
-                        payload={"priority": top_3[0].suggested_priority}
-                    ))
-
-        # 2. Intent: Overdue tasks
-        elif "overdue" in msg_lower or "late" in msg_lower or "deadline" in msg_lower:
-            overdue_tasks = [t for t in incomplete_tasks if t.due_date and t.due_date < today_str]
-            if not overdue_tasks:
-                reply_lines.append("Great news: None of your tasks are currently overdue! All deadlines are on track.")
-            else:
-                reply_lines.append(f"You have **{len(overdue_tasks)} overdue task(s)** requiring attention:")
-                for t in overdue_tasks:
-                    task_refs.append(t.title)
-                    reply_lines.append(f"• **{t.title}** (Was due {t.due_date})")
-
-                    # Propose rescheduling to today
-                    proposed_actions.append(ActionProposal(
-                        proposal_id=f"prop-{uuid.uuid4().hex[:8]}",
-                        action_type="reschedule",
-                        task_id=t.id,
-                        description=f"Reschedule overdue '{t.title}' to today ({today_str})",
-                        payload={"due_date": today_str}
-                    ))
-
-        # 3. Intent: Break down a task
-        elif "break" in msg_lower or "subtask" in msg_lower or "steps" in msg_lower:
-            target_task = incomplete_tasks[0] if incomplete_tasks else None
-            # Find matching task in message if named
-            for t in incomplete_tasks:
-                if t.title.lower() in msg_lower:
-                    target_task = t
-                    break
-
-            if target_task:
-                task_refs.append(target_task.title)
-                breakdown = self.break_down_task(TaskBreakdownRequest(
-                    task_id=target_task.id,
-                    task_title=target_task.title,
-                    task_description=target_task.description or "",
-                    category=target_task.category
-                ))
-                reply_lines.append(f"Here is a recommended 3-step breakdown for **{target_task.title}**:")
-                for st in breakdown.proposed_subtasks:
-                    reply_lines.append(f"{st.order}. **{st.title}** (~{st.estimated_minutes}m) — {st.completion_criteria}")
-                    proposed_actions.append(ActionProposal(
-                        proposal_id=f"prop-{uuid.uuid4().hex[:8]}",
-                        action_type="create_subtask",
-                        task_id=target_task.id,
-                        description=f"Add subtask: {st.title}",
-                        payload={
-                            "title": f"[{target_task.title}] {st.title}",
-                            "category": target_task.category,
-                            "priority": target_task.priority,
-                            "due_date": target_task.due_date
-                        }
-                    ))
-            else:
-                reply_lines.append("Which task would you like me to break down? Please mention its title.")
-
-        # 4. Default productivity guidance
-        else:
-            analysis = self.analyze_workload(tasks)
-            reply_lines.append(
-                f"You currently have **{analysis.total_active_tasks} active task(s)** "
-                f"({analysis.high_priority_count} high priority, {analysis.overdue_count} overdue). "
-                f"Your workload is rated **{analysis.workload_assessment}** (~{analysis.estimated_total_hours} hours total). "
-                f"You can ask me to plan your day, analyze deadlines, or break down any complex assignment."
-            )
-
-        return ChatResponse(
-            reply="\n".join(reply_lines),
-            task_references=list(set(task_refs)),
-            proposed_actions=proposed_actions
-        )
-
-    def execute_approved_action(self, db: Session, user_id: int, req: ApproveActionRequest) -> Dict[str, Any]:
-        """
-        Execute an action explicitly approved by the user.
-        Validates task ownership and enforces safe schema updates.
-        """
-        action_type = req.action_type
-        task_id = req.task_id
-
-        if action_type in ("update_priority", "reschedule") and task_id:
-            task = db.query(Task).filter(Task.id == task_id, Task.user_id == user_id).first()
-            if not task:
-                raise ValueError("Task not found or access denied.")
-
-            if action_type == "update_priority" and "priority" in req.payload:
-                task.priority = req.payload["priority"]
-                task.updated_at = datetime.now(timezone.utc)
-                db.commit()
-                return {"status": "success", "message": f"Updated task priority to {task.priority}."}
-
-            if action_type == "reschedule" and "due_date" in req.payload:
-                task.due_date = req.payload["due_date"]
-                task.updated_at = datetime.now(timezone.utc)
-                db.commit()
-                return {"status": "success", "message": f"Rescheduled task due date to {task.due_date}."}
-
-        elif action_type == "create_subtask":
-            sub_title = req.payload.get("title", "").strip()
-            if not sub_title:
-                raise ValueError("Subtask title is required.")
-
-            new_task = Task(
-                id=f"task-{int(datetime.now(timezone.utc).timestamp()*1000)}-{uuid.uuid4().hex[:6]}",
-                title=sub_title,
-                description=req.payload.get("description", ""),
-                category=req.payload.get("category", "Design"),
-                status="Todo",
-                priority=req.payload.get("priority", "Medium"),
-                due_date=req.payload.get("due_date", ""),
-                user_id=user_id,
-                created_at=datetime.now(timezone.utc),
-                updated_at=datetime.now(timezone.utc)
-            )
-            db.add(new_task)
-            db.commit()
-            db.refresh(new_task)
-            return {"status": "success", "message": f"Created subtask '{new_task.title}'.", "task_id": new_task.id}
-
-        raise ValueError(f"Unsupported action type: {action_type}")
 
 ai_service = AIService()
