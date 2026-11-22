@@ -9,6 +9,8 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.rate_limiter import RateLimiterMiddleware
 from app.core.security_headers import SecurityHeadersMiddleware
+from app.core.logging import setup_logging
+from app.core.exceptions import register_exception_handlers
 from app.db.database import engine, Base
 import app.models  # Ensure all models are registered
 from app.services.entitlement_service import seed_default_plans
@@ -50,12 +52,8 @@ from app.api.routes import (
     product_lifecycle_routes,
 )
 
-# Configure structured logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] [ReqID: %(name)s] %(message)s"
-)
-logger = logging.getLogger("focusboard")
+# Configure structured, sensitive-data-safe logging
+logger = setup_logging()
 
 # Initialize DB tables for SQLite / fallback
 Base.metadata.create_all(bind=engine)
@@ -72,6 +70,9 @@ app = FastAPI(
     version=settings.VERSION,
     description="FocusBoard Enterprise SaaS Task Management & Connected Platform API"
 )
+
+# Register centralized exception handlers
+register_exception_handlers(app)
 
 # 1. Security Headers Middleware (OWASP protection)
 app.add_middleware(SecurityHeadersMiddleware)
@@ -133,6 +134,7 @@ async def correlation_id_and_logging_middleware(request: Request, call_next):
 
 # Register API Routers
 app.include_router(health_routes.router)
+app.include_router(health_routes.router, prefix=settings.API_V1_STR)
 app.include_router(auth_routes.router, prefix=settings.API_V1_STR)
 app.include_router(task_routes.router, prefix=settings.API_V1_STR)
 app.include_router(analytics_routes.router, prefix=settings.API_V1_STR)

@@ -1,7 +1,9 @@
 from typing import List, Union, Optional
-from pydantic import AnyHttpUrl, field_validator
+from pathlib import Path
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import json
+import os
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -13,14 +15,32 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "FocusBoard API"
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api/v1"
+    ENVIRONMENT: str = "development"  # "development" | "staging" | "production" | "testing"
+    DEBUG: bool = False
 
     # Security
     SECRET_KEY: str = "focusboard_production_super_secret_jwt_key_change_in_production"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
+    REFRESH_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
 
     # Database
     DATABASE_URL: str = "sqlite:///./focusboard.db"
+    DB_POOL_SIZE: int = 10
+    DB_MAX_OVERFLOW: int = 20
+    DB_POOL_TIMEOUT: int = 30
+    DB_POOL_PRE_PING: bool = True
+
+    # Rate Limiting
+    RATE_LIMIT_ENABLED: bool = True
+    RATE_LIMIT_PER_MINUTE: int = 120
+
+    # File Storage & Uploads
+    UPLOAD_MAX_BYTES: int = 20 * 1024 * 1024  # 20 MB
+    ALLOWED_UPLOAD_EXTENSIONS: List[str] = [".png", ".jpg", ".jpeg", ".pdf", ".txt", ".csv", ".json", ".zip"]
+
+    # Redis (Optional cache/queue)
+    REDIS_URL: Optional[str] = None
 
     # CORS
     CORS_ORIGINS: Union[List[str], str] = [
@@ -44,6 +64,19 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: Optional[str] = None
     EMAIL_FROM: str = "notifications@focusboard.io"
     EMAIL_ENABLED: bool = False
+
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def resolve_database_url(cls, v: Optional[str]) -> str:
+        if not v or v == "sqlite:///./focusboard.db":
+            # If default SQLite is used, resolve to the shared focusboard.db in project root
+            try:
+                root_db = Path(__file__).resolve().parents[3] / "focusboard.db"
+                if root_db.exists():
+                    return f"sqlite:///{root_db.as_posix()}"
+            except Exception:
+                pass
+        return v or "sqlite:///./focusboard.db"
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod

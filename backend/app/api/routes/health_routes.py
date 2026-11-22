@@ -1,8 +1,11 @@
+import sys
 import time
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from app.db.database import get_db
+from app.db.database import get_db, engine
+from app.core.config import settings
 
 router = APIRouter(tags=["Health & Observability"])
 
@@ -14,24 +17,56 @@ def health_check():
     return {
         "status": "healthy",
         "service": "focusboard-api",
-        "timestamp": True
+        "version": settings.VERSION,
+        "environment": settings.ENVIRONMENT,
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
+@router.get("/health/live")
+def liveness_probe():
+    """Kubernetes / container liveness check: validates process health."""
+    return {
+        "status": "alive",
+        "uptime_seconds": round(time.time() - _START_TIME, 2),
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+@router.get("/health/ready")
 @router.get("/ready")
 def readiness_check(db: Session = Depends(get_db)):
-    """Readiness probe verifying database connectivity."""
+    """Readiness probe verifying database connectivity and primary dependency health."""
     try:
-        # Execute light ping query
+        t0 = time.perf_counter()
         db.execute(text("SELECT 1"))
+        latency_ms = round((time.perf_counter() - t0) * 1000, 2)
         return {
             "status": "ready",
-            "database": "connected"
+            "database": {
+                "status": "connected",
+                "dialect": engine.dialect.name,
+                "latency_ms": latency_ms
+            },
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"Database connection error: {str(exc)}"
+            detail=f"Database connection check failed: {str(exc)}"
         )
+
+@router.get("/system/info")
+def system_info():
+    """Safe, non-confidential system and runtime metadata for operators."""
+    return {
+        "service": settings.PROJECT_NAME,
+        "version": settings.VERSION,
+        "environment": settings.ENVIRONMENT,
+        "uptime_seconds": round(time.time() - _START_TIME, 2),
+        "python_version": sys.version.split()[0],
+        "database_dialect": engine.dialect.name,
+        "rate_limiting_enabled": settings.RATE_LIMIT_ENABLED,
+        "docs_url": "/docs" if settings.ENVIRONMENT != "production" else None
+    }
 
 @router.get("/metrics")
 def get_prometheus_metrics(db: Session = Depends(get_db)):
