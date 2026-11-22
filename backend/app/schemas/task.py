@@ -35,6 +35,9 @@ class TaskResponse(BaseModel):
     updated_at: datetime
     completed_at: Optional[datetime] = None
     user_id: int
+    workspace_id: Optional[int] = None
+    project_id: Optional[int] = None
+    assignee_id: Optional[int] = None
 
     # Frontend camelCase compatibility aliases
     @property

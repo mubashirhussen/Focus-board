@@ -1,6 +1,7 @@
 import React from 'react';
 import { APP_CONFIG } from '../../app/appConfig';
 import { UserProfileMenu } from '../auth/UserProfileMenu';
+import { NotificationBell } from '../notifications/NotificationBell';
 import './Header.css';
 
 export function Header({ title = 'Overview' }) {
@@ -24,8 +25,9 @@ export function Header({ title = 'Overview' }) {
         <span className="brand-title">{APP_CONFIG.appName}</span>
       </div>
 
-      {/* User profile avatar and session menu */}
+      {/* Header action controls */}
       <div className="header-actions">
+        <NotificationBell />
         <UserProfileMenu />
       </div>
     </header>

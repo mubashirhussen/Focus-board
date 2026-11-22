@@ -16,4 +16,4 @@ class User(Base):
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
     # Isolated user tasks relationship
-    tasks = relationship("Task", back_populates="user", cascade="all, delete-orphan")
+    tasks = relationship("Task", foreign_keys="[Task.user_id]", back_populates="user", cascade="all, delete-orphan")

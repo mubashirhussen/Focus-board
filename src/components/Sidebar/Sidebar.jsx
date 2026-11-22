@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import {
   LayoutGrid,
   CheckSquare,
+  Sparkles,
+  Users,
   BarChart2,
   Calendar,
   Settings,
@@ -17,6 +19,8 @@ export function Sidebar({ activeTab = 'overview', onTabChange }) {
   const navItems = [
     { id: 'overview', label: 'Overview', icon: LayoutGrid, count: null },
     { id: 'tasks', label: 'My Tasks', icon: CheckSquare, count: stats.total },
+    { id: 'ai', label: 'AI Planner', icon: Sparkles, count: null },
+    { id: 'team', label: 'Team Space', icon: Users, count: null },
     { id: 'analytics', label: 'Analytics', icon: BarChart2, count: null },
     { id: 'calendar', label: 'Calendar', icon: Calendar, count: null },
     { id: 'settings', label: 'Settings', icon: Settings, count: null },

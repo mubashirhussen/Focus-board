@@ -20,11 +20,19 @@ class Task(Base):
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
     completed_at = Column(DateTime, nullable=True, index=True)
 
-    # Relationship to user
-    user = relationship("User", back_populates="tasks")
+    # Multi-User Collaboration Extensions (Phase 16)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id", ondelete="SET NULL"), nullable=True, index=True)
+    assignee_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+
+    # Relationships
+    user = relationship("User", foreign_keys=[user_id], back_populates="tasks")
+    assignee = relationship("User", foreign_keys=[assignee_id])
+    comments = relationship("TaskComment", cascade="all, delete-orphan")
 
     # Composite indexes for multi-tenant query performance
     __table_args__ = (
         Index("ix_tasks_user_status", "user_id", "status"),
         Index("ix_tasks_user_priority", "user_id", "priority"),
+        Index("ix_tasks_workspace_status", "workspace_id", "status"),
     )

@@ -5,6 +5,8 @@ import { Sidebar } from '../components/Sidebar/Sidebar';
 import { Header } from '../components/Header/Header';
 import { Dashboard } from '../pages/Dashboard/Dashboard';
 import { Analytics } from '../pages/Analytics/Analytics';
+import { AIAssistant } from '../pages/AIAssistant/AIAssistant';
+import { TeamWorkspace } from '../pages/TeamWorkspace/TeamWorkspace';
 import { AuthModal } from '../components/auth/AuthModal';
 import './App.css';
 
@@ -13,6 +15,10 @@ export function App() {
 
   const getPageTitle = (tab) => {
     switch (tab) {
+      case 'ai':
+        return 'AI Task Planning & Assistant';
+      case 'team':
+        return 'Team Workspace & Collaboration';
       case 'analytics':
         return 'Productivity Analytics';
       case 'tasks':
@@ -27,6 +33,19 @@ export function App() {
     }
   };
 
+  const renderActiveContent = () => {
+    switch (activeTab) {
+      case 'ai':
+        return <AIAssistant />;
+      case 'team':
+        return <TeamWorkspace />;
+      case 'analytics':
+        return <Analytics />;
+      default:
+        return <Dashboard activeTab={activeTab} />;
+    }
+  };
+
   return (
     <AuthProvider>
       <TaskProvider>
@@ -38,11 +57,7 @@ export function App() {
           <div className="app-main-wrapper">
             <Header title={getPageTitle(activeTab)} />
             <main className="app-main" id="main-content">
-              {activeTab === 'analytics' ? (
-                <Analytics />
-              ) : (
-                <Dashboard activeTab={activeTab} />
-              )}
+              {renderActiveContent()}
             </main>
           </div>
 

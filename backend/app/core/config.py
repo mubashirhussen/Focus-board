@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Union, Optional
 from pydantic import AnyHttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import json
@@ -29,6 +29,21 @@ class Settings(BaseSettings):
         "http://127.0.0.1:5173",
         "http://127.0.0.1:3000",
     ]
+
+    # AI Configuration (Phase 14)
+    AI_PROVIDER: str = "mock"  # "mock" | "gemini" | "openai"
+    AI_API_KEY: Optional[str] = None
+    AI_MODEL: str = "gemini-1.5-flash"
+    AI_TIMEOUT_SECONDS: int = 30
+    AI_MAX_OUTPUT_TOKENS: int = 2048
+
+    # Email & Notifications Configuration (Phase 15)
+    SMTP_HOST: str = "localhost"
+    SMTP_PORT: int = 1025
+    SMTP_USERNAME: Optional[str] = None
+    SMTP_PASSWORD: Optional[str] = None
+    EMAIL_FROM: str = "notifications@focusboard.io"
+    EMAIL_ENABLED: bool = False
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod

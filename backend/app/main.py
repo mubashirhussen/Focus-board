@@ -7,8 +7,17 @@ from fastapi.responses import JSONResponse
 
 from app.core.config import settings
 from app.db.database import engine, Base
-import app.models  # Ensure models are loaded
-from app.api.routes import auth_routes, task_routes, analytics_routes, health_routes
+import app.models  # Ensure all models are registered
+from app.api.routes import (
+    auth_routes,
+    task_routes,
+    analytics_routes,
+    health_routes,
+    ai_routes,
+    notification_routes,
+    workspace_routes,
+    websocket_routes,
+)
 
 # Configure structured logging
 logging.basicConfig(
@@ -23,7 +32,7 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
-    description="FocusBoard Multi-User Task Management & Analytics API"
+    description="FocusBoard AI-Powered Multi-User Task Management & Collaborative Workspace API"
 )
 
 # CORS Configuration
@@ -66,6 +75,10 @@ app.include_router(health_routes.router)
 app.include_router(auth_routes.router, prefix=settings.API_V1_STR)
 app.include_router(task_routes.router, prefix=settings.API_V1_STR)
 app.include_router(analytics_routes.router, prefix=settings.API_V1_STR)
+app.include_router(ai_routes.router, prefix=settings.API_V1_STR)
+app.include_router(notification_routes.router, prefix=settings.API_V1_STR)
+app.include_router(workspace_routes.router, prefix=settings.API_V1_STR)
+app.include_router(websocket_routes.router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 def root():
