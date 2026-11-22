@@ -1,0 +1,256 @@
+/* Focus Notes Carousel - Exact Figma Gradient and Visual Treatment */
+.focus-notes-carousel {
+  position: relative;
+  background: var(--gradient-focus);
+  border-radius: var(--radius-lg);
+  color: #ffffff;
+  padding: 24px 28px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.3), 0 8px 10px -6px rgba(79, 70, 229, 0.2);
+  outline: none;
+  transition: box-shadow var(--transition-normal);
+}
+
+.focus-notes-carousel:focus-visible {
+  box-shadow: 0 0 0 3px #ffffff, 0 0 0 6px var(--color-primary);
+}
+
+.focus-notes-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xl);
+  position: relative;
+  z-index: 2;
+}
+
+.focus-notes-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.focus-notes-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xs);
+}
+
+.focus-notes-tag {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.85);
+  background-color: rgba(255, 255, 255, 0.15);
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  backdrop-filter: blur(4px);
+}
+
+.focus-notes-counter {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 0.04em;
+}
+
+.focus-notes-heading {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 4px;
+  letter-spacing: -0.015em;
+}
+
+.focus-notes-subtitle {
+  font-size: var(--font-size-base);
+  color: rgba(255, 255, 255, 0.82);
+  margin-bottom: var(--space-lg);
+  font-weight: 400;
+}
+
+/* Indicators */
+.focus-notes-indicators {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.indicator-bar {
+  height: 4px;
+  width: 14px;
+  background-color: rgba(255, 255, 255, 0.35);
+  border-radius: var(--radius-full);
+  transition: all var(--transition-normal);
+  padding: 0;
+}
+
+.indicator-bar:hover {
+  background-color: rgba(255, 255, 255, 0.6);
+}
+
+.indicator-bar.active {
+  width: 32px;
+  background-color: #ffffff;
+}
+
+/* Right Section with Floating Task Card & Controls */
+.focus-notes-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  flex-shrink: 0;
+}
+
+.floating-task-card {
+  background: #ffffff;
+  color: var(--color-text-primary);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  box-shadow: 0 12px 24px -4px rgba(0, 0, 0, 0.15);
+  min-width: 200px;
+  max-width: 230px;
+  transform: rotate(-1.5deg);
+  transition: transform var(--transition-normal);
+}
+
+.floating-task-card:hover {
+  transform: rotate(0deg) scale(1.02);
+}
+
+.floating-card-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.floating-check-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-full);
+  background-color: #ecfdf5;
+  color: #059669;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.floating-card-tag {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.floating-card-title {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.floating-progress-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.floating-progress-track {
+  flex: 1;
+  height: 5px;
+  background-color: #f1f5f9;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.floating-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4f46e5, #6366f1);
+  border-radius: var(--radius-full);
+  transition: width var(--transition-slow);
+}
+
+.floating-progress-text {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: #4f46e5;
+  min-width: 28px;
+}
+
+/* Controls */
+.focus-notes-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.carousel-nav-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  backdrop-filter: blur(4px);
+  transition: all var(--transition-fast);
+}
+
+.carousel-nav-btn:hover {
+  background-color: rgba(255, 255, 255, 0.35);
+  transform: scale(1.05);
+}
+
+.carousel-nav-btn:active {
+  transform: scale(0.95);
+}
+
+/* Responsive adjustments */
+@media (max-width: 860px) {
+  .focus-notes-inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .focus-notes-right {
+    width: 100%;
+    justify-content: space-between;
+    margin-top: var(--space-sm);
+  }
+
+  .floating-task-card {
+    transform: none;
+    min-width: unset;
+    flex: 1;
+    max-width: 260px;
+  }
+}
+
+@media (max-width: 480px) {
+  .focus-notes-carousel {
+    padding: 18px 16px;
+  }
+
+  .focus-notes-heading {
+    font-size: 1.25rem;
+  }
+
+  .focus-notes-subtitle {
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--space-md);
+  }
+
+  .floating-task-card {
+    display: none;
+  }
+
+  .focus-notes-right {
+    justify-content: flex-end;
+    margin-top: 0;
+  }
+}

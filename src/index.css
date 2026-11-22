@@ -1,0 +1,5 @@
+/* Main index CSS importing all style layers */
+@import './styles/variables.css';
+@import './styles/typography.css';
+@import './styles/global.css';
+@import './styles/responsive.css';
