@@ -1,22 +1,31 @@
-from datetime import datetime, timezone
-from typing import List, Optional, Dict
+from typing import List, Optional
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, and_, desc, asc
 
 from app.db.database import get_db
 from app.models.user import User
-from app.models.task import Task
-from app.models.collaboration import Workspace, WorkspaceMember, Project
-from app.schemas.search import SearchResponse, SearchResultItem, SearchFacets
+from app.schemas.search import (
+    SearchResultItem,
+    SearchResponse,
+    SearchSuggestionsResponse,
+    SearchHistoryItemResponse,
+    SavedSearchCreate,
+    SavedSearchUpdate,
+    SavedSearchResponse,
+    AdvancedFilterRequest,
+)
 from app.api.dependencies import get_current_user
+from app.services.search_service import search_service
 
-router = APIRouter(prefix="/search", tags=["Global Search"])
+router = APIRouter(prefix="/search", tags=["Global Search & Intelligence"])
 
+# -------------------------------------------------------------
+# 1. Global Search Engine
+# -------------------------------------------------------------
 @router.get("", response_model=SearchResponse)
 def global_search(
-    q: Optional[str] = Query(None, description="Search term for title, description, or name"),
-    type: Optional[str] = Query("ALL", description="Filter by resource type: ALL, TASK, PROJECT, WORKSPACE"),
+    q: Optional[str] = Query(None, description="Search term for title, description, or content"),
+    type: Optional[str] = Query("ALL", description="Filter by resource type: ALL, TASK, PROJECT, BOARD, TEAM, WORKSPACE, MEMBER, COMMENT"),
     status: Optional[str] = Query(None, description="Filter by status"),
     priority: Optional[str] = Query(None, description="Filter by priority"),
     category: Optional[str] = Query(None, description="Filter by category"),
@@ -24,168 +33,299 @@ def global_search(
     project_id: Optional[int] = Query(None, description="Scope search to specific project"),
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(20, ge=1, le=100, description="Page size"),
+    sort_by: Optional[str] = Query("relevance", description="Sort by: relevance, created_at, title"),
     sort_order: str = Query("desc", description="Sort order: asc or desc"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """
-    Search across Tasks, Projects, and Workspaces with strict multi-tenant authorization.
-    Users only see resources they own or have explicit membership in.
+    Search across Tasks, Projects, Boards, Teams, Workspaces, Members, and Comments.
+    Enforces strict multi-tenant authorization, relevance ranking, facets, and pagination.
     """
-    # 1. Determine user accessible workspaces
-    memberships = db.query(WorkspaceMember.workspace_id).filter(WorkspaceMember.user_id == current_user.id).all()
-    accessible_workspace_ids = [m[0] for m in memberships]
-
-    # If workspace_id filter is requested, verify user has access
-    if workspace_id is not None:
-        if workspace_id not in accessible_workspace_ids:
-            return SearchResponse(
-                results=[],
-                total=0,
-                page=page,
-                page_size=page_size,
-                facets=SearchFacets(by_type={}, by_status={})
-            )
-        target_workspace_ids = [workspace_id]
-    else:
-        target_workspace_ids = accessible_workspace_ids
-
-    search_term = f"%{q.strip()}%" if q and q.strip() else None
-    target_type = (type or "ALL").upper()
-
-    all_results: List[SearchResultItem] = []
-    by_type_counts: Dict[str, int] = {"TASK": 0, "PROJECT": 0, "WORKSPACE": 0}
-    by_status_counts: Dict[str, int] = {}
-
-    # 2. Search Tasks
-    if target_type in ["ALL", "TASK"]:
-        task_query = db.query(Task)
-        
-        # Authorization constraint: User owns the task OR it belongs to an accessible workspace
-        if target_workspace_ids:
-            task_auth_condition = or_(
-                Task.user_id == current_user.id,
-                Task.workspace_id.in_(target_workspace_ids)
-            )
-        else:
-            task_auth_condition = (Task.user_id == current_user.id)
-            
-        task_query = task_query.filter(task_auth_condition)
-
-        if workspace_id is not None:
-            task_query = task_query.filter(Task.workspace_id == workspace_id)
-        if project_id is not None:
-            task_query = task_query.filter(Task.project_id == project_id)
-        if status and status.lower() != "all":
-            task_query = task_query.filter(Task.status.ilike(status))
-        if priority and priority.lower() != "all":
-            task_query = task_query.filter(Task.priority.ilike(priority))
-        if category and category.lower() != "all":
-            task_query = task_query.filter(Task.category.ilike(category))
-
-        if search_term:
-            task_query = task_query.filter(
-                or_(
-                    Task.title.ilike(search_term),
-                    Task.description.ilike(search_term),
-                    Task.category.ilike(search_term),
-                )
-            )
-
-        tasks = task_query.all()
-        by_type_counts["TASK"] = len(tasks)
-        for t in tasks:
-            st = t.status or "Unknown"
-            by_status_counts[st] = by_status_counts.get(st, 0) + 1
-            all_results.append(SearchResultItem(
-                id=str(t.id),
-                type="TASK",
-                title=t.title,
-                description=t.description,
-                status=t.status,
-                priority=t.priority,
-                category=t.category,
-                workspace_id=t.workspace_id,
-                project_id=t.project_id,
-                created_at=t.created_at,
-                url_path=f"/?task_id={t.id}" if not t.workspace_id else f"/workspaces/{t.workspace_id}?task_id={t.id}"
-            ))
-
-    # 3. Search Projects
-    if target_type in ["ALL", "PROJECT"] and target_workspace_ids:
-        project_query = db.query(Project).filter(Project.workspace_id.in_(target_workspace_ids))
-
-        if workspace_id is not None:
-            project_query = project_query.filter(Project.workspace_id == workspace_id)
-        if status and status.lower() != "all":
-            project_query = project_query.filter(Project.status.ilike(status))
-        if search_term:
-            project_query = project_query.filter(
-                or_(
-                    Project.name.ilike(search_term),
-                    Project.description.ilike(search_term),
-                )
-            )
-
-        projects = project_query.all()
-        by_type_counts["PROJECT"] = len(projects)
-        for p in projects:
-            st = p.status or "ACTIVE"
-            by_status_counts[st] = by_status_counts.get(st, 0) + 1
-            all_results.append(SearchResultItem(
-                id=str(p.id),
-                type="PROJECT",
-                title=p.name,
-                description=p.description,
-                status=p.status,
-                priority=None,
-                category="Project",
-                workspace_id=p.workspace_id,
-                project_id=p.id,
-                created_at=p.created_at,
-                url_path=f"/workspaces/{p.workspace_id}?project_id={p.id}"
-            ))
-
-    # 4. Search Workspaces
-    if target_type in ["ALL", "WORKSPACE"] and target_workspace_ids:
-        ws_query = db.query(Workspace).filter(Workspace.id.in_(target_workspace_ids))
-        if search_term:
-            ws_query = ws_query.filter(
-                or_(
-                    Workspace.name.ilike(search_term),
-                    Workspace.description.ilike(search_term),
-                )
-            )
-        workspaces = ws_query.all()
-        by_type_counts["WORKSPACE"] = len(workspaces)
-        for w in workspaces:
-            all_results.append(SearchResultItem(
-                id=str(w.id),
-                type="WORKSPACE",
-                title=w.name,
-                description=w.description,
-                status="ACTIVE",
-                priority=None,
-                category="Workspace",
-                workspace_id=w.id,
-                project_id=None,
-                created_at=w.created_at,
-                url_path=f"/workspaces/{w.id}"
-            ))
-
-    # Sort results
-    reverse = (sort_order.lower() == "desc")
-    all_results.sort(key=lambda item: item.created_at or datetime.min.replace(tzinfo=timezone.utc), reverse=reverse)
-
-    total = len(all_results)
-    start_idx = (page - 1) * page_size
-    end_idx = start_idx + page_size
-    paginated_results = all_results[start_idx:end_idx]
-
-    return SearchResponse(
-        results=paginated_results,
-        total=total,
+    return search_service.global_search(
+        db=db,
+        current_user=current_user,
+        q=q,
+        type=type,
+        status=status,
+        priority=priority,
+        category=category,
+        workspace_id=workspace_id,
+        project_id=project_id,
         page=page,
         page_size=page_size,
-        facets=SearchFacets(by_type=by_type_counts, by_status=by_status_counts)
+        sort_by=sort_by,
+        sort_order=sort_order,
     )
+
+# -------------------------------------------------------------
+# 2. Autocomplete Suggestions & Typeahead
+# -------------------------------------------------------------
+@router.get("/suggestions", response_model=SearchSuggestionsResponse)
+def get_search_suggestions(
+    q: str = Query(..., min_length=1, description="Typeahead prefix/query"),
+    limit: int = Query(5, ge=1, le=20, description="Max suggestions per entity group"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Instant search suggestions grouped by entity category with permission filtering."""
+    return search_service.get_suggestions(
+        db=db,
+        current_user=current_user,
+        q=q,
+        limit_per_type=limit,
+    )
+
+# -------------------------------------------------------------
+# 3. Entity-Specific Searches
+# -------------------------------------------------------------
+@router.get("/tasks", response_model=List[SearchResultItem])
+def search_tasks(
+    q: Optional[str] = Query(None, description="Search term"),
+    status: Optional[str] = Query(None, description="Filter status"),
+    priority: Optional[str] = Query(None, description="Filter priority"),
+    category: Optional[str] = Query(None, description="Filter category"),
+    assignee_id: Optional[int] = Query(None, description="Filter assignee"),
+    workspace_id: Optional[int] = Query(None, description="Filter workspace"),
+    project_id: Optional[int] = Query(None, description="Filter project"),
+    due_date: Optional[str] = Query(None, description="Filter due date (YYYY-MM-DD)"),
+    limit: int = Query(50, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Search tasks accessible to authenticated user."""
+    return search_service.search_tasks(
+        db=db,
+        current_user=current_user,
+        q=q,
+        status=status,
+        priority=priority,
+        category=category,
+        assignee_id=assignee_id,
+        workspace_id=workspace_id,
+        project_id=project_id,
+        due_date=due_date,
+        limit=limit,
+    )
+
+@router.get("/projects", response_model=List[SearchResultItem])
+def search_projects(
+    q: Optional[str] = Query(None, description="Search term"),
+    status: Optional[str] = Query(None, description="Filter status"),
+    priority: Optional[str] = Query(None, description="Filter priority"),
+    category: Optional[str] = Query(None, description="Filter category"),
+    workspace_id: Optional[int] = Query(None, description="Filter workspace"),
+    limit: int = Query(50, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Search projects accessible to authenticated user."""
+    return search_service.search_projects(
+        db=db,
+        current_user=current_user,
+        q=q,
+        status=status,
+        priority=priority,
+        category=category,
+        workspace_id=workspace_id,
+        limit=limit,
+    )
+
+@router.get("/teams", response_model=List[SearchResultItem])
+def search_teams(
+    q: Optional[str] = Query(None, description="Search term"),
+    limit: int = Query(50, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Search teams accessible to authenticated user."""
+    return search_service.search_teams(
+        db=db,
+        current_user=current_user,
+        q=q,
+        limit=limit,
+    )
+
+@router.get("/workspaces", response_model=List[SearchResultItem])
+def search_workspaces(
+    q: Optional[str] = Query(None, description="Search term"),
+    limit: int = Query(50, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Search workspaces accessible to authenticated user."""
+    return search_service.search_workspaces(
+        db=db,
+        current_user=current_user,
+        q=q,
+        limit=limit,
+    )
+
+@router.get("/boards", response_model=List[SearchResultItem])
+def search_boards(
+    q: Optional[str] = Query(None, description="Search term"),
+    workspace_id: Optional[int] = Query(None, description="Filter workspace"),
+    limit: int = Query(50, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Search boards accessible to authenticated user."""
+    return search_service.search_boards(
+        db=db,
+        current_user=current_user,
+        q=q,
+        workspace_id=workspace_id,
+        limit=limit,
+    )
+
+@router.get("/members", response_model=List[SearchResultItem])
+def search_members(
+    q: Optional[str] = Query(None, description="Search name, username, or email"),
+    limit: int = Query(50, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Search members strictly within shared organizations, workspaces, or teams."""
+    return search_service.search_members(
+        db=db,
+        current_user=current_user,
+        q=q,
+        limit=limit,
+    )
+
+@router.get("/comments", response_model=List[SearchResultItem])
+def search_comments(
+    q: Optional[str] = Query(None, description="Search text in comment discussions"),
+    limit: int = Query(50, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Search comment discussions within accessible scope."""
+    return search_service.search_comments(
+        db=db,
+        current_user=current_user,
+        q=q,
+        limit=limit,
+    )
+
+# -------------------------------------------------------------
+# 4. Advanced Filter Engine
+# -------------------------------------------------------------
+@router.post("/filter", response_model=SearchResponse)
+def advanced_filter(
+    filter_req: AdvancedFilterRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Execute multi-field composite filters across tasks or projects."""
+    return search_service.apply_advanced_filter(
+        db=db,
+        current_user=current_user,
+        filter_req=filter_req,
+    )
+
+# -------------------------------------------------------------
+# 5. Search History Management
+# -------------------------------------------------------------
+@router.get("/history", response_model=List[SearchHistoryItemResponse])
+def get_search_history(
+    limit: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Retrieve search history for the authenticated user."""
+    return search_service.get_history(db=db, user_id=current_user.id, limit=limit)
+
+@router.delete("/history/{history_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_search_history_item(
+    history_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Delete a single history item owned by the user."""
+    try:
+        search_service.delete_history_item(db=db, history_id=history_id, user_id=current_user.id)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="History item not found.")
+    return None
+
+@router.delete("/history", status_code=status.HTTP_200_OK)
+def clear_search_history(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Clear all search history for the authenticated user."""
+    affected = search_service.clear_history(db=db, user_id=current_user.id)
+    return {"message": "Search history cleared.", "affected": affected}
+
+# -------------------------------------------------------------
+# 6. Saved Searches & Filter Presets
+# -------------------------------------------------------------
+@router.get("/saved", response_model=List[SavedSearchResponse])
+def list_saved_searches(
+    entity_type: Optional[str] = Query(None, description="Filter by entity type (TASK, PROJECT, GLOBAL)"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """List saved searches owned by user or shared within organization."""
+    return search_service.list_saved_searches(
+        db=db,
+        current_user=current_user,
+        entity_type=entity_type,
+    )
+
+@router.post("/saved", response_model=SavedSearchResponse, status_code=status.HTTP_201_CREATED)
+def create_saved_search(
+    saved_in: SavedSearchCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Create a new saved search or filter preset."""
+    return search_service.create_saved_search(
+        db=db,
+        current_user=current_user,
+        saved_in=saved_in,
+    )
+
+@router.get("/saved/{saved_id}", response_model=SavedSearchResponse)
+def get_saved_search(
+    saved_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Retrieve a single saved search respecting ownership or organization sharing."""
+    try:
+        return search_service.get_saved_search(db=db, saved_id=saved_id, current_user=current_user)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Saved search not found.")
+
+@router.put("/saved/{saved_id}", response_model=SavedSearchResponse)
+def update_saved_search(
+    saved_id: int,
+    saved_update: SavedSearchUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Update a saved search owned by the authenticated user."""
+    try:
+        return search_service.update_saved_search(
+            db=db,
+            saved_id=saved_id,
+            update_in=saved_update,
+            current_user=current_user,
+        )
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Saved search not found.")
+
+@router.delete("/saved/{saved_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_saved_search(
+    saved_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Delete a saved search owned by the authenticated user."""
+    try:
+        search_service.delete_saved_search(db=db, saved_id=saved_id, current_user=current_user)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Saved search not found.")
+    return None
