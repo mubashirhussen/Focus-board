@@ -68,4 +68,52 @@ export const collaborationApi = {
   getTeamAnalytics: async (workspaceId) => {
     return api.get(`/workspaces/${workspaceId}/analytics`);
   },
+
+  // --- Phase B9: Comments, Mentions, Activity Feeds & Audit Logs ---
+  getUnifiedComments: async (entityType, entityId) => {
+    return api.get(`/comments?entity_type=${entityType}&entity_id=${entityId}`);
+  },
+
+  createUnifiedComment: async (data) => {
+    return api.post('/comments', data);
+  },
+
+  updateComment: async (commentId, content) => {
+    return api.patch(`/comments/${commentId}`, { content });
+  },
+
+  deleteComment: async (commentId) => {
+    return api.delete(`/comments/${commentId}`);
+  },
+
+  getCommentReplies: async (commentId) => {
+    return api.get(`/comments/${commentId}/replies`);
+  },
+
+  postCommentReply: async (commentId, content) => {
+    return api.post(`/comments/${commentId}/replies`, { content });
+  },
+
+  addCommentReaction: async (commentId, reactionType) => {
+    return api.post(`/comments/${commentId}/reactions`, { reaction_type: reactionType });
+  },
+
+  removeCommentReaction: async (commentId, reactionType) => {
+    return api.delete(`/comments/${commentId}/reactions/${reactionType}`);
+  },
+
+  autocompleteMentions: async (query, organizationId = null) => {
+    const orgParam = organizationId ? `&organization_id=${organizationId}` : '';
+    return api.get(`/comments/mentions/autocomplete?q=${encodeURIComponent(query)}${orgParam}`);
+  },
+
+  getActivityFeed: async (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return api.get(`/activities${query ? `?${query}` : ''}`);
+  },
+
+  getAuditLogs: async (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return api.get(`/audit-logs${query ? `?${query}` : ''}`);
+  },
 };

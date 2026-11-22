@@ -5,12 +5,16 @@ from pydantic import BaseModel, ConfigDict
 class AuditLogResponse(BaseModel):
     id: int
     actor_id: Optional[int] = None
+    organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
     event_type: str
     resource_type: Optional[str] = None
     resource_id: Optional[str] = None
     request_id: Optional[str] = None
     ip_address: Optional[str] = None
     user_agent: Optional[str] = None
+    before_state_json: Optional[str] = None
+    after_state_json: Optional[str] = None
     metadata_json: Optional[str] = None
     created_at: datetime
 

@@ -29,9 +29,13 @@ def record_audit_log(
     db: Session,
     event_type: str,
     actor_id: Optional[int] = None,
+    organization_id: Optional[int] = None,
+    workspace_id: Optional[int] = None,
     resource_type: Optional[str] = None,
     resource_id: Optional[str] = None,
     request: Optional[Request] = None,
+    before_state: Optional[Dict[str, Any]] = None,
+    after_state: Optional[Dict[str, Any]] = None,
     metadata: Optional[Dict[str, Any]] = None,
 ) -> AuditLog:
     """Safely log security-relevant actions to the immutable audit trail."""
@@ -52,14 +56,24 @@ def record_audit_log(
     sanitized_meta = sanitize_metadata(metadata) if metadata else None
     metadata_json = json.dumps(sanitized_meta) if sanitized_meta else None
 
+    sanitized_before = sanitize_metadata(before_state) if before_state else None
+    before_json = json.dumps(sanitized_before) if sanitized_before else None
+
+    sanitized_after = sanitize_metadata(after_state) if after_state else None
+    after_json = json.dumps(sanitized_after) if sanitized_after else None
+
     log_entry = AuditLog(
         actor_id=actor_id,
+        organization_id=organization_id,
+        workspace_id=workspace_id,
         event_type=event_type,
         resource_type=resource_type,
         resource_id=str(resource_id) if resource_id is not None else None,
         request_id=request_id,
         ip_address=ip_address,
         user_agent=user_agent[:255] if user_agent else None,
+        before_state_json=before_json,
+        after_state_json=after_json,
         metadata_json=metadata_json,
     )
     db.add(log_entry)

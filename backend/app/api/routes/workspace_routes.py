@@ -72,7 +72,7 @@ def log_activity(db: Session, workspace_id: int, actor_id: int, event_type: str,
         description=description,
         project_id=project_id,
         task_id=task_id,
-        created_at=datetime.now(timezone.utc)
+        created_at=datetime.utcnow()
     )
     db.add(activity)
     db.commit()
