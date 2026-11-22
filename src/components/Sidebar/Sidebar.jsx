@@ -64,7 +64,6 @@ export function Sidebar({ activeTab = 'tasks', onTabChange, onOpenFeedback }) {
     { id: 'developer', label: t('nav.developer', 'Developer Platform'), icon: Code, count: null },
     { id: 'analytics', label: t('nav.analytics', 'Analytics'), icon: BarChart2, count: null },
     { id: 'support', label: t('nav.support', 'Support & Help'), icon: HelpCircle, count: null },
-    { id: 'settings', label: t('nav.settings', 'Regional Settings'), icon: Globe, count: null },
   ];
 
   const handleReset = () => {

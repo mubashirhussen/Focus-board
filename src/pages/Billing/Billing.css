@@ -299,6 +299,166 @@
   cursor: default;
 }
 
+/* Subscription Summary Cards */
+.billing-overview-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.billing-summary-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.summary-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.summary-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.5px;
+}
+
+.summary-status-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background-color: #ecfdf5;
+  color: #059669;
+}
+
+.summary-status-badge.default {
+  background-color: #eff6ff;
+  color: #2563eb;
+}
+
+.summary-plan-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.payment-method-box {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.payment-card-icon {
+  color: #2563eb;
+}
+
+.card-brand-num {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.card-expiry {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.summary-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 10px;
+  margin-top: 4px;
+}
+
+.summary-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #475569;
+}
+
+/* Invoices Table */
+.billing-invoices-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.invoices-table-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.invoices-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  text-align: left;
+}
+
+.invoices-table th {
+  background-color: #f8fafc;
+  padding: 12px 18px;
+  color: #475569;
+  font-weight: 600;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.invoices-table td {
+  padding: 14px 18px;
+  color: #1e293b;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.invoices-table tr:last-child td {
+  border-bottom: none;
+}
+
+.invoice-status-paid {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background-color: #ecfdf5;
+  color: #059669;
+}
+
+.btn-download-invoice {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-download-invoice:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
 @media (max-width: 768px) {
   .billing-page {
     padding: 16px;

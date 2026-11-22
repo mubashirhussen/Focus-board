@@ -14,6 +14,5 @@ export const APP_CONFIG = {
   navItems: [
     { id: 'tasks', label: 'My Tasks', icon: 'CheckSquare' },
     { id: 'calendar', label: 'Calendar', icon: 'Calendar' },
-    { id: 'settings', label: 'Settings', icon: 'Settings' },
   ],
 };

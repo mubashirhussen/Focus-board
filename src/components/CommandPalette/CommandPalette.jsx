@@ -246,13 +246,6 @@ export function CommandPalette({
       icon: Bot,
       action: () => { onNavigate('agents'); onClose(); },
     },
-    {
-      id: 'nav-settings',
-      category: 'Navigation',
-      label: 'Open Regional Settings, Multi-Currency & Languages',
-      icon: Globe,
-      action: () => { onNavigate('settings'); onClose(); },
-    },
   ], [onNavigate, onClose]);
 
   // Static Action Commands

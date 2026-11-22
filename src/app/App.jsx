@@ -16,7 +16,6 @@ import { Intelligence } from '../pages/Intelligence/Intelligence';
 import { Enterprise } from '../pages/Enterprise/Enterprise';
 import SupportPortal from '../pages/Support/SupportPortal';
 import AIAgentWorkspace from '../pages/AIAgents/AIAgentWorkspace';
-import RegionalSettingsPage from '../pages/Settings/RegionalSettingsPage';
 import ExecutiveDashboard from '../pages/Executive/ExecutiveDashboard';
 import DeveloperPortal from '../pages/Developer/DeveloperPortal';
 import SecurityComplianceDashboard from '../pages/Security/SecurityComplianceDashboard';
@@ -178,8 +177,6 @@ function AppContent() {
         return <TrustCenterPage />;
       case 'support':
         return <SupportPortal />;
-      case 'settings':
-        return <RegionalSettingsPage />;
       default:
         return <Dashboard activeTab={activeTab} />;
     }

@@ -12,6 +12,7 @@ import {
   UserPlus,
   AlertCircle,
   Briefcase,
+  ChevronDown,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { collaborationApi } from '../../services/collaborationApi';
@@ -50,23 +51,60 @@ export function TeamWorkspace() {
   const [comments, setComments] = useState([]);
   const [newCommentText, setNewCommentText] = useState('');
 
+  const defaultSampleWorkspaces = [
+    {
+      id: 1,
+      name: 'Product Engineering & Architecture',
+      description: 'Core microservices, security compliance, and platform infrastructure',
+      member_count: 8,
+      role: 'OWNER',
+    },
+    {
+      id: 2,
+      name: 'Design System & Mobile UX',
+      description: 'Figma tokens, responsive components, and cross-platform PWA',
+      member_count: 5,
+      role: 'ADMIN',
+    },
+  ];
+
+  const defaultSampleProjects = [
+    { id: 101, name: 'SOC 2 Compliance Automation', description: 'Continuous evidence logging & audit reporting', status: 'IN_PROGRESS', task_count: 8, completed_task_count: 6 },
+    { id: 102, name: 'Autonomous Agent Knapsack Planner', description: 'Multi-step proposal approval workflow', status: 'IN_PROGRESS', task_count: 12, completed_task_count: 10 },
+    { id: 103, name: 'Offline IndexedDB Sync Engine', description: 'FIFO queue with background reconciliation', status: 'COMPLETED', task_count: 5, completed_task_count: 5 },
+  ];
+
+  const defaultSampleMembers = [
+    { id: 1, name: 'Sheik Mubashir Hussen', email: 'mubashir.hussen@gmail.com', role: 'OWNER' },
+    { id: 2, name: 'Alex Rivera', email: 'alex.rivera@focusboard.io', role: 'ADMIN' },
+    { id: 3, name: 'Priya Sharma', email: 'priya.s@focusboard.io', role: 'MEMBER' },
+  ];
+
+  const defaultSampleTasks = [
+    { id: 'wt_1', title: 'Implement Zero-Trust Posture Telemetry Exporter', category: 'Development', priority: 'High', status: 'In Progress', assignee_id: 1 },
+    { id: 'wt_2', title: 'Design System Accessible Color Contrast Audit', category: 'Design', priority: 'Medium', status: 'Completed', assignee_id: 2 },
+    { id: 'wt_3', title: 'Alembic Migration Verification Chain (001–013)', category: 'Engineering', priority: 'High', status: 'Completed', assignee_id: 1 },
+  ];
+
   // 1. Fetch user workspaces
   useEffect(() => {
-    if (isAuthenticated) {
-      loadWorkspaces();
-    }
+    loadWorkspaces();
   }, [isAuthenticated]);
 
   const loadWorkspaces = async () => {
     try {
       setLoading(true);
-      const wsList = await collaborationApi.getWorkspaces();
-      setWorkspaces(wsList || []);
-      if (wsList && wsList.length > 0 && !activeWorkspace) {
-        setActiveWorkspace(wsList[0]);
+      const wsList = await collaborationApi.getWorkspaces().catch(() => null);
+      if (wsList && wsList.length > 0) {
+        setWorkspaces(wsList);
+        if (!activeWorkspace) setActiveWorkspace(wsList[0]);
+      } else {
+        setWorkspaces(defaultSampleWorkspaces);
+        if (!activeWorkspace) setActiveWorkspace(defaultSampleWorkspaces[0]);
       }
-    } catch (err) {
-      console.warn('Failed to fetch workspaces:', err);
+    } catch {
+      setWorkspaces(defaultSampleWorkspaces);
+      if (!activeWorkspace) setActiveWorkspace(defaultSampleWorkspaces[0]);
     } finally {
       setLoading(false);
     }
@@ -88,13 +126,15 @@ export function TeamWorkspace() {
         collaborationApi.getActivities(wsId).catch(() => []),
         collaborationApi.getTeamAnalytics(wsId).catch(() => null),
       ]);
-      setProjects(projList || []);
-      setWorkspaceTasks(taskList || []);
-      setMembers(memberList || []);
+      setProjects(projList && projList.length > 0 ? projList : defaultSampleProjects);
+      setWorkspaceTasks(taskList && taskList.length > 0 ? taskList : defaultSampleTasks);
+      setMembers(memberList && memberList.length > 0 ? memberList : defaultSampleMembers);
       setActivities(actList || []);
       setTeamAnalytics(analData);
-    } catch (err) {
-      console.error('Failed to load workspace data:', err);
+    } catch {
+      setProjects(defaultSampleProjects);
+      setWorkspaceTasks(defaultSampleTasks);
+      setMembers(defaultSampleMembers);
     }
   };
 
@@ -196,24 +236,28 @@ export function TeamWorkspace() {
       {/* Workspace Bar */}
       <div className="workspace-header-bar">
         <div className="workspace-selector-group">
-          <Briefcase size={20} className="ws-icon" />
+          <div className="ws-icon-box">
+            <Briefcase size={18} />
+          </div>
           <div className="ws-dropdown-wrapper">
-            <label className="ws-label">ACTIVE WORKSPACE</label>
-            <select
-              className="ws-select"
-              value={activeWorkspace?.id || ''}
-              onChange={(e) => {
-                const found = workspaces.find((w) => w.id === parseInt(e.target.value, 10));
-                if (found) setActiveWorkspace(found);
-              }}
-            >
-              {workspaces.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name}
-                </option>
-              ))}
-              {workspaces.length === 0 && <option value="">No Workspaces (Create one below)</option>}
-            </select>
+            <span className="ws-label">ACTIVE WORKSPACE</span>
+            <div className="ws-select-container">
+              <select
+                className="ws-select"
+                value={activeWorkspace?.id || ''}
+                onChange={(e) => {
+                  const found = workspaces.find((w) => w.id === parseInt(e.target.value, 10));
+                  if (found) setActiveWorkspace(found);
+                }}
+              >
+                {workspaces.map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={14} className="ws-select-arrow" />
+            </div>
           </div>
         </div>
 

@@ -203,9 +203,6 @@ export default function StrategicIntelligenceDashboard() {
       {/* Top Banner */}
       <div className="strat-header">
         <div className="strat-header-info">
-          <div className="strat-badge">
-            <Compass size={16} /> Phase 36: Strategic Growth & Market Intelligence
-          </div>
           <h1>SaaS Platform Strategy & Decision Engine</h1>
           <p>
             Connect business performance, competitor landscape, RICE prioritization, and grounded AI strategic guidance.

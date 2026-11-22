@@ -189,10 +189,6 @@ export function Analytics() {
       {/* Top Header & Toolbar - Restructured for High Visual Quality */}
       <div className="analytics-header">
         <div className="analytics-header-titles">
-          <div className="analytics-badge">
-            <TrendingUp size={13} />
-            <span>Real-Time Velocity & Metrics</span>
-          </div>
           <h1 className="analytics-title">Productivity & Analytics</h1>
           <p className="analytics-subtitle">Real-time velocity metrics, task distributions, and performance insights.</p>
         </div>
