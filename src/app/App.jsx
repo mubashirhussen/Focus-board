@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider } from '../context/AuthContext';
 import { TaskProvider } from '../context/TaskContext';
 import { useTasks } from '../hooks/useTasks';
@@ -14,6 +14,10 @@ import { Integrations } from '../pages/Integrations/Integrations';
 import { Billing } from '../pages/Billing/Billing';
 import { Intelligence } from '../pages/Intelligence/Intelligence';
 import { Enterprise } from '../pages/Enterprise/Enterprise';
+import SupportPortal from '../pages/Support/SupportPortal';
+import OnboardingModal from '../components/Onboarding/OnboardingModal';
+import FeedbackModal from '../components/FeedbackModal/FeedbackModal';
+import { growthApi } from '../services/growthApi';
 import { MobileBottomNav } from '../components/Navigation/MobileBottomNav';
 import { AuthModal } from '../components/auth/AuthModal';
 import { CommandPalette } from '../components/CommandPalette/CommandPalette';
@@ -24,7 +28,17 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState('overview');
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
   const { openCreateModal, closeTaskModal, closeDeleteDialog } = useTasks();
+
+  useEffect(() => {
+    growthApi.getOnboarding().then((data) => {
+      if (data && !data.is_completed && !data.dismissed) {
+        setIsOnboardingOpen(true);
+      }
+    }).catch(() => {});
+  }, []);
 
   // Global Keyboard Shortcuts handler
   useKeyboardShortcuts({
@@ -61,6 +75,8 @@ function AppContent() {
         return 'Product Intelligence & Behavioral Insights';
       case 'enterprise':
         return 'Enterprise Governance & Security RBAC';
+      case 'support':
+        return 'Customer Operations & Support';
       case 'tasks':
         return 'Task Management';
       case 'settings':
@@ -89,6 +105,8 @@ function AppContent() {
         return <Intelligence />;
       case 'enterprise':
         return <Enterprise />;
+      case 'support':
+        return <SupportPortal />;
       default:
         return <Dashboard activeTab={activeTab} />;
     }
@@ -97,7 +115,11 @@ function AppContent() {
   return (
     <div className="app-layout">
       {/* Navigation Sidebar (Desktop sticky / Tablet) */}
-      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+      <Sidebar
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        onOpenFeedback={() => setIsFeedbackModalOpen(true)}
+      />
 
       {/* Main Content Area */}
       <div className="app-main-wrapper">
@@ -115,6 +137,18 @@ function AppContent() {
 
       {/* Authentication Modal */}
       <AuthModal />
+
+      {/* Product-Led Growth Onboarding Modal */}
+      <OnboardingModal
+        isOpen={isOnboardingOpen}
+        onClose={() => setIsOnboardingOpen(false)}
+      />
+
+      {/* In-App Feedback & Bug Reporting Modal */}
+      <FeedbackModal
+        isOpen={isFeedbackModalOpen}
+        onClose={() => setIsFeedbackModalOpen(false)}
+      />
 
       {/* Global Command Palette (Cmd/Ctrl + K) */}
       <CommandPalette

@@ -15,6 +15,7 @@ import { TaskList } from '../../components/TaskList/TaskList';
 import { Modal } from '../../components/Modal/Modal';
 import { TaskForm } from '../../components/TaskForm/TaskForm';
 import { ConfirmDialog } from '../../components/ConfirmDialog/ConfirmDialog';
+import OnboardingChecklist from '../../components/Onboarding/OnboardingChecklist';
 import './Dashboard.css';
 
 export function Dashboard() {
@@ -50,6 +51,9 @@ export function Dashboard() {
           <span>New task</span>
         </button>
       </section>
+
+      {/* Persistent PLG Onboarding Checklist */}
+      <OnboardingChecklist />
 
       {/* 2. Focus Notes Carousel (Figma 15:2, 15:30, 15:58) */}
       <FocusNotes />

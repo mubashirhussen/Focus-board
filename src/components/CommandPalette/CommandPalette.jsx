@@ -138,6 +138,13 @@ export function CommandPalette({
       icon: BarChart3,
       action: () => { onNavigate('analytics'); onClose(); },
     },
+    {
+      id: 'nav-support',
+      category: 'Navigation',
+      label: 'Open Customer Support, Knowledge Base & Roadmap',
+      icon: HelpCircle,
+      action: () => { onNavigate('support'); onClose(); },
+    },
   ], [onNavigate, onClose]);
 
   // Static Action Commands

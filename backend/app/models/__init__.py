@@ -27,6 +27,18 @@ from app.models.enterprise import (
     EnterpriseInvitation,
     UserMFA,
 )
+from app.models.growth import (
+    OnboardingProgress,
+    ProductAnalyticsEvent,
+    CustomerFeedback,
+)
+from app.models.support import (
+    SupportTicket,
+    SupportMessage,
+    KnowledgeBaseCategory,
+    KnowledgeBaseArticle,
+    ProductRoadmapItem,
+)
 
 __all__ = [
     "User",
@@ -59,4 +71,12 @@ __all__ = [
     "OrganizationDomain",
     "EnterpriseInvitation",
     "UserMFA",
+    "OnboardingProgress",
+    "ProductAnalyticsEvent",
+    "CustomerFeedback",
+    "SupportTicket",
+    "SupportMessage",
+    "KnowledgeBaseCategory",
+    "KnowledgeBaseArticle",
+    "ProductRoadmapItem",
 ]

@@ -43,6 +43,14 @@ def test_alembic_migrations_lifecycle():
             "organization_domains",
             "user_mfa",
             "intelligence_preferences",
+            "onboarding_progress",
+            "product_analytics_events",
+            "customer_feedbacks",
+            "support_tickets",
+            "support_messages",
+            "knowledge_base_categories",
+            "knowledge_base_articles",
+            "product_roadmap_items",
         ]
 
         for table in expected_tables:

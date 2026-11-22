@@ -12,12 +12,14 @@ import {
   ShieldCheck,
   Settings,
   RotateCcw,
+  HelpCircle,
+  MessageSquare,
 } from 'lucide-react';
 import { useTasks } from '../../hooks/useTasks';
 import { APP_CONFIG } from '../../app/appConfig';
 import './Sidebar.css';
 
-export function Sidebar({ activeTab = 'overview', onTabChange }) {
+export function Sidebar({ activeTab = 'overview', onTabChange, onOpenFeedback }) {
   const { stats, resetToSampleData } = useTasks();
 
   const navItems = [
@@ -31,6 +33,7 @@ export function Sidebar({ activeTab = 'overview', onTabChange }) {
     { id: 'intelligence', label: 'Intelligence', icon: Brain, count: null },
     { id: 'enterprise', label: 'Enterprise Admin', icon: ShieldCheck, count: null },
     { id: 'analytics', label: 'Analytics', icon: BarChart2, count: null },
+    { id: 'support', label: 'Support & Help', icon: HelpCircle, count: null },
   ];
 
   const handleReset = () => {
@@ -85,8 +88,20 @@ export function Sidebar({ activeTab = 'overview', onTabChange }) {
           </nav>
         </div>
 
-        {/* Sidebar Footer / Quick Reset */}
+        {/* Sidebar Footer / Quick Reset & Feedback */}
         <div className="sidebar-footer">
+          {onOpenFeedback && (
+            <button
+              type="button"
+              className="sidebar-reset-btn"
+              onClick={onOpenFeedback}
+              title="Share feedback"
+              style={{ marginBottom: '0.375rem' }}
+            >
+              <MessageSquare size={14} aria-hidden="true" />
+              <span>Feedback</span>
+            </button>
+          )}
           <button
             type="button"
             className="sidebar-reset-btn"
