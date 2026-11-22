@@ -1,233 +1,298 @@
-from datetime import datetime, timezone, timedelta
-from typing import List
-import csv
-import io
-from fastapi import APIRouter, Depends, Query, Response, status
+from datetime import datetime, timezone
+from typing import List, Optional
+from fastapi import APIRouter, Depends, Query, Response, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 
 from app.db.database import get_db
 from app.models.user import User
-from app.models.task import Task
 from app.schemas.analytics import (
     AnalyticsSummary,
     TrendItem,
+    TrendComparisonResponse,
     AnalyticsDistribution,
-    DistributionItem,
     AnalyticsInsightsResponse,
-    ProductivityInsight,
+    PersonalProductivityResponse,
+    ProjectAnalyticsResponse,
+    TeamAnalyticsResponse,
+    WorkspaceAnalyticsResponse,
+    OrganizationAnalyticsResponse,
+    DeadlineAnalyticsResponse,
+    ActivityAnalyticsResponse,
+    KPISummaryResponse,
 )
 from app.api.dependencies import get_current_user
+from app.services.analytics_service import analytics_service
 
-router = APIRouter(prefix="/analytics", tags=["Analytics"])
+router = APIRouter(prefix="/analytics", tags=["Analytics & Productivity Reports"])
 
+# -------------------------------------------------------------
+# 1. Main Dashboard & KPI Summaries
+# -------------------------------------------------------------
 @router.get("/summary", response_model=AnalyticsSummary)
-def get_analytics_summary(
+@router.get("/dashboard", response_model=AnalyticsSummary)
+def get_dashboard_summary(
+    workspace_id: Optional[int] = Query(None, description="Scope to workspace"),
+    project_id: Optional[int] = Query(None, description="Scope to project"),
+    team_id: Optional[int] = Query(None, description="Scope to team"),
+    organization_id: Optional[int] = Query(None, description="Scope to organization"),
+    start_date: Optional[str] = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="Filter end date (YYYY-MM-DD)"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Calculate aggregate task metrics for the authenticated user."""
-    tasks = db.query(Task).filter(Task.user_id == current_user.id).all()
-    
-    total = len(tasks)
-    completed = sum(1 for t in tasks if (t.status or "").lower() == "completed")
-    in_progress = sum(1 for t in tasks if (t.status or "").lower() == "in progress")
-    todo = sum(1 for t in tasks if (t.status or "").lower() == "todo")
-    
-    now_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    overdue = 0
-    due_today = 0
-    high_priority_pending = 0
+    """Calculate aggregate task and project KPI metrics for the dashboard."""
+    return analytics_service.get_dashboard_summary(
+        db=db,
+        current_user=current_user,
+        workspace_id=workspace_id,
+        project_id=project_id,
+        team_id=team_id,
+        organization_id=organization_id,
+        start_date=start_date,
+        end_date=end_date,
+    )
 
-    for t in tasks:
-        if (t.status or "").lower() != "completed" and (t.priority or "").lower() == "high":
-            high_priority_pending += 1
-        if t.due_date and (t.status or "").lower() != "completed":
-            if t.due_date < now_date:
-                overdue += 1
-            elif t.due_date == now_date:
-                due_today += 1
+@router.get("/kpis", response_model=KPISummaryResponse)
+def get_kpis(
+    workspace_id: Optional[int] = Query(None, description="Scope to workspace"),
+    project_id: Optional[int] = Query(None, description="Scope to project"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Unified summary of core organizational performance KPIs."""
+    return analytics_service.get_kpis(
+        db=db,
+        current_user=current_user,
+        workspace_id=workspace_id,
+        project_id=project_id,
+    )
 
-    completion_rate = round((completed / total) * 100) if total > 0 else 0
+# -------------------------------------------------------------
+# 2. Personal Productivity Analytics
+# -------------------------------------------------------------
+@router.get("/personal", response_model=PersonalProductivityResponse)
+def get_personal_analytics(
+    start_date: Optional[str] = Query(None, description="Filter start date"),
+    end_date: Optional[str] = Query(None, description="Filter end date"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Personal productivity, velocity, and workload metrics for the authenticated user."""
+    return analytics_service.get_personal_analytics(
+        db=db,
+        current_user=current_user,
+        start_date=start_date,
+        end_date=end_date,
+    )
 
-    return {
-        "total": total,
-        "completed": completed,
-        "in_progress": in_progress,
-        "todo": todo,
-        "overdue": overdue,
-        "due_today": due_today,
-        "completion_rate": completion_rate,
-        "high_priority_pending": high_priority_pending
-    }
+# -------------------------------------------------------------
+# 3. Project Analytics & Health
+# -------------------------------------------------------------
+@router.get("/projects", response_model=ProjectAnalyticsResponse)
+def get_projects_analytics(
+    workspace_id: Optional[int] = Query(None, description="Scope to workspace"),
+    project_id: Optional[int] = Query(None, description="Scope to specific project"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Aggregate project performance, progress, and health metrics."""
+    return analytics_service.get_project_analytics(
+        db=db,
+        current_user=current_user,
+        workspace_id=workspace_id,
+        project_id=project_id,
+    )
 
+@router.get("/projects/{project_id}", response_model=ProjectAnalyticsResponse)
+def get_single_project_analytics(
+    project_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Detailed analytics for an individual project."""
+    res = analytics_service.get_project_analytics(
+        db=db,
+        current_user=current_user,
+        project_id=project_id,
+    )
+    if not res.projects:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found.")
+    return res
+
+# -------------------------------------------------------------
+# 4. Team Analytics & Workload Distribution
+# -------------------------------------------------------------
+@router.get("/teams/{team_id}", response_model=TeamAnalyticsResponse)
+def get_team_analytics(
+    team_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Workload distribution and performance metrics for a specific team."""
+    try:
+        return analytics_service.get_team_analytics(
+            db=db,
+            current_user=current_user,
+            team_id=team_id,
+        )
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found.")
+
+# -------------------------------------------------------------
+# 5. Workspace & Organization Analytics
+# -------------------------------------------------------------
+@router.get("/workspaces/{workspace_id}", response_model=WorkspaceAnalyticsResponse)
+def get_workspace_analytics(
+    workspace_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Workspace-scoped analytics metrics."""
+    try:
+        return analytics_service.get_workspace_analytics(
+            db=db,
+            current_user=current_user,
+            workspace_id=workspace_id,
+        )
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workspace not found.")
+
+@router.get("/organization", response_model=OrganizationAnalyticsResponse)
+def get_organization_analytics(
+    organization_id: Optional[int] = Query(None, description="Organization ID"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Organization-level aggregate performance metrics."""
+    if not organization_id:
+        _, _, _, org_ids = analytics_service.get_accessible_scope(db, current_user)
+        if not org_ids:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No organization found.")
+        organization_id = org_ids[0]
+
+    try:
+        return analytics_service.get_organization_analytics(
+            db=db,
+            current_user=current_user,
+            organization_id=organization_id,
+        )
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Organization access denied.")
+
+# -------------------------------------------------------------
+# 6. Trends, Distributions & Deadlines
+# -------------------------------------------------------------
 @router.get("/completion-trends", response_model=List[TrendItem])
 def get_completion_trends(
     days: int = Query(7, ge=1, le=90, description="Trend window in days (7, 30, 90)"),
+    workspace_id: Optional[int] = Query(None, description="Scope to workspace"),
+    project_id: Optional[int] = Query(None, description="Scope to project"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Calculate daily task completions and creations over the selected period."""
-    today = datetime.now(timezone.utc).date()
-    start_date = today - timedelta(days=days - 1)
+    """Daily task creations and completions over the selected window."""
+    res = analytics_service.get_completion_trends(
+        db=db,
+        current_user=current_user,
+        days=days,
+        workspace_id=workspace_id,
+        project_id=project_id,
+        compare_previous=False,
+    )
+    return res.current_period
 
-    tasks = db.query(Task).filter(Task.user_id == current_user.id).all()
-
-    # Generate dates list
-    trend_map = {}
-    for i in range(days):
-        d = start_date + timedelta(days=i)
-        d_str = d.strftime("%Y-%m-%d")
-        trend_map[d_str] = {"completed": 0, "created": 0}
-
-    for t in tasks:
-        # Created
-        if t.created_at:
-            c_date = t.created_at.date().strftime("%Y-%m-%d")
-            if c_date in trend_map:
-                trend_map[c_date]["created"] += 1
-        # Completed
-        if t.completed_at and (t.status or "").lower() == "completed":
-            comp_date = t.completed_at.date().strftime("%Y-%m-%d")
-            if comp_date in trend_map:
-                trend_map[comp_date]["completed"] += 1
-
-    return [
-        {"date": d_str, "completed": data["completed"], "created": data["created"]}
-        for d_str, data in sorted(trend_map.items())
-    ]
+@router.get("/trends/compare", response_model=TrendComparisonResponse)
+def get_trends_comparison(
+    days: int = Query(7, ge=1, le=90, description="Comparison window in days"),
+    workspace_id: Optional[int] = Query(None, description="Scope to workspace"),
+    project_id: Optional[int] = Query(None, description="Scope to project"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Comparative period trend analysis showing percentage changes and direction."""
+    return analytics_service.get_completion_trends(
+        db=db,
+        current_user=current_user,
+        days=days,
+        workspace_id=workspace_id,
+        project_id=project_id,
+        compare_previous=True,
+    )
 
 @router.get("/distribution", response_model=AnalyticsDistribution)
 def get_distribution(
+    workspace_id: Optional[int] = Query(None, description="Scope to workspace"),
+    project_id: Optional[int] = Query(None, description="Scope to project"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Distribution of tasks across status, priority, and category."""
-    tasks = db.query(Task).filter(Task.user_id == current_user.id).all()
-    total = len(tasks)
+    """Distribution of tasks across status, priority, category, and assignee."""
+    return analytics_service.get_distribution(
+        db=db,
+        current_user=current_user,
+        workspace_id=workspace_id,
+        project_id=project_id,
+    )
 
-    def calculate_group(items):
-        counts = {}
-        for item in items:
-            counts[item] = counts.get(item, 0) + 1
-        res = []
-        for name, count in sorted(counts.items(), key=lambda x: x[1], reverse=True):
-            pct = round((count / total) * 100, 1) if total > 0 else 0.0
-            res.append({"name": name, "count": count, "percentage": pct})
-        return res
+@router.get("/deadlines", response_model=DeadlineAnalyticsResponse)
+def get_deadlines_analytics(
+    workspace_id: Optional[int] = Query(None, description="Scope to workspace"),
+    project_id: Optional[int] = Query(None, description="Scope to project"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Deadline adherence, overdue metrics, and schedule risk scores."""
+    return analytics_service.get_deadline_analytics(
+        db=db,
+        current_user=current_user,
+        workspace_id=workspace_id,
+        project_id=project_id,
+    )
 
-    return {
-        "by_status": calculate_group([t.status or "Todo" for t in tasks]),
-        "by_priority": calculate_group([t.priority or "Medium" for t in tasks]),
-        "by_category": calculate_group([t.category or "General" for t in tasks]),
-    }
+@router.get("/activity", response_model=ActivityAnalyticsResponse)
+def get_activity_analytics(
+    days: int = Query(14, ge=1, le=90, description="Activity window in days"),
+    workspace_id: Optional[int] = Query(None, description="Scope to workspace"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Activity event velocity and category distribution."""
+    return analytics_service.get_activity_analytics(
+        db=db,
+        current_user=current_user,
+        days=days,
+        workspace_id=workspace_id,
+    )
 
 @router.get("/insights", response_model=AnalyticsInsightsResponse)
 def get_insights(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Generate smart productivity insights for the user."""
-    tasks = db.query(Task).filter(Task.user_id == current_user.id).all()
-    total = len(tasks)
-    completed = sum(1 for t in tasks if (t.status or "").lower() == "completed")
-    now_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    overdue = sum(1 for t in tasks if t.due_date and t.due_date < now_date and (t.status or "").lower() != "completed")
-    
-    insights: List[ProductivityInsight] = []
+    """Smart personalized productivity insights and suggestions."""
+    return analytics_service.get_insights(db=db, current_user=current_user)
 
-    if total == 0:
-        insights.append(ProductivityInsight(
-            type="info",
-            title="Welcome to FocusBoard",
-            message="Create your first task to start tracking your daily progress and productivity metrics."
-        ))
-    else:
-        rate = round((completed / total) * 100)
-        if rate >= 80:
-            insights.append(ProductivityInsight(
-                type="success",
-                title="Exceptional Progress",
-                message=f"You have completed {rate}% of your tasks. Keep up the great velocity!"
-            ))
-        elif rate < 40 and total >= 3:
-            insights.append(ProductivityInsight(
-                type="warning",
-                title="Pacing Check",
-                message=f"Your completion rate is currently {rate}%. Consider breaking larger tasks into focused subtasks."
-            ))
-
-        if overdue > 0:
-            insights.append(ProductivityInsight(
-                type="warning",
-                title="Overdue Tasks Detected",
-                message=f"You have {overdue} overdue task{'s' if overdue > 1 else ''}. Review your deadlines to maintain momentum."
-            ))
-        else:
-            insights.append(ProductivityInsight(
-                type="success",
-                title="No Overdue Deadlines",
-                message="All pending tasks are currently on schedule. Well done!"
-            ))
-
-    # Identify most active category
-    category_counts = {}
-    for t in tasks:
-        category_counts[t.category] = category_counts.get(t.category, 0) + 1
-    most_active = max(category_counts, key=category_counts.get) if category_counts else None
-
-    return {
-        "insights": insights,
-        "most_active_category": most_active,
-        "fastest_completion_day": "Tuesday"
-    }
-
-def sanitize_csv_cell(value: str) -> str:
-    """
-    Mitigate spreadsheet formula injection attacks (CSV Injection / CWE-1236).
-    If cell begins with =, +, -, or @, prefix it with a single quote.
-    """
-    if not value:
-        return ""
-    val_str = str(value)
-    if val_str.startswith(("=", "+", "-", "@")):
-        return f"'{val_str}"
-    return val_str
-
+# -------------------------------------------------------------
+# 7. Reports & CSV Export
+# -------------------------------------------------------------
 @router.get("/export")
-def export_tasks_csv(
+def export_analytics_csv(
+    report_type: str = Query("tasks", description="Report type: tasks, projects"),
+    workspace_id: Optional[int] = Query(None, description="Scope to workspace"),
+    project_id: Optional[int] = Query(None, description="Scope to project"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """
-    Export all user tasks to a secure CSV file.
-    Includes sanitization against formula injection and UTF-8-sig encoding.
+    Export analytics reports to secure CSV format with formula injection sanitization and UTF-8 BOM.
     """
-    tasks = db.query(Task).filter(Task.user_id == current_user.id).order_by(Task.created_at.desc()).all()
-
-    output = io.StringIO()
-    writer = csv.writer(output, quoting=csv.QUOTE_MINIMAL)
-
-    # Header
-    writer.writerow(["Task ID", "Title", "Category", "Status", "Priority", "Due Date", "Created At", "Completed At"])
-
-    for t in tasks:
-        writer.writerow([
-            sanitize_csv_cell(t.id),
-            sanitize_csv_cell(t.title),
-            sanitize_csv_cell(t.category),
-            sanitize_csv_cell(t.status),
-            sanitize_csv_cell(t.priority),
-            sanitize_csv_cell(t.due_date or "None"),
-            t.created_at.strftime("%Y-%m-%d %H:%M:%S") if t.created_at else "",
-            t.completed_at.strftime("%Y-%m-%d %H:%M:%S") if t.completed_at else "N/A"
-        ])
-
-    csv_content = output.getvalue()
-    # Add BOM for Excel compatibility with UTF-8
-    csv_bytes = "\ufeff" + csv_content
-
-    filename = f"focusboard_tasks_export_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.csv"
+    csv_bytes, filename = analytics_service.generate_csv_report(
+        db=db,
+        current_user=current_user,
+        report_type=report_type,
+        workspace_id=workspace_id,
+        project_id=project_id,
+    )
     return Response(
         content=csv_bytes,
         media_type="text/csv; charset=utf-8",

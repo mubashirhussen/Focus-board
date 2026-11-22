@@ -33,21 +33,24 @@ def log_task_activity(
     action: str,
     details: str
 ):
-    """Log task-related activity to workspace activity log if attached to a workspace."""
-    if task.workspace_id:
-        try:
-            act = Activity(
-                workspace_id=task.workspace_id,
-                user_id=user_id,
-                action=action,
-                details=details,
-                task_id=task.id,
-                project_id=task.project_id,
-                created_at=datetime.now(timezone.utc)
-            )
-            db.add(act)
-        except Exception:
-            pass
+    """Log task-related activity to activity log."""
+    try:
+        act = Activity(
+            workspace_id=task.workspace_id,
+            organization_id=task.organization_id,
+            project_id=task.project_id,
+            task_id=str(task.id),
+            actor_id=user_id,
+            event_type=action,
+            entity_type="TASK",
+            entity_id=str(task.id),
+            description=details,
+            created_at=datetime.utcnow(),
+        )
+        db.add(act)
+        db.commit()
+    except Exception:
+        pass
 
 def authorize_task_access(db: Session, task: Task, user: User, action: str = "read") -> bool:
     """Multi-tenant security authorization check."""
