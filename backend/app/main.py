@@ -6,6 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.core.config import settings
+from app.core.rate_limiter import RateLimiterMiddleware
+from app.core.security_headers import SecurityHeadersMiddleware
 from app.db.database import engine, Base
 import app.models  # Ensure all models are registered
 from app.api.routes import (
@@ -17,6 +19,8 @@ from app.api.routes import (
     notification_routes,
     workspace_routes,
     websocket_routes,
+    search_routes,
+    audit_routes,
 )
 
 # Configure structured logging
@@ -35,17 +39,23 @@ app = FastAPI(
     description="FocusBoard AI-Powered Multi-User Task Management & Collaborative Workspace API"
 )
 
-# CORS Configuration
+# 1. Security Headers Middleware (OWASP protection)
+app.add_middleware(SecurityHeadersMiddleware)
+
+# 2. CORS Configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["X-Request-ID"]
+    expose_headers=["X-Request-ID", "X-RateLimit-Limit", "X-RateLimit-Remaining", "Retry-After"]
 )
 
-# Correlation Request ID and Structured Logging Middleware
+# 3. Rate Limiter Middleware
+app.add_middleware(RateLimiterMiddleware, enabled=True)
+
+# 4. Correlation Request ID and Structured Logging Middleware
 @app.middleware("http")
 async def correlation_id_and_logging_middleware(request: Request, call_next):
     # Extract or generate correlation ID
@@ -79,6 +89,8 @@ app.include_router(ai_routes.router, prefix=settings.API_V1_STR)
 app.include_router(notification_routes.router, prefix=settings.API_V1_STR)
 app.include_router(workspace_routes.router, prefix=settings.API_V1_STR)
 app.include_router(websocket_routes.router, prefix=settings.API_V1_STR)
+app.include_router(search_routes.router, prefix=settings.API_V1_STR)
+app.include_router(audit_routes.router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 def root():

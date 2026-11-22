@@ -9,6 +9,8 @@ Originally initiated as a high-fidelity frontend based on Figma design specifica
 - **Phase 14**: AI-Powered Task Planning, Smart Prioritization & Proposal Approval Workflows
 - **Phase 15**: Deadline Reminders, Background Job Notifications & Email Integration
 - **Phase 16**: Real-Time Team Collaboration, Shared Projects, Task Assignment & WebSocket Activity Feeds
+- **Phase 17**: Advanced Search, Global Command Palette (`⌘K`), Keyboard Shortcuts & UX Optimization
+- **Phase 18**: Security Hardening, Privacy & GDPR Controls, Immutable Audit Trails, Automated Backup & Disaster Recovery
 
 ---
 
@@ -45,6 +47,23 @@ Originally initiated as a high-fidelity frontend based on Figma design specifica
 - **Task Discussion Threads**: In-context comments for shared task alignment.
 - **Real-Time WebSockets**: Live broadcast of workspace events (`task_created`, `task_assigned`, `comment_added`) over authenticated `/api/v1/ws/workspaces/{id}` channels.
 - **Audit Activity Feed**: Complete immutable audit trail of team operations and updates.
+
+### Advanced Search & Global Command Palette (Phase 17)
+- **Unified Global Search API (`/api/v1/search`)**: Multi-tenant authorized search indexing tasks, projects, and workspaces with status, priority, category, and workspace facet breakdowns.
+- **Command Palette (`⌘K` / `Ctrl+K`)**: Floating quick-action modal with debounced search, keyboard navigation (`↑`/`↓`, `↵`, `Esc`), and contextual action routing.
+- **Global Keyboard Shortcuts**:
+  - `⌘/Ctrl + K`: Toggle Command Palette
+  - `⌘/Ctrl + Shift + F`: Global Search trigger
+  - `N`: Quick Create New Task (from anywhere outside text inputs)
+  - `?`: Open Keyboard Shortcuts Help Cheatsheet
+  - `Esc`: Dismiss open modal, palette, or confirm dialog
+
+### Security Hardening, Privacy & Production Reliability (Phase 18)
+- **OWASP Security Headers**: Automatic application of `Content-Security-Policy`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Strict-Transport-Security`, and `Referrer-Policy`.
+- **Sliding Window Rate Limiter**: In-memory IP-based rate limiting protecting sensitive endpoints (`/auth/login`, `/auth/register`, `/ai/`, `/search`) with standard `429 Too Many Requests` and `Retry-After` headers.
+- **GDPR Privacy & Data Portability**: Machine-readable full data export (`GET /api/v1/auth/export-data`) and permanent account erasure (`DELETE /api/v1/auth/me`) with cascading cleanup.
+- **Immutable Security Audit Trail**: Database audit log model (`audit_logs`) capturing authentication, authorization, access views, and mutations with metadata sanitization (redacting passwords and credentials).
+- **Automated Backup & Disaster Recovery Runbook**: Online zero-downtime database snapshot scripts (`backend/scripts/backup_db.py`, `restore_db.py`) with GZIP compression, SHA256 verification, and automated retention pruning.
 
 ---
 

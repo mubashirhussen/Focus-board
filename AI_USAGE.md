@@ -31,6 +31,12 @@ AI tooling was utilized in an engineering acceleration, architecture validation,
 - **Prompt Injection Defense**: Validating adversarial regex patterns to mitigate prompt hijacking in the chat assistant.
 - **WebSocket Protocol Design**: Designing the connection manager and pub/sub architecture for workspace collaboration.
 
+### Phase 17–18 (Search, Command Palette, Security Hardening & DR)
+- **Global Search Indexing**: Assisted in multi-tenant authorized querying and dynamic facet aggregation across Tasks, Projects, and Workspaces.
+- **Command Palette & Keyboard Shortcuts**: Implementation of accessible focus management, ARIA combobox pattern, and global shortcut listeners (`⌘K`, `⌘+Shift+F`, `N`, `?`, `Esc`).
+- **OWASP Security Hardening & Rate Limiting**: Implementing sliding window token tracking, OWASP security response headers, and audit trail metadata sanitization.
+- **Disaster Recovery Scripts**: Engineering zero-downtime online SQLite snapshotting with GZIP compression, SHA256 integrity validation, and backup retention pruning.
+
 ---
 
 ## 3. Human Engineering Decisions & Authorship
@@ -49,6 +55,7 @@ All core architecture, UX decisions, and code reviews were driven by the candida
 
 Every piece of code generated or assisted was executed, verified, and validated through real compilers and automated test suites:
 - Frontend Node test script: `28/28 passing`
-- Frontend Vite production build: `dist/ built in 1.69s`
-- Backend Pytest test suite: `11/11 test suites passing (100% assertions)`
-- Alembic database migrations: `001_initial` and `002_ai_notifications_collaboration` upgraded cleanly
+- Frontend Vite production build: `dist/ built cleanly with 0 errors`
+- Backend Pytest test suite: `19/19 tests passing (100% assertions across all 13 suites)`
+- Alembic database migrations: `001_initial`, `002_ai_notifications_collaboration`, and `003_audit_trail` upgraded cleanly
+- Disaster recovery backup script verified: `focusboard_*.db.gz` generated with SHA256 checksum and verified restoration

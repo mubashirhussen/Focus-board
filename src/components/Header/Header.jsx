@@ -1,10 +1,14 @@
 import React from 'react';
+import { Search } from 'lucide-react';
 import { APP_CONFIG } from '../../app/appConfig';
 import { UserProfileMenu } from '../auth/UserProfileMenu';
 import { NotificationBell } from '../notifications/NotificationBell';
 import './Header.css';
 
-export function Header({ title = 'Overview' }) {
+export function Header({ title = 'Overview', onOpenCommandPalette }) {
+  const isMac = typeof navigator !== 'undefined' && navigator.platform?.toUpperCase().indexOf('MAC') >= 0;
+  const shortcutLabel = isMac ? '⌘K' : 'Ctrl+K';
+
   return (
     <header className="app-header" role="banner">
       {/* Desktop breadcrumb */}
@@ -27,6 +31,18 @@ export function Header({ title = 'Overview' }) {
 
       {/* Header action controls */}
       <div className="header-actions">
+        {/* Command Palette Quick Trigger */}
+        <button
+          type="button"
+          className="header-cmd-trigger"
+          onClick={onOpenCommandPalette}
+          aria-label={`Open Command Palette (${shortcutLabel})`}
+        >
+          <Search size={14} className="cmd-trigger-icon" />
+          <span className="cmd-trigger-text">Search & commands...</span>
+          <kbd className="cmd-trigger-badge">{shortcutLabel}</kbd>
+        </button>
+
         <NotificationBell />
         <UserProfileMenu />
       </div>

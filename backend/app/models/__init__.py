@@ -9,6 +9,7 @@ from app.models.collaboration import (
     TaskComment,
     Activity,
 )
+from app.models.audit import AuditLog
 
 __all__ = [
     "User",
@@ -21,4 +22,5 @@ __all__ = [
     "Project",
     "TaskComment",
     "Activity",
+    "AuditLog",
 ]
