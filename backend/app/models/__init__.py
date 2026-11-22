@@ -124,6 +124,28 @@ from app.models.integration_marketplace import (
     MarketplaceInstallation,
     OAuthConnector,
 )
+from app.models.observability import (
+    ServiceRegistryItem,
+    PlatformAlertRule,
+    PlatformAlert,
+    PlatformIncident,
+    IncidentTimelineEntry,
+    IncidentActionItem,
+    IncidentPostMortem,
+    SLODefinition,
+    PlatformMaintenanceWindow,
+)
+from app.models.data_intelligence import (
+    AnalyticsDataset,
+    AnalyticsMetricDefinition,
+    AnalyticsDataPipeline,
+    AnalyticsPipelineExecution,
+    AnalyticsDashboard,
+    AnalyticsWidget,
+    AnalyticsCustomReport,
+    DataQualityRule,
+    DataQualityIssue,
+)
 
 __all__ = [
     "User",
@@ -229,4 +251,22 @@ __all__ = [
     "MarketplaceListing",
     "MarketplaceInstallation",
     "OAuthConnector",
+    "ServiceRegistryItem",
+    "PlatformAlertRule",
+    "PlatformAlert",
+    "PlatformIncident",
+    "IncidentTimelineEntry",
+    "IncidentActionItem",
+    "IncidentPostMortem",
+    "SLODefinition",
+    "PlatformMaintenanceWindow",
+    "AnalyticsDataset",
+    "AnalyticsMetricDefinition",
+    "AnalyticsDataPipeline",
+    "AnalyticsPipelineExecution",
+    "AnalyticsDashboard",
+    "AnalyticsWidget",
+    "AnalyticsCustomReport",
+    "DataQualityRule",
+    "DataQualityIssue",
 ]

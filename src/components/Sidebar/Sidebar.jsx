@@ -25,6 +25,8 @@ import {
   Lightbulb,
   BookOpen,
   Workflow,
+  Server,
+  Database,
 } from 'lucide-react';
 import { useTasks } from '../../hooks/useTasks';
 import { useI18n } from '../../i18n/I18nContext';
@@ -44,6 +46,8 @@ export function Sidebar({ activeTab = 'overview', onTabChange, onOpenFeedback })
     { id: 'calendar', label: t('nav.calendar', 'Calendar'), icon: Calendar, count: null },
     { id: 'automation', label: t('nav.automation', 'Automation Hub'), icon: Workflow, count: null },
     { id: 'integrations', label: t('nav.integrations', 'Integrations'), icon: Layers, count: null },
+    { id: 'operations', label: t('nav.operations', 'Platform Ops'), icon: Server, count: null },
+    { id: 'data-intelligence', label: t('nav.data_intelligence', 'Data Intelligence'), icon: Database, count: null },
     { id: 'billing', label: t('nav.billing', 'Plans & Billing'), icon: CreditCard, count: null },
     { id: 'intelligence', label: t('nav.intelligence', 'Intelligence'), icon: Brain, count: null },
     { id: 'enterprise', label: t('nav.enterprise', 'Enterprise Admin'), icon: ShieldCheck, count: null },

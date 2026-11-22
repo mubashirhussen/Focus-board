@@ -27,6 +27,8 @@ import InnovationLabDashboard from '../pages/Innovation/InnovationLabDashboard';
 import KnowledgeIntelligenceDashboard from '../pages/Knowledge/KnowledgeIntelligenceDashboard';
 import AutomationDashboard from '../pages/Automation/AutomationDashboard';
 import IntegrationPlatformDashboard from '../pages/Integrations/IntegrationPlatformDashboard';
+import OperationsConsole from '../pages/Operations/OperationsConsole';
+import DataIntelligenceDashboard from '../pages/DataIntelligence/DataIntelligenceDashboard';
 import { I18nProvider, useI18n } from '../i18n/I18nContext';
 import OnboardingModal from '../components/Onboarding/OnboardingModal';
 import FeedbackModal from '../components/FeedbackModal/FeedbackModal';
@@ -86,6 +88,10 @@ function AppContent() {
         return 'Automation Intelligence & Workflow Orchestrator';
       case 'integrations':
         return 'Integrations Ecosystem & Developer Platform';
+      case 'operations':
+        return 'Platform Observability & Operations Console';
+      case 'data-intelligence':
+        return 'Data Intelligence, BI & Enterprise Insights';
       case 'billing':
         return 'SaaS Plans & Usage Limits';
       case 'intelligence':
@@ -136,6 +142,10 @@ function AppContent() {
         return <AutomationDashboard />;
       case 'integrations':
         return <IntegrationPlatformDashboard />;
+      case 'operations':
+        return <OperationsConsole />;
+      case 'data-intelligence':
+        return <DataIntelligenceDashboard />;
       case 'billing':
         return <Billing />;
       case 'intelligence':

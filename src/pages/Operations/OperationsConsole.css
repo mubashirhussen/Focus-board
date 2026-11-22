@@ -1,0 +1,173 @@
+.ops-container {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+  color: #1e293b;
+  font-family: inherit;
+}
+
+.ops-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.ops-title-area h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.ops-subtitle {
+  font-size: 0.95rem;
+  color: #64748b;
+}
+
+.ops-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.ops-metric-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.ops-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 24px;
+  overflow-x: auto;
+}
+
+.ops-tab-btn {
+  padding: 10px 18px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-weight: 500;
+  font-size: 0.92rem;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.ops-tab-btn.active {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+}
+
+.ops-badge-count {
+  background: #fee2e2;
+  color: #dc2626;
+  font-size: 0.75rem;
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+/* Incident Timeline */
+.incident-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 16px 0;
+  padding-left: 12px;
+  border-left: 2px solid #e2e8f0;
+}
+
+.timeline-entry {
+  position: relative;
+  padding-left: 16px;
+}
+
+.timeline-dot {
+  position: absolute;
+  left: -21px;
+  top: 4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #3b82f6;
+  border: 2px solid white;
+}
+
+.timeline-meta {
+  font-size: 0.78rem;
+  color: #64748b;
+  margin-bottom: 2px;
+}
+
+.timeline-msg {
+  font-size: 0.88rem;
+  color: #1e293b;
+}
+
+/* SLO Card */
+.slo-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.slo-progress-bar {
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 10px 0;
+}
+
+.slo-progress-fill {
+  height: 100%;
+  background: #16a34a;
+}
+
+.slo-progress-fill.warning {
+  background: #f59e0b;
+}
+
+.slo-progress-fill.danger {
+  background: #dc2626;
+}
+
+/* Severity Pill */
+.sev-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.sev-pill.sev1 { background: #fee2e2; color: #991b1b; }
+.sev-pill.sev2 { background: #ffedd5; color: #9a3412; }
+.sev-pill.sev3 { background: #fef9c3; color: #854d0e; }
+.sev-pill.sev4 { background: #f1f5f9; color: #475569; }
+
+.sev-pill.critical { background: #fee2e2; color: #991b1b; }
+.sev-pill.error { background: #ffedd5; color: #9a3412; }
+.sev-pill.warning { background: #fef9c3; color: #854d0e; }
+.sev-pill.info { background: #e0f2fe; color: #075985; }

@@ -9,6 +9,8 @@ export const translations = {
     'nav.calendar': 'Calendar',
     'nav.automation': 'Automation Hub',
     'nav.integrations': 'Integrations',
+    'nav.operations': 'Platform Ops',
+    'nav.data_intelligence': 'Data Intelligence',
     'nav.billing': 'Plans & Billing',
     'nav.intelligence': 'Intelligence',
     'nav.enterprise': 'Enterprise Admin',

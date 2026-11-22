@@ -128,6 +128,20 @@ export function CommandPalette({
       action: () => { onNavigate('integrations'); onClose(); },
     },
     {
+      id: 'nav-operations',
+      category: 'Navigation',
+      label: 'Open Platform Operations & Observability Console',
+      icon: Briefcase,
+      action: () => { onNavigate('operations'); onClose(); },
+    },
+    {
+      id: 'nav-data-intelligence',
+      category: 'Navigation',
+      label: 'Open Data Intelligence, BI & Enterprise Insights',
+      icon: Briefcase,
+      action: () => { onNavigate('data-intelligence'); onClose(); },
+    },
+    {
       id: 'nav-billing',
       category: 'Navigation',
       label: 'View Subscription Plans & Quota Limits',
