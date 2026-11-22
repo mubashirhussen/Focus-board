@@ -27,7 +27,17 @@ FocusBoard is built to solve everyday task organization with clean visual hierar
 
 ---
 
-## 2. Tech Stack
+## 2. Screenshots
+
+### Desktop Dashboard (1440px)
+![FocusBoard Desktop Dashboard](./screenshots/focusboard-desktop.png)
+
+### Mobile Dashboard (390px)
+<img src="./screenshots/focusboard-mobile.png" alt="FocusBoard Mobile Dashboard" width="390" />
+
+---
+
+## 3. Tech Stack
 
 - **Framework**: React 19 (Hooks, Context API, memoization)
 - **Tooling & Bundler**: Vite 8
@@ -38,12 +48,15 @@ FocusBoard is built to solve everyday task organization with clean visual hierar
 
 ---
 
-## 3. Project Structure
+## 4. Project Structure
 
 ```
 focusboard/
 ├── public/
 │   └── favicon.svg
+├── screenshots/
+│   ├── focusboard-desktop.png
+│   └── focusboard-mobile.png
 ├── src/
 │   ├── app/
 │   │   ├── App.jsx
@@ -53,43 +66,19 @@ focusboard/
 │   │   ├── images/
 │   │   └── icons/
 │   ├── components/
-│   │   ├── Sidebar/
-│   │   │   ├── Sidebar.jsx
-│   │   │   └── Sidebar.css
-│   │   ├── Header/
-│   │   │   ├── Header.jsx
-│   │   │   └── Header.css
-│   │   ├── StatCard/
-│   │   │   ├── StatCard.jsx
-│   │   │   └── StatCard.css
-│   │   ├── FocusNotes/
-│   │   │   ├── FocusNotes.jsx
-│   │   │   └── FocusNotes.css
-│   │   ├── TaskList/
-│   │   │   ├── TaskList.jsx
-│   │   │   └── TaskList.css
-│   │   ├── TaskItem/
-│   │   │   ├── TaskItem.jsx
-│   │   │   └── TaskItem.css
-│   │   ├── TaskFilters/
-│   │   │   ├── TaskFilters.jsx
-│   │   │   └── TaskFilters.css
-│   │   ├── TaskForm/
-│   │   │   ├── TaskForm.jsx
-│   │   │   └── TaskForm.css
-│   │   ├── Modal/
-│   │   │   ├── Modal.jsx
-│   │   │   └── Modal.css
-│   │   ├── EmptyState/
-│   │   │   ├── EmptyState.jsx
-│   │   │   └── EmptyState.css
-│   │   └── ConfirmDialog/
-│   │       ├── ConfirmDialog.jsx
-│   │       └── ConfirmDialog.css
+│   │   ├── Sidebar/ (Sidebar.jsx, Sidebar.css)
+│   │   ├── Header/ (Header.jsx, Header.css)
+│   │   ├── StatCard/ (StatCard.jsx, StatCard.css)
+│   │   ├── FocusNotes/ (FocusNotes.jsx, FocusNotes.css)
+│   │   ├── TaskList/ (TaskList.jsx, TaskList.css)
+│   │   ├── TaskItem/ (TaskItem.jsx, TaskItem.css)
+│   │   ├── TaskFilters/ (TaskFilters.jsx, TaskFilters.css)
+│   │   ├── TaskForm/ (TaskForm.jsx, TaskForm.css)
+│   │   ├── Modal/ (Modal.jsx, Modal.css)
+│   │   ├── EmptyState/ (EmptyState.jsx, EmptyState.css)
+│   │   └── ConfirmDialog/ (ConfirmDialog.jsx, ConfirmDialog.css)
 │   ├── pages/
-│   │   └── Dashboard/
-│   │       ├── Dashboard.jsx
-│   │       └── Dashboard.css
+│   │   └── Dashboard/ (Dashboard.jsx, Dashboard.css)
 │   ├── context/
 │   │   └── TaskContext.jsx
 │   ├── hooks/
@@ -122,7 +111,7 @@ focusboard/
 
 ---
 
-## 4. Installation & Getting Started
+## 5. Installation & Getting Started
 
 ### Prerequisites
 - Node.js (version 18 or higher recommended; verified on Node v24)
@@ -163,7 +152,7 @@ npm run preview
 
 ---
 
-## 5. State Management Architecture
+## 6. State Management Architecture
 
 State is architected around the **Single Source of Truth** principle using React's built-in **Context API** (`TaskContext`) combined with custom hooks (`useTasks`, `useLocalStorage`).
 
@@ -174,7 +163,7 @@ State is architected around the **Single Source of Truth** principle using React
 
 ---
 
-## 6. Local Storage Persistence
+## 7. Local Storage Persistence
 
 Task data is stored under the storage key defined in `.env` (`focusboard_tasks_v1`).
 
@@ -185,7 +174,7 @@ Task data is stored under the storage key defined in `.env` (`focusboard_tasks_v
 
 ---
 
-## 7. Responsive Design System
+## 8. Responsive Design System
 
 The application adapts across three primary screen widths matching Figma specifications:
 
@@ -201,7 +190,7 @@ The application adapts across three primary screen widths matching Figma specifi
 
 ---
 
-## 8. Deployment
+## 9. Deployment
 
 ### Deploying to Vercel
 1. Sign in to [Vercel](https://vercel.com) using GitHub.
@@ -215,7 +204,7 @@ The application adapts across three primary screen widths matching Figma specifi
 
 ---
 
-## 9. Limitations
+## 10. Limitations
 
 - **Single User Scope**: Designed strictly as a client-side, single-user dashboard; does not implement multi-tenant authentication or server-side databases.
 - **Unlinked Navigation Items**: As designated in the assessment scope, navigation sections such as "Calendar" and "Settings" are visual UI placeholders, keeping focus on core task management and the Focus Notes carousel.
