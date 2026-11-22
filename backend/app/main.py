@@ -52,6 +52,9 @@ from app.api.routes import (
     product_lifecycle_routes,
     organization_routes,
     project_routes,
+    board_routes,
+    view_routes,
+    filter_routes,
 )
 
 # Configure structured, sensitive-data-safe logging
@@ -174,6 +177,9 @@ app.include_router(security_intelligence_routes.router, prefix=f"{settings.API_V
 app.include_router(product_lifecycle_routes.router, prefix=f"{settings.API_V1_STR}/product-lifecycle")
 app.include_router(organization_routes.router, prefix=settings.API_V1_STR)
 app.include_router(project_routes.router, prefix=settings.API_V1_STR)
+app.include_router(board_routes.router, prefix=settings.API_V1_STR)
+app.include_router(view_routes.router, prefix=settings.API_V1_STR)
+app.include_router(filter_routes.router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 def root():

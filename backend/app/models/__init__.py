@@ -11,6 +11,7 @@ from app.models.organization import (
     OrganizationInvitation,
 )
 from app.models.task import Task, TaskDependency
+from app.models.board import Board, BoardColumn, BoardView, SavedFilter
 from app.models.notification import Notification, NotificationPreference
 from app.models.project import (
     Project,
@@ -200,6 +201,10 @@ __all__ = [
     "User",
     "Task",
     "TaskDependency",
+    "Board",
+    "BoardColumn",
+    "BoardView",
+    "SavedFilter",
     "Notification",
     "NotificationPreference",
     "Workspace",
