@@ -13,6 +13,7 @@ class ProductDiscoveryCreate(BaseModel):
     customer_impact: str
     status: str = "DISCOVERED"
     organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
 
 class ProductDiscoveryUpdate(BaseModel):
     title: Optional[str] = None
@@ -34,6 +35,7 @@ class ProductDiscoveryResponse(BaseModel):
     status: str
     owner_id: Optional[int] = None
     organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
     created_at: datetime
     updated_at: datetime
 
@@ -51,12 +53,15 @@ class ProductIdeaCreate(BaseModel):
     priority: str = "MEDIUM"
     status: str = "NEW"
     tags_json: Optional[str] = "[]"
+    organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
 
 class ProductIdeaUpdate(BaseModel):
     title: Optional[str] = None
     status: Optional[str] = None
     priority: Optional[str] = None
     proposed_solution: Optional[str] = None
+    description: Optional[str] = None
 
 class ProductIdeaResponse(BaseModel):
     id: str
@@ -71,17 +76,33 @@ class ProductIdeaResponse(BaseModel):
     status: str
     owner_id: Optional[int] = None
     organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
+    linked_task_id: Optional[str] = None
+    linked_feature_id: Optional[str] = None
     tags_json: str
     created_at: datetime
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 
+class IdeaConvertRequest(BaseModel):
+    target_type: str = "FEATURE_REQUEST"  # FEATURE_REQUEST, TASK, ROADMAP_ITEM
+    workspace_id: Optional[int] = None
+    project_id: Optional[int] = None
+    target_date: Optional[datetime] = None
+
+class IdeaConvertResponse(BaseModel):
+    status: str
+    target_type: str
+    target_id: str
+    idea_id: str
+    message: str
+
 # 3. Product Feature Request Schemas
 class ProductFeatureRequestCreate(BaseModel):
     title: str
-    description: str
-    customer_name: str
+    description: str = ""
+    customer_name: str = "Customer"
     customer_segment: str = "ENTERPRISE"
     source: str = "CUSTOMER_FEEDBACK"
     request_count: int = 1
@@ -90,11 +111,16 @@ class ProductFeatureRequestCreate(BaseModel):
     business_impact: Optional[str] = None
     revenue_impact: float = 0.0
     linked_idea_id: Optional[str] = None
+    organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
 
 class ProductFeatureRequestUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
     status: Optional[str] = None
     priority: Optional[str] = None
     request_count: Optional[int] = None
+    revenue_impact: Optional[float] = None
     merged_into_id: Optional[str] = None
 
 class ProductFeatureRequestResponse(BaseModel):
@@ -113,6 +139,7 @@ class ProductFeatureRequestResponse(BaseModel):
     linked_idea_id: Optional[str] = None
     owner_id: Optional[int] = None
     organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
     created_at: datetime
     updated_at: datetime
 
@@ -134,6 +161,7 @@ class ProductOpportunityCreate(BaseModel):
     validation_status: str = "IDENTIFIED"
     priority: str = "MEDIUM"
     organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
 
 class ProductOpportunityUpdate(BaseModel):
     title: Optional[str] = None
@@ -160,6 +188,7 @@ class ProductOpportunityResponse(BaseModel):
     priority: str
     owner_id: Optional[int] = None
     organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
     created_at: datetime
     updated_at: datetime
 
@@ -170,7 +199,7 @@ class ProductPrioritizationItemCreate(BaseModel):
     item_type: str = "FEATURE_REQUEST"
     item_id: str
     title: str
-    reach: float = Field(100.0, ge=1.0)
+    reach: float = Field(100.0, ge=0.0)
     impact: float = Field(3.0, ge=0.1, le=10.0)
     confidence: float = Field(0.8, ge=0.01, le=1.0)
     effort: float = Field(2.0, gt=0.0)
@@ -180,6 +209,7 @@ class ProductPrioritizationItemCreate(BaseModel):
     priority_rank: int = 1
     notes: Optional[str] = None
     organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
 
 class ProductPrioritizationItemResponse(BaseModel):
     id: str
@@ -199,6 +229,7 @@ class ProductPrioritizationItemResponse(BaseModel):
     notes: Optional[str] = None
     evaluated_by_id: Optional[int] = None
     organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
     evaluated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -206,18 +237,22 @@ class ProductPrioritizationItemResponse(BaseModel):
 # 6. Strategic Product Initiative Schemas
 class ProductInitiativeCreate(BaseModel):
     title: str
-    description: str
-    strategic_objective: str
+    description: str = ""
+    strategic_objective: str = ""
+    strategic_goal: Optional[str] = None
+    target_quarter: Optional[str] = None
     priority: str = "HIGH"
     status: str = "IN_PROGRESS"
     progress_pct: float = 0.0
     start_date: Optional[datetime] = None
     target_date: Optional[datetime] = None
     organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
 
 class ProductInitiativeUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
+    strategic_objective: Optional[str] = None
     priority: Optional[str] = None
     status: Optional[str] = None
     progress_pct: Optional[float] = None
@@ -232,6 +267,7 @@ class ProductInitiativeResponse(BaseModel):
     progress_pct: float
     owner_id: Optional[int] = None
     organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
     start_date: Optional[datetime] = None
     target_date: Optional[datetime] = None
     created_at: datetime
@@ -243,7 +279,7 @@ class ProductInitiativeResponse(BaseModel):
 class LifecycleRoadmapItemCreate(BaseModel):
     initiative_id: Optional[str] = None
     title: str
-    description: str
+    description: str = ""
     product_area: str = "CORE_PLATFORM"
     status: str = "PLANNED"
     priority: str = "MEDIUM"
@@ -251,13 +287,21 @@ class LifecycleRoadmapItemCreate(BaseModel):
     start_date: Optional[datetime] = None
     target_date: Optional[datetime] = None
     progress_pct: float = 0.0
+    sort_order: int = 0
+    linked_feature_id: Optional[str] = None
+    linked_task_id: Optional[str] = None
     organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
 
 class LifecycleRoadmapItemUpdate(BaseModel):
     title: Optional[str] = None
+    description: Optional[str] = None
     status: Optional[str] = None
     priority: Optional[str] = None
+    quarter: Optional[str] = None
     progress_pct: Optional[float] = None
+    sort_order: Optional[int] = None
+    start_date: Optional[datetime] = None
     target_date: Optional[datetime] = None
 
 class LifecycleRoadmapItemResponse(BaseModel):
@@ -269,15 +313,27 @@ class LifecycleRoadmapItemResponse(BaseModel):
     status: str
     priority: str
     quarter: str
+    sort_order: int = 0
     start_date: Optional[datetime] = None
     target_date: Optional[datetime] = None
     progress_pct: float
     owner_id: Optional[int] = None
     organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
+    linked_feature_id: Optional[str] = None
+    linked_task_id: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class RoadmapReorderItem(BaseModel):
+    id: str
+    sort_order: int
+    quarter: Optional[str] = None
+
+class RoadmapReorderRequest(BaseModel):
+    items: List[RoadmapReorderItem]
 
 class RoadmapDependencyCreate(BaseModel):
     roadmap_item_id: str
@@ -320,7 +376,7 @@ class ExperimentVariantResponse(BaseModel):
 
 class ProductExperimentCreate(BaseModel):
     name: str
-    description: str
+    description: str = ""
     hypothesis: str
     experiment_type: str = "AB_TEST"
     primary_metric: str = "conversion_rate"
@@ -328,6 +384,7 @@ class ProductExperimentCreate(BaseModel):
     audience_segment: str = "ALL_USERS"
     variants: List[ExperimentVariantCreate] = []
     organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
 
 class ProductExperimentUpdate(BaseModel):
     name: Optional[str] = None
@@ -352,22 +409,42 @@ class ProductExperimentResponse(BaseModel):
     conclusion: Optional[str] = None
     owner_id: Optional[int] = None
     organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
     created_at: datetime
     updated_at: datetime
     variants: List[ExperimentVariantResponse] = []
 
     model_config = ConfigDict(from_attributes=True)
 
+class ExperimentStatisticalAnalysisResponse(BaseModel):
+    experiment_id: str
+    status: str
+    primary_metric: str
+    total_sample_size: int
+    control_variant: Optional[str] = None
+    control_conversion_rate: float = 0.0
+    treatment_variant: Optional[str] = None
+    treatment_conversion_rate: float = 0.0
+    relative_uplift_pct: float = 0.0
+    z_score: float = 0.0
+    p_value: float = 1.0
+    is_statistically_significant: bool = False
+    confidence_interval_95: List[float] = [0.0, 0.0]
+    sample_sufficient: bool = False
+    conclusion: str
+
 # 9. Product Releases & Retrospectives Schemas
 class ProductReleaseCreate(BaseModel):
     release_version: str
-    title: str
-    description: str
-    status: str = "PLANNED"
+    title: str = "Release"
+    description: str = ""
+    status: str = "PLANNING"
     release_date: Optional[datetime] = None
+    target_date: Optional[datetime] = None
     rollout_percentage: float = 100.0
-    release_notes: str
+    release_notes: str = ""
     organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
 
 class ProductReleaseUpdate(BaseModel):
     title: Optional[str] = None
@@ -375,6 +452,7 @@ class ProductReleaseUpdate(BaseModel):
     status: Optional[str] = None
     rollout_percentage: Optional[float] = None
     release_notes: Optional[str] = None
+    release_date: Optional[datetime] = None
 
 class ProductReleaseResponse(BaseModel):
     id: str
@@ -385,12 +463,26 @@ class ProductReleaseResponse(BaseModel):
     release_date: Optional[datetime] = None
     rollout_percentage: float
     release_notes: str
+    readiness_score: float = 100.0
+    readiness_status: str = "READY"
     owner_id: Optional[int] = None
     organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
     created_at: datetime
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class ReleaseReadinessResponse(BaseModel):
+    release_id: str
+    release_version: str
+    readiness_score: float
+    readiness_status: str
+    linked_features_count: int
+    completed_features_count: int
+    open_risks_count: int
+    blockers: List[str] = []
+    details: Dict[str, Any] = {}
 
 # 10. Product Decisions & Risks Schemas
 class ProductDecisionCreate(BaseModel):
@@ -401,6 +493,7 @@ class ProductDecisionCreate(BaseModel):
     alternatives_considered: Optional[str] = None
     status: str = "APPROVED"
     organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
 
 class ProductDecisionResponse(BaseModel):
     id: str
@@ -412,6 +505,7 @@ class ProductDecisionResponse(BaseModel):
     status: str
     decision_maker_id: Optional[int] = None
     organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
     decision_date: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -425,6 +519,7 @@ class ProductRiskCreate(BaseModel):
     mitigation_plan: str
     status: str = "IDENTIFIED"
     organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
 
 class ProductRiskResponse(BaseModel):
     id: str
@@ -434,9 +529,11 @@ class ProductRiskResponse(BaseModel):
     severity: str
     likelihood: str
     mitigation_plan: str
+    risk_score: float = 25.0
     status: str
     owner_id: Optional[int] = None
     organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

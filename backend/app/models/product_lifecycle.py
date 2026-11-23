@@ -23,6 +23,7 @@ class ProductDiscovery(Base):
     # DISCOVERED, INVESTIGATING, VALIDATING, VALIDATED, PRIORITIZED, PLANNED, REJECTED, ARCHIVED
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     organization_id = Column(Integer, nullable=True, index=True)
+    workspace_id = Column(Integer, nullable=True, index=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
@@ -47,6 +48,9 @@ class ProductIdea(Base):
     # NEW, UNDER_REVIEW, VALIDATED, PLANNED, IN_PROGRESS, SHIPPED, ARCHIVED
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     organization_id = Column(Integer, nullable=True, index=True)
+    workspace_id = Column(Integer, nullable=True, index=True)
+    linked_task_id = Column(String(64), nullable=True)
+    linked_feature_id = Column(String(64), nullable=True)
     tags_json = Column(Text, server_default="[]", nullable=False)
     created_at = Column(DateTime, default=utc_now, nullable=False)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
@@ -75,6 +79,7 @@ class ProductFeatureRequest(Base):
     linked_idea_id = Column(String(64), ForeignKey("product_ideas.id", ondelete="SET NULL"), nullable=True)
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     organization_id = Column(Integer, nullable=True, index=True)
+    workspace_id = Column(Integer, nullable=True, index=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
@@ -101,6 +106,7 @@ class ProductOpportunity(Base):
     priority = Column(String(32), default="MEDIUM", nullable=False)
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     organization_id = Column(Integer, nullable=True, index=True)
+    workspace_id = Column(Integer, nullable=True, index=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
@@ -127,6 +133,8 @@ class ProductPrioritizationItem(Base):
     notes = Column(Text, nullable=True)
     evaluated_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     organization_id = Column(Integer, nullable=True, index=True)
+    workspace_id = Column(Integer, nullable=True, index=True)
+    formula_json = Column(Text, server_default="{}", nullable=False)
     evaluated_at = Column(DateTime, default=utc_now, nullable=False)
 
     evaluated_by = relationship("User", foreign_keys=[evaluated_by_id])
@@ -144,6 +152,7 @@ class ProductInitiative(Base):
     progress_pct = Column(Float, default=0.0, nullable=False)
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     organization_id = Column(Integer, nullable=True, index=True)
+    workspace_id = Column(Integer, nullable=True, index=True)
     start_date = Column(DateTime, nullable=True)
     target_date = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
@@ -167,8 +176,12 @@ class LifecycleRoadmapItem(Base):
     start_date = Column(DateTime, nullable=True)
     target_date = Column(DateTime, nullable=True)
     progress_pct = Column(Float, default=0.0, nullable=False)
+    sort_order = Column(Integer, default=0, nullable=False)
+    linked_feature_id = Column(String(64), nullable=True)
+    linked_task_id = Column(String(64), nullable=True)
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     organization_id = Column(Integer, nullable=True, index=True)
+    workspace_id = Column(Integer, nullable=True, index=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
@@ -223,8 +236,10 @@ class ProductExperiment(Base):
     end_date = Column(DateTime, nullable=True)
     total_sample_size = Column(Integer, default=0, nullable=False)
     conclusion = Column(Text, nullable=True)
+    statistical_summary_json = Column(Text, server_default="{}", nullable=False)
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     organization_id = Column(Integer, nullable=True, index=True)
+    workspace_id = Column(Integer, nullable=True, index=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
@@ -282,8 +297,11 @@ class ProductRelease(Base):
     release_date = Column(DateTime, nullable=True)
     rollout_percentage = Column(Float, default=100.0, nullable=False)
     release_notes = Column(Text, nullable=False)
+    readiness_score = Column(Float, default=100.0, nullable=False)
+    readiness_status = Column(String(32), default="READY", nullable=False)
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     organization_id = Column(Integer, nullable=True, index=True)
+    workspace_id = Column(Integer, nullable=True, index=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
@@ -350,9 +368,11 @@ class ProductRiskRecord(Base):
     severity = Column(String(32), default="MEDIUM", nullable=False) # LOW, MEDIUM, HIGH, CRITICAL
     likelihood = Column(String(32), default="MEDIUM", nullable=False) # LOW, MEDIUM, HIGH
     mitigation_plan = Column(Text, nullable=False)
+    risk_score = Column(Float, default=25.0, nullable=False)
     status = Column(String(32), default="IDENTIFIED", nullable=False, index=True) # IDENTIFIED, ASSESSED, MITIGATING, ACCEPTED, RESOLVED
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     organization_id = Column(Integer, nullable=True, index=True)
+    workspace_id = Column(Integer, nullable=True, index=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
 
     owner = relationship("User", foreign_keys=[owner_id])

@@ -13,12 +13,15 @@ export const productLifecycleApi = {
 
   // Ideas
   listIdeas: (params = {}) => apiClient.get('/product-lifecycle/ideas', { params }),
+  getIdea: (id) => apiClient.get(`/product-lifecycle/ideas/${id}`),
   createIdea: (payload) => apiClient.post('/product-lifecycle/ideas', payload),
   updateIdea: (id, payload) => apiClient.patch(`/product-lifecycle/ideas/${id}`, payload),
   deleteIdea: (id) => apiClient.delete(`/product-lifecycle/ideas/${id}`),
+  convertIdea: (id, payload) => apiClient.post(`/product-lifecycle/ideas/${id}/convert`, payload),
 
   // Feature Requests & Demand Hub
   listFeatureRequests: (params = {}) => apiClient.get('/product-lifecycle/feature-requests', { params }),
+  getFeatureRequest: (id) => apiClient.get(`/product-lifecycle/feature-requests/${id}`),
   createFeatureRequest: (payload) => apiClient.post('/product-lifecycle/feature-requests', payload),
   updateFeatureRequest: (id, payload) => apiClient.patch(`/product-lifecycle/feature-requests/${id}`, payload),
   mergeFeatureRequests: (sourceId, targetId) =>
@@ -37,20 +40,36 @@ export const productLifecycleApi = {
   // Initiatives & Roadmaps
   listInitiatives: (params = {}) => apiClient.get('/product-lifecycle/initiatives', { params }),
   createInitiative: (payload) => apiClient.post('/product-lifecycle/initiatives', payload),
+  updateInitiative: (id, payload) => apiClient.patch(`/product-lifecycle/initiatives/${id}`, payload),
+  deleteInitiative: (id) => apiClient.delete(`/product-lifecycle/initiatives/${id}`),
+
   listRoadmapItems: (params = {}) => apiClient.get('/product-lifecycle/roadmap', { params }),
   createRoadmapItem: (payload) => apiClient.post('/product-lifecycle/roadmap', payload),
+  updateRoadmapItem: (id, payload) => apiClient.patch(`/product-lifecycle/roadmap/${id}`, payload),
+  deleteRoadmapItem: (id) => apiClient.delete(`/product-lifecycle/roadmap/${id}`),
+  reorderRoadmapItems: (payload) => apiClient.post('/product-lifecycle/roadmap/reorder', payload),
+
+  // Roadmap Dependencies
+  listRoadmapDependencies: (params = {}) => apiClient.get('/product-lifecycle/roadmap/dependencies', { params }),
+  createRoadmapDependency: (payload) => apiClient.post('/product-lifecycle/roadmap/dependencies', payload),
+  deleteRoadmapDependency: (id) => apiClient.delete(`/product-lifecycle/roadmap/dependencies/${id}`),
 
   // Experiments & A/B Testing
   listExperiments: (params = {}) => apiClient.get('/product-lifecycle/experiments', { params }),
+  getExperiment: (id) => apiClient.get(`/product-lifecycle/experiments/${id}`),
   createExperiment: (payload) => apiClient.post('/product-lifecycle/experiments', payload),
   updateExperiment: (id, payload) => apiClient.patch(`/product-lifecycle/experiments/${id}`, payload),
   assignExperimentVariant: (expId) => apiClient.post(`/product-lifecycle/experiments/${expId}/assign`),
   trackExperimentEvent: (expId, eventName, metricValue = 1.0) =>
     apiClient.post(`/product-lifecycle/experiments/${expId}/events?event_name=${eventName}&metric_value=${metricValue}`),
+  getExperimentAnalysis: (id) => apiClient.get(`/product-lifecycle/experiments/${id}/analysis`),
 
   // Releases
   listReleases: (params = {}) => apiClient.get('/product-lifecycle/releases', { params }),
   createRelease: (payload) => apiClient.post('/product-lifecycle/releases', payload),
+  updateRelease: (id, payload) => apiClient.patch(`/product-lifecycle/releases/${id}`, payload),
+  deleteRelease: (id) => apiClient.delete(`/product-lifecycle/releases/${id}`),
+  getReleaseReadiness: (id) => apiClient.get(`/product-lifecycle/releases/${id}/readiness`),
 
   // Decisions & Risks
   listDecisions: (params = {}) => apiClient.get('/product-lifecycle/decisions', { params }),
