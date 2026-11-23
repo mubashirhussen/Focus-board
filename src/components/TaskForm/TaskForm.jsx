@@ -90,24 +90,26 @@ export function TaskForm() {
   return (
     <form className="task-form" onSubmit={handleSubmit} noValidate>
       {/* Title Field (Mandatory) */}
-      <div className="form-group">
-        <label htmlFor="task-title-input" className="form-label">
-          Task title <span className="required-asterisk">*</span>
-        </label>
-        <input
-          id="task-title-input"
-          name="title"
-          type="text"
-          className={`form-input ${errors.title ? 'is-invalid' : ''}`}
-          placeholder="e.g., Update brand guidelines"
-          value={formData.title}
-          onChange={handleChange}
-          autoFocus
-          required
-          aria-required="true"
-          aria-invalid={Boolean(errors.title)}
-          aria-describedby={errors.title ? 'task-title-error' : undefined}
-        />
+      <div className="form-group floating-form-group">
+        <div className={`floating-input-wrap ${formData.title ? 'has-value' : ''}`}>
+          <input
+            id="task-title-input"
+            name="title"
+            type="text"
+            className={`form-input floating-input ${errors.title ? 'is-invalid' : ''}`}
+            placeholder=" "
+            value={formData.title}
+            onChange={handleChange}
+            autoFocus
+            required
+            aria-required="true"
+            aria-invalid={Boolean(errors.title)}
+            aria-describedby={errors.title ? 'task-title-error' : undefined}
+          />
+          <label htmlFor="task-title-input" className="floating-placeholder-label">
+            Task title (e.g., Update brand guidelines) <span className="required-asterisk">*</span>
+          </label>
+        </div>
         {errors.title && (
           <p id="task-title-error" className="form-error-msg" role="alert">
             {errors.title}
@@ -116,20 +118,22 @@ export function TaskForm() {
       </div>
 
       {/* Description Field */}
-      <div className="form-group">
-        <label htmlFor="task-desc-input" className="form-label">
-          Description
-        </label>
-        <textarea
-          id="task-desc-input"
-          name="description"
-          rows={3}
-          className={`form-textarea ${errors.description ? 'is-invalid' : ''}`}
-          placeholder="Add more details about this task..."
-          value={formData.description}
-          onChange={handleChange}
-          aria-describedby={errors.description ? 'task-desc-error' : undefined}
-        />
+      <div className="form-group floating-form-group">
+        <div className={`floating-input-wrap ${formData.description ? 'has-value' : ''}`}>
+          <textarea
+            id="task-desc-input"
+            name="description"
+            rows={3}
+            className={`form-textarea floating-input ${errors.description ? 'is-invalid' : ''}`}
+            placeholder=" "
+            value={formData.description}
+            onChange={handleChange}
+            aria-describedby={errors.description ? 'task-desc-error' : undefined}
+          />
+          <label htmlFor="task-desc-input" className="floating-placeholder-label">
+            Add more details about this task...
+          </label>
+        </div>
         {errors.description && (
           <p id="task-desc-error" className="form-error-msg" role="alert">
             {errors.description}

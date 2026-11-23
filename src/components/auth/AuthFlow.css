@@ -219,6 +219,73 @@
   margin-top: 2px;
 }
 
+/* Floating Placeholder / Label on Click / Focus / Hover / Value */
+.floating-form-group {
+  position: relative;
+  margin-top: 4px;
+}
+
+.floating-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.floating-input-wrap .field-icon {
+  position: absolute;
+  left: 14px;
+  color: #64748b;
+  pointer-events: none;
+  z-index: 2;
+  transition: color 0.2s ease;
+}
+
+.floating-placeholder-label {
+  position: absolute;
+  left: 42px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: #64748b;
+  pointer-events: none;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 0 4px;
+  background: transparent;
+  border-radius: 4px;
+  z-index: 3;
+  line-height: 1;
+}
+
+/* Float up to top-left when focused, clicked, hovered, or filled */
+.floating-input-wrap:hover .floating-placeholder-label,
+.floating-input:focus ~ .floating-placeholder-label,
+.floating-input:not(:placeholder-shown) ~ .floating-placeholder-label,
+.floating-input-wrap.has-value .floating-placeholder-label {
+  top: -8px;
+  left: 12px;
+  transform: none;
+  font-size: 11px;
+  font-weight: 600;
+  color: #818cf8;
+  background: #0b0f19;
+  padding: 2px 6px;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.floating-input-wrap:hover .field-icon,
+.floating-input:focus ~ .field-icon,
+.floating-input-wrap.has-value .field-icon {
+  color: #818cf8;
+}
+
+.field-top-meta {
+  font-size: 12px;
+  font-weight: 500;
+  color: #94a3b8;
+  margin-bottom: 2px;
+}
+
 /* Primary and Action Buttons */
 .btn-auth-primary {
   height: 44px;

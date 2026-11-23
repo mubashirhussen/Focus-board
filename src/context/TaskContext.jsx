@@ -1,5 +1,6 @@
 import React, { createContext, useMemo, useState, useEffect, useCallback } from 'react';
 import { initialTasks } from '../data/initialTasks';
+import { generateUserTestingTasks } from '../data/userSampleTasks';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { calculateStats, filterTasks } from '../utils/taskHelpers';
 import { APP_CONFIG } from '../app/appConfig';
@@ -9,7 +10,7 @@ import { useAuth } from './AuthContext';
 export const TaskContext = createContext(null);
 
 export function TaskProvider({ children }) {
-  const { isAuthenticated, token } = useAuth();
+  const { isAuthenticated, token, user } = useAuth();
 
   // 1. Local Persistent Task State (For offline / guest mode)
   const [localTasks, setLocalTasks] = useLocalStorage(APP_CONFIG.storageKey, initialTasks);
@@ -18,31 +19,76 @@ export function TaskProvider({ children }) {
   const [remoteTasks, setRemoteTasks] = useState([]);
   const [isSyncing, setIsSyncing] = useState(false);
 
+  // User-scoped storage key for authenticated testing tasks persistence
+  const userStorageKey = useMemo(() => {
+    if (!user || user.isGuest) return null;
+    const identifier = user.id || user.email || user.username || 'user';
+    return `focusboard_user_tasks_${identifier}`;
+  }, [user]);
+
+  // Load account-specific testing tasks upon login
+  useEffect(() => {
+    if (isAuthenticated && user && !user.isGuest) {
+      if (userStorageKey) {
+        try {
+          const cached = localStorage.getItem(userStorageKey);
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setRemoteTasks(parsed);
+              return;
+            }
+          }
+        } catch {
+          // Ignore cache parse error
+        }
+      }
+      // Populate fresh account-specific sample testing tasks
+      const sampleTestingTasks = generateUserTestingTasks(user);
+      setRemoteTasks(sampleTestingTasks);
+      if (userStorageKey) {
+        try {
+          localStorage.setItem(userStorageKey, JSON.stringify(sampleTestingTasks));
+        } catch {}
+      }
+    }
+  }, [isAuthenticated, user, userStorageKey]);
+
+  // Automatically persist user tasks changes to their account storage
+  useEffect(() => {
+    if (isAuthenticated && userStorageKey && remoteTasks.length > 0) {
+      try {
+        localStorage.setItem(userStorageKey, JSON.stringify(remoteTasks));
+      } catch {}
+    }
+  }, [remoteTasks, isAuthenticated, userStorageKey]);
+
   // Active tasks based on authentication mode
   const tasks = isAuthenticated ? remoteTasks : localTasks;
 
-  // Sync tasks from backend when user logs in
+  // Sync tasks from backend when user logs in if backend has tasks
   const fetchRemoteTasks = useCallback(async () => {
     if (!isAuthenticated) return;
     setIsSyncing(true);
     try {
       const data = await taskApi.getTasks();
-      // Format backend response with camelCase aliases if needed
-      const formatted = (data || []).map((t) => ({
-        id: t.id,
-        title: t.title,
-        description: t.description || '',
-        category: t.category,
-        status: t.status,
-        priority: t.priority,
-        dueDate: t.due_date || t.dueDate || '',
-        createdAt: t.created_at || t.createdAt,
-        updatedAt: t.updated_at || t.updatedAt,
-        completedAt: t.completed_at || t.completedAt,
-      }));
-      setRemoteTasks(formatted);
+      if (Array.isArray(data) && data.length > 0) {
+        const formatted = data.map((t) => ({
+          id: t.id,
+          title: t.title,
+          description: t.description || '',
+          category: t.category,
+          status: t.status,
+          priority: t.priority,
+          dueDate: t.due_date || t.dueDate || '',
+          createdAt: t.created_at || t.createdAt,
+          updatedAt: t.updated_at || t.updatedAt,
+          completedAt: t.completed_at || t.completedAt,
+        }));
+        setRemoteTasks(formatted);
+      }
     } catch (err) {
-      console.warn('Failed to fetch remote tasks from API, falling back to local cache:', err);
+      console.warn('Failed to fetch remote tasks from API, keeping active user testing tasks:', err);
     } finally {
       setIsSyncing(false);
     }
@@ -189,20 +235,18 @@ export function TaskProvider({ children }) {
 
   // Reset to initial sample data helper
   const resetToSampleData = useCallback(() => {
-    if (isAuthenticated) {
-      // In authenticated mode, seed initial tasks to user account
-      initialTasks.forEach(async (task) => {
+    if (isAuthenticated && user && !user.isGuest) {
+      const freshUserTasks = generateUserTestingTasks(user);
+      setRemoteTasks(freshUserTasks);
+      if (userStorageKey) {
         try {
-          await taskApi.createTask(task);
-        } catch {
-          // ignore duplicate
-        }
-      });
-      fetchRemoteTasks();
+          localStorage.setItem(userStorageKey, JSON.stringify(freshUserTasks));
+        } catch {}
+      }
     } else {
       setLocalTasks(initialTasks);
     }
-  }, [isAuthenticated, fetchRemoteTasks, setLocalTasks]);
+  }, [isAuthenticated, user, userStorageKey, setLocalTasks]);
 
   // Modal open / close handlers
   const openCreateModal = useCallback(() => {

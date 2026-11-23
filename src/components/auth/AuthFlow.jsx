@@ -322,23 +322,23 @@ export function AuthFlow({ onSuccess, onCancel, standalone = false }) {
       {/* STEP 1: EMAIL ENTRY */}
       {step === 'email' && (
         <form onSubmit={handleEmailSubmit} className="auth-form" noValidate>
-          <div className="form-group">
-            <label htmlFor="auth-email-input" className="form-label">
-              Email address
-            </label>
-            <div className="input-field-wrap">
+          <div className="form-group floating-form-group">
+            <div className={`floating-input-wrap ${email ? 'has-value' : ''}`}>
               <Mail size={16} className="field-icon" />
               <input
                 id="auth-email-input"
                 type="email"
-                className="auth-input"
-                placeholder="name@company.com"
+                className="auth-input floating-input"
+                placeholder=" "
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
                 autoFocus
                 required
               />
+              <label htmlFor="auth-email-input" className="floating-placeholder-label">
+                me@company.com
+              </label>
             </div>
           </div>
 
@@ -446,31 +446,29 @@ export function AuthFlow({ onSuccess, onCancel, standalone = false }) {
       {/* STEP 2: NEW USER REGISTRATION */}
       {step === 'register' && (
         <form onSubmit={handleRegisterSubmit} className="auth-form" noValidate>
-          <div className="form-group">
-            <label htmlFor="reg-name-input" className="form-label">
-              Full Name
-            </label>
-            <div className="input-field-wrap">
+          <div className="form-group floating-form-group">
+            <div className={`floating-input-wrap ${name ? 'has-value' : ''}`}>
               <User size={16} className="field-icon" />
               <input
                 id="reg-name-input"
                 type="text"
-                className="auth-input"
-                placeholder="e.g. Sheik Mubashir"
+                className="auth-input floating-input"
+                placeholder=" "
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 autoComplete="name"
                 autoFocus
                 required
               />
+              <label htmlFor="reg-name-input" className="floating-placeholder-label">
+                e.g. Sheik Mubashir
+              </label>
             </div>
           </div>
 
-          <div className="form-group">
+          <div className="form-group floating-form-group">
             <div className="label-with-status">
-              <label htmlFor="reg-username-input" className="form-label">
-                Username
-              </label>
+              <span className="field-top-meta">Choose unique username</span>
               {isCheckingUsername && <span className="status-note">Checking...</span>}
               {!isCheckingUsername && usernameStatus && (
                 <span className={`status-note ${usernameStatus.available ? 'valid' : 'invalid'}`}>
@@ -486,18 +484,21 @@ export function AuthFlow({ onSuccess, onCancel, standalone = false }) {
                 </span>
               )}
             </div>
-            <div className="input-field-wrap">
+            <div className={`floating-input-wrap ${username ? 'has-value' : ''}`}>
               <AtSign size={16} className="field-icon" />
               <input
                 id="reg-username-input"
                 type="text"
-                className={`auth-input ${usernameStatus && !usernameStatus.available ? 'input-error' : ''}`}
-                placeholder="username"
+                className={`auth-input floating-input ${usernameStatus && !usernameStatus.available ? 'input-error' : ''}`}
+                placeholder=" "
                 value={username}
                 onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s+/g, ''))}
                 autoComplete="username"
                 required
               />
+              <label htmlFor="reg-username-input" className="floating-placeholder-label">
+                username
+              </label>
             </div>
             <span className="field-hint">Letters, numbers, underscores and hyphens (3-30 chars).</span>
           </div>
