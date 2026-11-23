@@ -2,6 +2,39 @@ from datetime import datetime
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field, ConfigDict
 
+# --- Data Sources ---
+class DataSourceBase(BaseModel):
+    name: str
+    source_type: str = Field(default="INTERNAL_DB", description="INTERNAL_DB, POSTGRESQL, SNOWFLAKE, BIGQUERY, API, CSV_UPLOAD")
+    connection_status: str = Field(default="CONNECTED", description="CONNECTED, DISCONNECTED, ERROR, TESTING")
+    config_json: str = "{}"
+    organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
+
+class DataSourceCreate(DataSourceBase):
+    pass
+
+class DataSourceUpdate(BaseModel):
+    name: Optional[str] = None
+    source_type: Optional[str] = None
+    connection_status: Optional[str] = None
+    config_json: Optional[str] = None
+    workspace_id: Optional[int] = None
+
+class DataSourceResponse(DataSourceBase):
+    id: str
+    last_sync_at: Optional[datetime] = None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+class DataSourceTestResponse(BaseModel):
+    data_source_id: str
+    connection_status: str
+    latency_ms: float
+    message: str
+
 # --- Datasets ---
 class AnalyticsDatasetBase(BaseModel):
     name: str
@@ -9,14 +42,26 @@ class AnalyticsDatasetBase(BaseModel):
     category: str = "PRODUCTIVITY"
     description: str
     data_source: str
+    source_type: str = "DATABASE"
+    classification: str = "INTERNAL"  # PUBLIC, INTERNAL, CONFIDENTIAL, RESTRICTED
     freshness_status: str = "FRESH"
     record_count: int = 0
     schema_json: str = "[]"
+    organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
 
     model_config = ConfigDict(protected_namespaces=())
 
 class AnalyticsDatasetCreate(AnalyticsDatasetBase):
     pass
+
+class AnalyticsDatasetUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    category: Optional[str] = None
+    classification: Optional[str] = None
+    freshness_status: Optional[str] = None
+    schema_json: Optional[str] = None
 
 class AnalyticsDatasetResponse(AnalyticsDatasetBase):
     id: str
@@ -25,6 +70,30 @@ class AnalyticsDatasetResponse(AnalyticsDatasetBase):
     schema_fields: List[Dict[str, Any]] = []
 
     model_config = ConfigDict(from_attributes=True)
+
+# Dataset Import & Profiling
+class DatasetImportRequest(BaseModel):
+    dataset_name: str
+    dataset_slug: str
+    category: str = "OPERATIONS"
+    format: str = "CSV"  # CSV, JSON
+    raw_content: str
+    workspace_id: Optional[int] = None
+
+class DatasetImportResponse(BaseModel):
+    dataset_id: str
+    slug: str
+    imported_rows: int
+    detected_columns: List[str]
+    status: str
+    message: str
+
+class DatasetProfileResponse(BaseModel):
+    dataset_slug: str
+    total_records: int
+    column_count: int
+    columns_profile: Dict[str, Any]
+    generated_at: datetime
 
 # --- Metric Definitions ---
 class AnalyticsMetricDefinitionBase(BaseModel):
@@ -36,6 +105,8 @@ class AnalyticsMetricDefinitionBase(BaseModel):
     unit: str = "count"
     aggregation_method: str = "SUM"
     is_active: bool = True
+    organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
 
 class AnalyticsMetricDefinitionCreate(AnalyticsMetricDefinitionBase):
     pass
@@ -51,11 +122,21 @@ class AnalyticsDataPipelineBase(BaseModel):
     description: str
     source_dataset_slug: str
     target_model: str
+    pipeline_config_json: str = "{}"
     schedule_cron: str = "0 * * * *"
     status: str = "ACTIVE"
+    organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
 
 class AnalyticsDataPipelineCreate(AnalyticsDataPipelineBase):
     pass
+
+class AnalyticsDataPipelineUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    pipeline_config_json: Optional[str] = None
+    schedule_cron: Optional[str] = None
+    status: Optional[str] = None
 
 class AnalyticsDataPipelineResponse(AnalyticsDataPipelineBase):
     id: str
@@ -71,6 +152,7 @@ class AnalyticsPipelineExecutionResponse(BaseModel):
     status: str
     records_processed: int
     duration_ms: int
+    logs_json: str = "[]"
     error_message: Optional[str] = None
     started_at: datetime
     completed_at: Optional[datetime] = None
@@ -99,6 +181,7 @@ class AnalyticsDashboardBase(BaseModel):
     description: str
     visibility: str = "WORKSPACE"  # PRIVATE, WORKSPACE, ORGANIZATION
     layout_json: str = "[]"
+    organization_id: Optional[int] = None
 
 class AnalyticsDashboardCreate(AnalyticsDashboardBase):
     workspace_id: Optional[int] = None
@@ -121,6 +204,7 @@ class AnalyticsCustomReportBase(BaseModel):
     query_config_json: str = "{}"
     format: str = "CSV"
     schedule_cron: Optional[str] = None
+    organization_id: Optional[int] = None
 
 class AnalyticsCustomReportCreate(AnalyticsCustomReportBase):
     workspace_id: Optional[int] = None
@@ -134,13 +218,33 @@ class AnalyticsCustomReportResponse(AnalyticsCustomReportBase):
 
     model_config = ConfigDict(from_attributes=True)
 
+class ReportExecutionResultResponse(BaseModel):
+    report_id: str
+    title: str
+    category: str
+    format: str
+    total_records: int
+    data_summary: Dict[str, Any]
+    generated_at: str
+
+class ReportExportResponse(BaseModel):
+    report_id: str
+    title: str
+    format: str
+    file_name: str
+    content_type: str
+    raw_content: str
+    exported_at: datetime
+
 # --- Data Quality Rules & Issues ---
 class DataQualityRuleBase(BaseModel):
     dataset_slug: str
     rule_name: str
-    rule_type: str = "COMPLETENESS"  # COMPLETENESS, VALIDITY, FRESHNESS, CONSISTENCY
+    rule_type: str = "COMPLETENESS"  # COMPLETENESS, VALIDITY, FRESHNESS, CONSISTENCY, UNIQUENESS
     severity: str = "WARNING"
     condition_expr: str
+    organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
 
 class DataQualityRuleCreate(DataQualityRuleBase):
     pass
@@ -161,6 +265,42 @@ class DataQualityIssueResponse(BaseModel):
     status: str
     detected_at: datetime
     resolved_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+# --- Lineage & Insights ---
+class DataLineageNodeResponse(BaseModel):
+    id: str
+    source_asset_id: str
+    target_asset_id: str
+    lineage_type: str
+    transformation_details: Optional[str] = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+class DataLineageGraphResponse(BaseModel):
+    nodes: List[Dict[str, Any]]
+    edges: List[Dict[str, Any]]
+    total_assets: int
+
+class DataInsightBase(BaseModel):
+    title: str
+    description: str
+    insight_type: str = "TREND"
+    severity: str = "INFO"
+    confidence_score: float = 0.9
+    supporting_data_json: str = "{}"
+    status: str = "ACTIVE"
+    organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
+
+class DataInsightCreate(DataInsightBase):
+    pass
+
+class DataInsightResponse(DataInsightBase):
+    id: str
+    created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -189,3 +329,4 @@ class DataIntelligenceOverviewResponse(BaseModel):
     pipelines: List[AnalyticsDataPipelineResponse] = []
     recent_dashboards: List[AnalyticsDashboardResponse] = []
     quality_rules: List[DataQualityRuleResponse] = []
+    recent_insights: List[DataInsightResponse] = []
