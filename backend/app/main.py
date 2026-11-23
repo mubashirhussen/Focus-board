@@ -173,6 +173,7 @@ app.include_router(security_compliance_routes.router, prefix=settings.API_V1_STR
 app.include_router(financial_intelligence_routes.router, prefix=settings.API_V1_STR)
 app.include_router(financial_intelligence_routes.router)  # Direct /finance/... access support
 app.include_router(strategic_intelligence_routes.router, prefix=settings.API_V1_STR)
+app.include_router(strategic_intelligence_routes.router)  # Direct /strategy/... access support
 app.include_router(innovation_lab_routes.router, prefix=settings.API_V1_STR)
 app.include_router(knowledge_intelligence_routes.router, prefix=settings.API_V1_STR)
 app.include_router(automation_routes.router, prefix=settings.API_V1_STR)

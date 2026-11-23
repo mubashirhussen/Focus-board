@@ -11,7 +11,8 @@ class StrategicPlan(Base):
     __tablename__ = "strategic_plans"
 
     id = Column(String(64), primary_key=True, default=lambda: f"splan_{uuid.uuid4().hex[:12]}")
-    organization_id = Column(String(64), nullable=True, index=True)
+    organization_id = Column(Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True, index=True)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=True, index=True)
     title = Column(String(255), nullable=False)
     vision = Column(Text, nullable=False)
     mission = Column(Text, nullable=False)
@@ -29,6 +30,8 @@ class StrategicGoal(Base):
     __tablename__ = "strategic_goals"
 
     id = Column(String(64), primary_key=True, default=lambda: f"sgoal_{uuid.uuid4().hex[:12]}")
+    organization_id = Column(Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True, index=True)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=True, index=True)
     plan_id = Column(String(64), ForeignKey("strategic_plans.id", ondelete="CASCADE"), nullable=False, index=True)
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=False)
@@ -52,6 +55,8 @@ class StrategicInitiative(Base):
     __tablename__ = "strategic_initiatives"
 
     id = Column(String(64), primary_key=True, default=lambda: f"sinit_{uuid.uuid4().hex[:12]}")
+    organization_id = Column(Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True, index=True)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=True, index=True)
     goal_id = Column(String(64), ForeignKey("strategic_goals.id", ondelete="CASCADE"), nullable=False, index=True)
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=False)
@@ -72,6 +77,8 @@ class MarketIntelligence(Base):
     __tablename__ = "market_intelligences"
 
     id = Column(String(64), primary_key=True, default=lambda: f"mkt_{uuid.uuid4().hex[:12]}")
+    organization_id = Column(Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True, index=True)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=True, index=True)
     title = Column(String(255), nullable=False)
     intelligence_type = Column(String(64), nullable=False, index=True)  # TREND, TECH_DISRUPTION, REGULATORY, MACROECONOMIC
     summary = Column(Text, nullable=False)
@@ -88,6 +95,8 @@ class MarketSignal(Base):
     __tablename__ = "market_signals"
 
     id = Column(String(64), primary_key=True, default=lambda: f"sig_{uuid.uuid4().hex[:12]}")
+    organization_id = Column(Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True, index=True)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=True, index=True)
     signal_type = Column(String(64), nullable=False, index=True)  # GROWTH, PRICING_SHIFT, CUSTOMER_DEMAND, COMPETITOR_MOVE
     title = Column(String(255), nullable=False)
     observations = Column(Text, nullable=False)
@@ -100,6 +109,8 @@ class Competitor(Base):
     __tablename__ = "competitors"
 
     id = Column(String(64), primary_key=True, default=lambda: f"comp_{uuid.uuid4().hex[:12]}")
+    organization_id = Column(Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True, index=True)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=True, index=True)
     name = Column(String(255), unique=True, nullable=False, index=True)
     website = Column(String(255), nullable=True)
     market_position = Column(String(64), default="CHALLENGER", nullable=False)  # LEADER, CHALLENGER, NICHE, NEW_ENTRANT
@@ -116,6 +127,8 @@ class SWOTEntry(Base):
     __tablename__ = "swot_entries"
 
     id = Column(String(64), primary_key=True, default=lambda: f"swot_{uuid.uuid4().hex[:12]}")
+    organization_id = Column(Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True, index=True)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=True, index=True)
     swot_type = Column(String(32), nullable=False, index=True)  # STRENGTH, WEAKNESS, OPPORTUNITY, THREAT
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=False)
@@ -128,6 +141,8 @@ class MarketSizing(Base):
     __tablename__ = "market_sizings"
 
     id = Column(String(64), primary_key=True, default=lambda: f"msize_{uuid.uuid4().hex[:12]}")
+    organization_id = Column(Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True, index=True)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=True, index=True)
     market_name = Column(String(255), nullable=False, index=True)
     methodology = Column(String(64), default="BOTTOM_UP", nullable=False)  # TOP_DOWN, BOTTOM_UP, VALUE_BASED
     tam_cents = Column(Integer, nullable=False)  # in cents
@@ -142,6 +157,8 @@ class StrategicOpportunity(Base):
     __tablename__ = "strategic_opportunities"
 
     id = Column(String(64), primary_key=True, default=lambda: f"sopp_{uuid.uuid4().hex[:12]}")
+    organization_id = Column(Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True, index=True)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=True, index=True)
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=False)
     customer_segment = Column(String(128), default="Enterprise B2B", nullable=False)
@@ -159,6 +176,8 @@ class StrategicScenario(Base):
     __tablename__ = "strategic_scenarios"
 
     id = Column(String(64), primary_key=True, default=lambda: f"scen_{uuid.uuid4().hex[:12]}")
+    organization_id = Column(Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True, index=True)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=True, index=True)
     name = Column(String(255), nullable=False)
     scenario_type = Column(String(32), default="BASE_CASE", nullable=False, index=True)  # BEST_CASE, BASE_CASE, WORST_CASE, MARKET_DISRUPTION
     description = Column(Text, nullable=False)
@@ -171,6 +190,8 @@ class StrategicDecision(Base):
     __tablename__ = "strategic_decisions"
 
     id = Column(String(64), primary_key=True, default=lambda: f"sdec_{uuid.uuid4().hex[:12]}")
+    organization_id = Column(Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True, index=True)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=True, index=True)
     title = Column(String(255), nullable=False)
     context = Column(Text, nullable=False)
     decision_outcome = Column(Text, nullable=False)
@@ -181,3 +202,39 @@ class StrategicDecision(Base):
     created_at = Column(DateTime, default=utc_now, nullable=False)
 
     decision_maker = relationship("User", foreign_keys=[decision_maker_id])
+
+class BusinessKPI(Base):
+    __tablename__ = "business_kpis"
+
+    id = Column(String(64), primary_key=True, default=lambda: f"kpi_{uuid.uuid4().hex[:12]}")
+    organization_id = Column(Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=True, index=True)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=True, index=True)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    category = Column(String(64), default="GROWTH", nullable=False, index=True)  # REVENUE, GROWTH, CUSTOMER, PRODUCT, OPERATIONAL
+    measurement_unit = Column(String(32), default="units", nullable=False)
+    target_value = Column(Float, default=0.0, nullable=False)
+    current_value = Column(Float, default=0.0, nullable=False)
+    baseline_value = Column(Float, default=0.0, nullable=False)
+    trend_direction = Column(String(32), default="UP", nullable=False)  # UP, DOWN, STABLE
+    status = Column(String(32), default="ON_TRACK", nullable=False, index=True)  # ON_TRACK, AT_RISK, BEHIND, EXCEEDED
+    owner_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
+
+    owner = relationship("User", foreign_keys=[owner_id])
+    values = relationship("BusinessKPIValue", back_populates="kpi", cascade="all, delete-orphan")
+
+class BusinessKPIValue(Base):
+    __tablename__ = "business_kpi_values"
+
+    id = Column(String(64), primary_key=True, default=lambda: f"kpiv_{uuid.uuid4().hex[:12]}")
+    kpi_id = Column(String(64), ForeignKey("business_kpis.id", ondelete="CASCADE"), nullable=False, index=True)
+    value = Column(Float, nullable=False)
+    period_date = Column(String(32), nullable=False, index=True)  # YYYY-MM or YYYY-QQ
+    notes = Column(Text, nullable=True)
+    recorded_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+
+    kpi = relationship("BusinessKPI", back_populates="values")
+    recorded_by = relationship("User", foreign_keys=[recorded_by_id])
