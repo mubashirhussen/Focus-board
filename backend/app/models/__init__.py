@@ -53,6 +53,15 @@ from app.models.growth import (
     ProductAnalyticsEvent,
     CustomerFeedback,
 )
+from app.models.cx_intelligence import (
+    CXFeedbackCategory,
+    CXSurvey,
+    CXSurveyQuestion,
+    CXSurveyResponse,
+    CXInsight,
+    CXRecommendation,
+    CXJourneyEvent,
+)
 from app.models.support import (
     SupportTicket,
     SupportMessage,
@@ -372,4 +381,12 @@ __all__ = [
     "ProductEventRecord",
     "ProductDecision",
     "ProductRiskRecord",
+    # CX Intelligence (Phase B17)
+    "CXFeedbackCategory",
+    "CXSurvey",
+    "CXSurveyQuestion",
+    "CXSurveyResponse",
+    "CXInsight",
+    "CXRecommendation",
+    "CXJourneyEvent",
 ]

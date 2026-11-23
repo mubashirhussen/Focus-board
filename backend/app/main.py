@@ -59,6 +59,7 @@ from app.api.routes import (
     team_routes,
     comment_routes,
     activity_routes,
+    cx_intelligence_routes,
 )
 
 # Configure structured, sensitive-data-safe logging
@@ -188,6 +189,8 @@ app.include_router(reminder_routes.router, prefix=settings.API_V1_STR)
 app.include_router(team_routes.router, prefix=settings.API_V1_STR)
 app.include_router(comment_routes.router, prefix=settings.API_V1_STR)
 app.include_router(activity_routes.router, prefix=settings.API_V1_STR)
+app.include_router(cx_intelligence_routes.router, prefix=settings.API_V1_STR)
+app.include_router(cx_intelligence_routes.router)  # Direct /cx/... access support
 
 @app.get("/")
 def root():

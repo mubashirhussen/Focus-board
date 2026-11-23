@@ -136,12 +136,27 @@ def create_feedback(
     rating: Optional[int] = None,
     workspace_id: Optional[int] = None,
 ) -> CustomerFeedback:
+    from app.services.cx_intelligence_service import analyze_sentiment, calculate_priority_score
+    s_label, s_score, s_conf, lang = analyze_sentiment(description)
+    p_level, p_score = calculate_priority_score(
+        rating=rating,
+        sentiment=s_label,
+        sentiment_score=s_score,
+        feedback_type=category,
+    )
     fb = CustomerFeedback(
+        title=description[:60] + "..." if len(description) > 60 else description,
         user_id=user_id,
         workspace_id=workspace_id,
         category=category,
         description=description,
         rating=rating,
+        sentiment=s_label,
+        sentiment_score=s_score,
+        sentiment_confidence=s_conf,
+        priority=p_level,
+        priority_score=p_score,
+        language=lang,
         status="NEW",
     )
     db.add(fb)
