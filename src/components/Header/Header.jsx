@@ -1,6 +1,7 @@
 import React from 'react';
 import { Search, Menu } from 'lucide-react';
 import { APP_CONFIG } from '../../app/appConfig';
+import { useAuth } from '../../context/AuthContext';
 import { UserProfileMenu } from '../auth/UserProfileMenu';
 import { NotificationBell } from '../notifications/NotificationBell';
 import './Header.css';
@@ -11,6 +12,9 @@ export function Header({
   onOpenMobileDrawer,
   onNavigate,
 }) {
+  const { isAuthenticated, user } = useAuth();
+  const isUserLoggedIn = Boolean(isAuthenticated && user && !user.isGuest);
+
   return (
     <header className="app-header" role="banner">
       {/* Mobile Drawer Hamburger Button */}
@@ -56,7 +60,10 @@ export function Header({
           <span className="cmd-trigger-text">Search & commands...</span>
         </button>
 
-        <NotificationBell onNavigate={onNavigate} />
+        {/* Notification Bell ONLY appears when a user is actually logged in */}
+        {isUserLoggedIn && <NotificationBell onNavigate={onNavigate} />}
+
+        {/* User Profile Menu shows Login when unauthenticated, Avatar when authenticated */}
         <UserProfileMenu />
       </div>
     </header>

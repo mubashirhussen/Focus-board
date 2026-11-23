@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Bell,
-  Check,
-  CheckCheck,
   Trash2,
   Clock,
   AlertTriangle,
@@ -15,7 +13,6 @@ import {
   Workflow,
   Users,
   MessageSquare,
-  ExternalLink,
   Inbox,
   AlertCircle,
 } from 'lucide-react';
@@ -78,123 +75,43 @@ export function NotificationBell({ onNavigate }) {
   }, [isOpen]);
 
   const fetchNotifications = async () => {
-    setError(null);
-    if (isAuthenticated) {
-      try {
-        setLoading(true);
-        const [notifData, countData] = await Promise.all([
-          notificationApi.getNotifications(),
-          notificationApi.getUnreadCount(),
-        ]);
-        const list = Array.isArray(notifData) ? notifData : notifData?.items || [];
-        setNotifications(list);
-        setUnreadCount(countData?.unread_count ?? list.filter((n) => !n.is_read && !n.read_at).length);
-      } catch (err) {
-        console.warn('Failed to load notifications from API:', err);
-        setError('Could not connect to notification service.');
-        generateLocalNotifications();
-      } finally {
-        setLoading(false);
-      }
-    } else {
-      generateLocalNotifications();
+    if (!isAuthenticated || !user || user.isGuest) {
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
     }
-  };
 
-  const generateLocalNotifications = () => {
-    const todayStr = new Date().toISOString().split('T')[0];
-    const localNotifs = [];
-
-    // System onboarding notification
-    localNotifs.push({
-      id: 'local-welcome',
-      category: 'System',
-      type: 'SYSTEM_WELCOME',
-      title: 'Welcome to FocusBoard Workspace',
-      message: 'Explore your projects, organize tasks, and evaluate real-time productivity analytics.',
-      is_read: false,
-      created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-      target_tab: 'tasks',
-    });
-
-    tasks.forEach((t) => {
-      if ((t.status || '').toLowerCase() === 'completed') return;
-
-      if (t.dueDate) {
-        if (t.dueDate < todayStr) {
-          localNotifs.push({
-            id: `local-overdue-${t.id}`,
-            category: 'Tasks',
-            type: 'TASK_OVERDUE',
-            title: `Task Overdue: ${t.title}`,
-            message: `Was due on ${t.dueDate}. Review priority or reschedule to maintain velocity.`,
-            is_read: false,
-            created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-            target_tab: 'tasks',
-          });
-        } else if (t.dueDate === todayStr) {
-          localNotifs.push({
-            id: `local-today-${t.id}`,
-            category: 'Tasks',
-            type: 'TASK_DUE_TODAY',
-            title: `Due Today: ${t.title}`,
-            message: 'Allocated for sprint completion today. Track your focus time.',
-            is_read: false,
-            created_at: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-            target_tab: 'tasks',
-          });
-        }
-      }
-    });
-
-    setNotifications(localNotifs);
-    setUnreadCount(localNotifs.filter((n) => !n.is_read).length);
+    setError(null);
+    try {
+      setLoading(true);
+      const [notifData, countData] = await Promise.all([
+        notificationApi.getNotifications(),
+        notificationApi.getUnreadCount(),
+      ]);
+      const list = Array.isArray(notifData) ? notifData : notifData?.items || [];
+      setNotifications(list);
+      setUnreadCount(countData?.unread_count ?? list.filter((n) => !n.is_read && !n.read_at).length);
+    } catch (err) {
+      console.warn('Failed to load notifications from API:', err);
+      setError('Could not connect to notification service.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    fetchNotifications();
-  }, [isAuthenticated, tasks]);
-
-  const handleToggleRead = async (notifId, currentlyRead, e) => {
-    if (e) e.stopPropagation();
-    const nextReadState = !currentlyRead;
-
-    // Optimistic state update
-    setNotifications((prev) =>
-      prev.map((n) =>
-        n.id === notifId
-          ? { ...n, is_read: nextReadState, read_at: nextReadState ? new Date().toISOString() : null }
-          : n
-      )
-    );
-    setUnreadCount((c) => Math.max(0, nextReadState ? c - 1 : c + 1));
-
-    if (isAuthenticated && typeof notifId === 'number') {
-      try {
-        if (nextReadState) {
-          await notificationApi.markAsRead(notifId);
-        }
-      } catch (err) {
-        console.error('Failed to update notification read state:', err);
-      }
+    if (isAuthenticated && user && !user.isGuest) {
+      fetchNotifications();
+    } else {
+      setNotifications([]);
+      setUnreadCount(0);
     }
-  };
+  }, [isAuthenticated, user]);
 
-  const handleMarkAllRead = async () => {
-    // Optimistic state
-    setNotifications((prev) =>
-      prev.map((n) => ({ ...n, is_read: true, read_at: new Date().toISOString() }))
-    );
-    setUnreadCount(0);
-
-    if (isAuthenticated) {
-      try {
-        await notificationApi.markAllAsRead();
-      } catch (err) {
-        console.error('Failed to mark all read:', err);
-      }
-    }
-  };
+  // NEVER appear if user has not logged in
+  if (!isAuthenticated || !user || user.isGuest) {
+    return null;
+  }
 
   const handleDelete = async (notifId, e) => {
     if (e) e.stopPropagation();
@@ -206,7 +123,7 @@ export function NotificationBell({ onNavigate }) {
       setUnreadCount((c) => Math.max(0, c - 1));
     }
 
-    if (isAuthenticated && typeof notifId === 'number') {
+    if (typeof notifId === 'number') {
       try {
         await notificationApi.deleteNotification(notifId);
       } catch (err) {
@@ -216,9 +133,6 @@ export function NotificationBell({ onNavigate }) {
   };
 
   const handleNotificationClick = (n) => {
-    if (!n.is_read && !n.read_at) {
-      handleToggleRead(n.id, false);
-    }
     const target = n.target_tab || (n.category === 'Security' ? 'soc' : n.category === 'Governance' ? 'enterprise' : 'tasks');
     if (onNavigate) {
       onNavigate(target);
@@ -300,17 +214,6 @@ export function NotificationBell({ onNavigate }) {
               >
                 <RefreshCw size={13} className={loading ? 'spinning' : ''} />
               </button>
-              {unreadCount > 0 && (
-                <button
-                  type="button"
-                  className="icon-text-btn"
-                  onClick={handleMarkAllRead}
-                  title="Mark all as read"
-                >
-                  <CheckCheck size={13} />
-                  <span>Mark all read</span>
-                </button>
-              )}
               <button
                 type="button"
                 className="icon-action-btn close-btn"
@@ -391,17 +294,8 @@ export function NotificationBell({ onNavigate }) {
                       <p className="notif-message">{n.message}</p>
                     </div>
 
-                    {/* Quick Card Actions */}
+                    {/* Quick Card Delete Action */}
                     <div className="notif-actions-col">
-                      <button
-                        type="button"
-                        className={`action-btn-status ${isRead ? 'is-read' : 'is-unread'}`}
-                        onClick={(e) => handleToggleRead(n.id, isRead, e)}
-                        title={isRead ? 'Mark as unread' : 'Mark as read'}
-                        aria-label={isRead ? 'Mark as unread' : 'Mark as read'}
-                      >
-                        <Check size={12} />
-                      </button>
                       <button
                         type="button"
                         className="action-btn-delete"
@@ -409,7 +303,7 @@ export function NotificationBell({ onNavigate }) {
                         title="Delete notification"
                         aria-label="Delete notification"
                       >
-                        <Trash2 size={12} />
+                        <Trash2 size={13} />
                       </button>
                     </div>
                   </div>

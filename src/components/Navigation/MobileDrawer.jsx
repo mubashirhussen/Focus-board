@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import {
   X,
   Search,
+  LogIn,
   CheckSquare,
   Sparkles,
   Bot,
@@ -99,7 +100,7 @@ export function MobileDrawer({
   onOpenSearch,
   onOpenFeedback,
 }) {
-  const { user } = useAuth();
+  const { user, openAuthModal } = useAuth();
   const { stats, resetToSampleData } = useTasks();
 
   // Escape key handler
@@ -156,15 +157,31 @@ export function MobileDrawer({
         </div>
 
         {/* User Card */}
-        <div className="drawer-user-card">
-          <div className="drawer-avatar">
-            {user?.name ? user.name.slice(0, 2).toUpperCase() : 'FB'}
+        {user && !user.isGuest ? (
+          <div className="drawer-user-card">
+            <div className="drawer-avatar">
+              {user.name ? user.name.slice(0, 2).toUpperCase() : 'FB'}
+            </div>
+            <div className="drawer-user-info">
+              <span className="drawer-user-name">{user.name || 'Workspace User'}</span>
+              <span className="drawer-user-role">{user.role || 'Member'}</span>
+            </div>
           </div>
-          <div className="drawer-user-info">
-            <span className="drawer-user-name">{user?.name || 'Workspace User'}</span>
-            <span className="drawer-user-role">{user?.role || 'Enterprise Admin'}</span>
+        ) : (
+          <div className="drawer-user-card drawer-guest-card">
+            <button
+              type="button"
+              className="drawer-signin-btn"
+              onClick={() => {
+                onClose();
+                openAuthModal?.();
+              }}
+            >
+              <LogIn size={15} />
+              <span>Sign In to Account</span>
+            </button>
           </div>
-        </div>
+        )}
 
         {/* Quick Search Button */}
         <div className="drawer-search-wrap">
