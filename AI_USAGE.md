@@ -1,68 +1,75 @@
-# AI Usage & Transparency Log
+# FocusBoard — AI Usage & Transparency Log
 
-This document provides transparent disclosure of AI assistance utilized during the development, testing, and full-stack expansion of **FocusBoard**, submitted by candidate **Sheik Mubashir Hussen**.
+This document provides transparent disclosure of AI assistance utilized during the development, testing, and full-stack expansion of **FocusBoard**, in accordance with Step 19 of the **MobileFirst Assignment Implementation Guide**.
 
 ---
 
 ## 1. Candidate Declaration
 
 - **Candidate Name:** Sheik Mubashir Hussen
-- **Project:** FocusBoard AI-Powered Collaborative Task Management Platform
-- **Assessment Track:** Senior / Trainee Full-Stack Assessment
+- **Project:** FocusBoard — Responsive Task Management Dashboard
+- **Repository:** https://github.com/mubashirhussen/Focus-board
 
 ---
 
-## 2. Scope of AI Tooling & Usage
+## 2. Tools Used
 
-AI tooling was utilized in an engineering acceleration, architecture validation, and automated test synthesis capacity:
-
-### Phase 1–6 (Frontend Implementation & Verification)
-- **Figma Token Extraction**: Parsing Figma frames (`15:2`, `15:30`, `15:58`) to extract exact color values (`#4F46E5`, `#0F172A`, `#F8FAFC`), font line heights, and padding metrics into pure CSS variables.
-- **Automated Verification Scripting**: Generation of `test_phase2_verification.js` to execute 28 deterministic assertions verifying state immutability, date formatting, and filter combinations.
-
-### Phase 11–13 (Backend, Security & Infrastructure Expansion)
-- **FastAPI Boilerplate & Schemas**: Assisted in drafting Pydantic v2 schemas and SQLAlchemy 2 relationship models.
-- **Security Validation**: Verification of OWASP guidelines regarding spreadsheet formula injection (CWE-1236) in CSV exports.
-- **Docker Optimization**: Structuring the multi-stage `Dockerfile` and `docker-compose.yml` for production execution.
-
-### Phase 14–16 (AI Assistant, Notifications & Collaboration)
-- **Deterministic Prioritization Formula**: Formulation of transparent scoring weights (Base Priority + Urgency + Active Momentum).
-- **Daily Schedule Knapsack Optimization**: Structuring time-block allocations with 15-minute rest intervals.
-- **Prompt Injection Defense**: Validating adversarial regex patterns to mitigate prompt hijacking in the chat assistant.
-- **WebSocket Protocol Design**: Designing the connection manager and pub/sub architecture for workspace collaboration.
-
-### Phase 17–18 (Search, Command Palette, Security Hardening & DR)
-- **Global Search Indexing**: Assisted in multi-tenant authorized querying and dynamic facet aggregation across Tasks, Projects, and Workspaces.
-- **Command Palette & Keyboard Shortcuts**: Implementation of accessible focus management, ARIA combobox pattern, and global shortcut listeners (`⌘K`, `⌘+Shift+F`, `N`, `?`, `Esc`).
-- **OWASP Security Hardening & Rate Limiting**: Implementing sliding window token tracking, OWASP security response headers, and audit trail metadata sanitization.
-- **Disaster Recovery Scripts**: Engineering zero-downtime online SQLite snapshotting with GZIP compression, SHA256 integrity validation, and backup retention pruning.
-
-### Phase 19–21 (SaaS Billing, Integrations, Calendar Sync, PWA & Offline Engine)
-- **SaaS Plan & Quota Engine**: Structuring plan tier limits, atomic usage metering, and provider abstraction (Stripe/Mock).
-- **Google Calendar Sync & Conflict Detection**: Designing bidirectional task-event mapping and overlapping schedule collision detection.
-- **Workflow Automation Engine**: Lightweight event-driven trigger matching with loop prevention and execution depth caps.
-- **Progressive Web App & Offline Reconciliation**: Implementing service worker caching, IndexedDB local persistence, and background offline mutation queue playback.
-- **Web Push Backend**: Architecture of VAPID key storage and background push notifications.
+- **ChatGPT (GPT-4o)**
+- **Antigravity AI (Google DeepMind)**
+- **GitHub Copilot**
+- **Claude 3.5 Sonnet**
 
 ---
 
-## 3. Human Engineering Decisions & Authorship
+## 3. Representative Prompts
 
-All core architecture, UX decisions, and code reviews were driven by the candidate:
+The following prompts illustrate how AI assistance was leveraged during development:
 
-1. **Proposal-Based AI Workflow**: Enforced that the AI assistant cannot directly mutate task records; every modification generates an `ActionProposal` requiring explicit user approval.
-2. **Deterministic Baseline Fallback**: Implemented rule-based scoring and planning that functions 100% reliably even when an external AI provider is offline or unconfigured.
-3. **Multi-Tenant Security Isolation**: Strictly enforced workspace and user boundaries at the database query level (`Task.workspace_id == workspace_id`).
-4. **Task Lifecycle Hooks**: Automated cancellation of pending deadline notifications upon task completion or deletion.
-5. **Aesthetic Consistency**: Preserved FocusBoard's human-crafted visual style without generic third-party UI framework dependencies.
+1. **Prompt 1 (State Management & Data Flow):**
+   > *"How do I design a centralized React custom hook and Context provider for FocusBoard that keeps task data in local state, derives dashboard statistics dynamically without division-by-zero errors, and synchronizes with browser localStorage on every mutation?"*
+
+2. **Prompt 2 (Carousel Implementation):**
+   > *"Write an accessible three-slide Focus Notes carousel in React with Lucide icons (ChevronLeft, ChevronRight), supporting circular boundary navigation, slide indicator dot selection, keyboard navigation with Arrow keys, and touch swipe gestures for mobile (390px)."*
+
+3. **Prompt 3 (Composite Filtering & Search):**
+   > *"How should I implement a composite filtering mechanism in React where case-insensitive title search, status tabs ('All', 'To do', 'In progress', 'Completed'), and priority dropdown ('Low', 'Medium', 'High') operate conjunctively (AND logic) on the same task dataset?"*
+
+4. **Prompt 4 (Responsive Design & Figma Token Mapping):**
+   > *"Extract CSS custom properties for FocusBoard adhering strictly to the 1440px desktop frame, 768px tablet reflow, and 390px mobile stacked card layout with WCAG AA compliant color contrast ratios."*
 
 ---
 
-## 4. Verification & Testing Evidence
+## 4. AI-Assisted Areas
 
-Every piece of code generated or assisted was executed, verified, and validated through real compilers and automated test suites:
-- Frontend Node test script: `28/28 passing`
-- Frontend Vite production build: `dist/ built cleanly with 0 errors`
-- Backend Pytest test suite: `30/30 tests passing (100% assertions across all 17 suites)`
-- Alembic database migrations: `001_initial`, `002_ai_notifications_collaboration`, `003_audit_trail`, and `004_saas_billing_integrations_pwa` upgraded cleanly
-- Disaster recovery backup script verified: `focusboard_*.db.gz` generated with SHA256 checksum and verified restoration
+- **CSS & Responsive Layouts:** Writing media queries for the 390px, 768px, and 1440px breakpoints; fine-tuning touch target sizes (min 44×44px) for mobile.
+- **Component Decomposition:** Structuring reusable components (`StatCard.jsx`, `FocusNotes.jsx`, `TaskCard.jsx`, `TaskForm.jsx`, `SearchBar.jsx`, `FilterTabs.jsx`, `ConfirmDialog.jsx`).
+- **Validation & Edge Cases:** Writing robust form validation logic for mandatory trimmed titles, whitespace rejection, and maximum character bounds.
+- **Automated Verification:** Synthesizing automated test assertions (`npm test` and pytest) covering CRUD operations, composite filtering, and storage persistence.
+
+---
+
+## 5. Verified or Corrected Suggestion
+
+### Carousel Boundary Navigation & State Wrapping
+- **AI Suggestion:** The initial AI-generated carousel implementation used strict boundary clamping: disabling the "Previous" button when `currentIndex === 0` and disabling the "Next" button when `currentIndex === totalSlides - 1`.
+- **Human Review & Correction:** During review against Step 7 of the MobileFirst Implementation Guide (*"Handle navigation boundaries consistently, preferably with circular navigation"*), the candidate identified that disabling buttons created a dead-end interaction for mobile touch users. The candidate modified the navigation handler to use modulo arithmetic:
+  ```javascript
+  // Corrected Circular Navigation Logic
+  const handlePrev = () => {
+    setCurrentIndex((prev) => (prev - 1 + totalSlides) % totalSlides);
+  };
+
+  const handleNext = () => {
+    setCurrentIndex((prev) => (prev + 1) % totalSlides);
+  };
+  ```
+  This ensures seamless circular looping across all three slides, keeps navigation buttons permanently interactive, and maintains synchronized indicator bars.
+
+---
+
+## 6. Human Engineering Decisions & Code Ownership
+
+All architectural decisions, visual alignment with the Figma source of truth, accessibility standards, and code reviews were driven and verified by the candidate:
+1. **Zero External Dependency Requirement:** Built on standard React hooks (`useState`, `useMemo`, `useCallback`, `useEffect`, `useRef`) without requiring external state management libraries (Redux/MobX) or backend infrastructure to operate.
+2. **Data Safety Guarantee:** `useLocalStorage` validates existing stored data before loading and prevents sample data from overwriting user-created tasks on refresh.
+3. **Accessibility Compliance:** Validated with semantic HTML5 (`<header>`, `<main>`, `<nav>`, `<section>`, `<dialog>`), visible keyboard focus rings, and screen-reader accessible ARIA labels.

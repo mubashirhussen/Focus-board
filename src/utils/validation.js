@@ -22,16 +22,22 @@ export function validateTaskForm(formData = {}) {
     errors.description = 'Description cannot exceed 500 characters.';
   }
 
-  // 3. Status validation (Must belong to allowed set)
-  const validStatuses = ['Todo', 'In Progress', 'Completed'];
-  if (formData.status && !validStatuses.includes(formData.status)) {
-    errors.status = 'Please select a valid status (Todo, In Progress, Completed).';
+  // 3. Status validation (Must belong to allowed set, tolerant of spaces)
+  const validStatusNorms = ['todo', 'inprogress', 'completed', 'done'];
+  if (formData.status) {
+    const norm = String(formData.status).toLowerCase().replace(/[\s_-]+/g, '');
+    if (!validStatusNorms.includes(norm)) {
+      errors.status = 'Please select a valid status (To do, In progress, Completed).';
+    }
   }
 
   // 4. Priority validation (Must belong to allowed set)
-  const validPriorities = ['Low', 'Medium', 'High'];
-  if (formData.priority && !validPriorities.includes(formData.priority)) {
-    errors.priority = 'Please select a valid priority (Low, Medium, High).';
+  const validPriorityNorms = ['low', 'medium', 'high'];
+  if (formData.priority) {
+    const norm = String(formData.priority).toLowerCase();
+    if (!validPriorityNorms.includes(norm)) {
+      errors.priority = 'Please select a valid priority (Low, Medium, High).';
+    }
   }
 
   return {

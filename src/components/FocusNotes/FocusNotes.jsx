@@ -15,15 +15,11 @@ export function FocusNotes() {
   const isLastSlide = currentIndex === totalSlides - 1;
 
   const handlePrev = () => {
-    if (!isFirstSlide) {
-      setCurrentIndex((prev) => prev - 1);
-    }
+    setCurrentIndex((prev) => (prev - 1 + totalSlides) % totalSlides);
   };
 
   const handleNext = () => {
-    if (!isLastSlide) {
-      setCurrentIndex((prev) => prev + 1);
-    }
+    setCurrentIndex((prev) => (prev + 1) % totalSlides);
   };
 
   const handleIndicatorClick = (index) => {
@@ -150,10 +146,8 @@ export function FocusNotes() {
               type="button"
               className="carousel-nav-btn prev-btn"
               onClick={handlePrev}
-              disabled={isFirstSlide}
-              aria-disabled={isFirstSlide}
               aria-label="Previous slide"
-              title={isFirstSlide ? 'First slide' : 'Previous slide'}
+              title="Previous slide"
             >
               <ChevronLeft size={18} />
             </button>
@@ -161,10 +155,8 @@ export function FocusNotes() {
               type="button"
               className="carousel-nav-btn next-btn"
               onClick={handleNext}
-              disabled={isLastSlide}
-              aria-disabled={isLastSlide}
               aria-label="Next slide"
-              title={isLastSlide ? 'Last slide' : 'Next slide'}
+              title="Next slide"
             >
               <ChevronRight size={18} />
             </button>

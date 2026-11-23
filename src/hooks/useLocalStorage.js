@@ -13,7 +13,11 @@ export function useLocalStorage(key, initialValue) {
     }
 
     try {
-      const item = window.localStorage.getItem(key);
+      let item = window.localStorage.getItem(key);
+      if (item === null && (key === 'focusboard_tasks' || key === 'focusboard_tasks_v1')) {
+        const altKey = key === 'focusboard_tasks' ? 'focusboard_tasks_v1' : 'focusboard_tasks';
+        item = window.localStorage.getItem(altKey);
+      }
       if (item !== null) {
         const parsed = JSON.parse(item);
 

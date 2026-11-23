@@ -2,7 +2,7 @@ export const APP_CONFIG = {
   appName: 'FocusBoard',
   tagline: 'Your work, in focus.',
   subtitle: 'Plan your day, stay organized, and get things done.',
-  storageKey: import.meta.env.VITE_APP_STORAGE_KEY || 'focusboard_tasks_v1',
+  storageKey: import.meta.env.VITE_APP_STORAGE_KEY || 'focusboard_tasks',
   user: {
     name: 'John Doe',
     initials: 'JD',
