@@ -1,29 +1,46 @@
 import React from 'react';
-import { Search } from 'lucide-react';
+import { Search, Menu } from 'lucide-react';
 import { APP_CONFIG } from '../../app/appConfig';
 import { UserProfileMenu } from '../auth/UserProfileMenu';
 import { NotificationBell } from '../notifications/NotificationBell';
 import './Header.css';
 
-export function Header({ title = 'Task Management', onOpenCommandPalette }) {
+export function Header({
+  title = 'Task Management',
+  onOpenCommandPalette,
+  onOpenMobileDrawer,
+  onNavigate,
+}) {
   return (
     <header className="app-header" role="banner">
-      {/* Desktop breadcrumb */}
-      <div className="header-context">
-        <span className="context-breadcrumb">Application</span>
-        <span className="context-separator" aria-hidden="true">/</span>
-        <span className="context-current">{title}</span>
-      </div>
+      {/* Mobile Drawer Hamburger Button */}
+      <div className="header-left-actions">
+        <button
+          type="button"
+          className="header-mobile-drawer-btn"
+          onClick={onOpenMobileDrawer}
+          aria-label="Open Navigation Menu"
+        >
+          <Menu size={20} />
+        </button>
 
-      {/* Mobile brand header (shown on small screens) */}
-      <div className="header-mobile-brand">
-        <div className="brand-logo-small" aria-hidden="true">
-          <span className="logo-dot dot-1" />
-          <span className="logo-dot dot-2" />
-          <span className="logo-dot dot-3" />
-          <span className="logo-dot dot-4" />
+        {/* Desktop breadcrumb */}
+        <div className="header-context">
+          <span className="context-breadcrumb">Application</span>
+          <span className="context-separator" aria-hidden="true">/</span>
+          <span className="context-current">{title}</span>
         </div>
-        <span className="brand-title">{APP_CONFIG.appName}</span>
+
+        {/* Mobile brand header (shown on small screens) */}
+        <div className="header-mobile-brand">
+          <div className="brand-logo-small" aria-hidden="true">
+            <span className="logo-dot dot-1" />
+            <span className="logo-dot dot-2" />
+            <span className="logo-dot dot-3" />
+            <span className="logo-dot dot-4" />
+          </div>
+          <span className="brand-title">{APP_CONFIG.appName}</span>
+        </div>
       </div>
 
       {/* Header action controls */}
@@ -39,9 +56,11 @@ export function Header({ title = 'Task Management', onOpenCommandPalette }) {
           <span className="cmd-trigger-text">Search & commands...</span>
         </button>
 
-        <NotificationBell />
+        <NotificationBell onNavigate={onNavigate} />
         <UserProfileMenu />
       </div>
     </header>
   );
 }
+
+export default Header;

@@ -1,31 +1,84 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, Check, Trash2, Clock, AlertTriangle, Sparkles, RefreshCw } from 'lucide-react';
+import {
+  Bell,
+  Check,
+  CheckCheck,
+  Trash2,
+  Clock,
+  AlertTriangle,
+  Sparkles,
+  RefreshCw,
+  X,
+  FolderKanban,
+  ShieldCheck,
+  ShieldAlert,
+  Workflow,
+  Users,
+  MessageSquare,
+  ExternalLink,
+  Inbox,
+  AlertCircle,
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTasks } from '../../hooks/useTasks';
 import { notificationApi } from '../../services/notificationApi';
 import './NotificationBell.css';
 
-export function NotificationBell() {
-  const { isAuthenticated } = useAuth();
+function formatRelativeTime(dateStr) {
+  if (!dateStr) return 'Just now';
+  try {
+    const date = new Date(dateStr);
+    const diffMs = Date.now() - date.getTime();
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHours = Math.floor(diffMin / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffSec < 45) return 'Just now';
+    if (diffMin < 60) return `${diffMin}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  } catch {
+    return 'Recently';
+  }
+}
+
+export function NotificationBell({ onNavigate }) {
+  const { isAuthenticated, user } = useAuth();
   const { tasks } = useTasks();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const dropdownRef = useRef(null);
 
-  // Close dropdown on click outside
+  // Close dropdown on click outside or Escape
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
       }
     }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    }
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
 
   const fetchNotifications = async () => {
+    setError(null);
     if (isAuthenticated) {
       try {
         setLoading(true);
@@ -33,15 +86,17 @@ export function NotificationBell() {
           notificationApi.getNotifications(),
           notificationApi.getUnreadCount(),
         ]);
-        setNotifications(notifData || []);
-        setUnreadCount(countData?.unread_count || 0);
+        const list = Array.isArray(notifData) ? notifData : notifData?.items || [];
+        setNotifications(list);
+        setUnreadCount(countData?.unread_count ?? list.filter((n) => !n.is_read && !n.read_at).length);
       } catch (err) {
         console.warn('Failed to load notifications from API:', err);
+        setError('Could not connect to notification service.');
+        generateLocalNotifications();
       } finally {
         setLoading(false);
       }
     } else {
-      // Local fallback for guest mode: derive deadlines directly
       generateLocalNotifications();
     }
   };
@@ -50,6 +105,18 @@ export function NotificationBell() {
     const todayStr = new Date().toISOString().split('T')[0];
     const localNotifs = [];
 
+    // System onboarding notification
+    localNotifs.push({
+      id: 'local-welcome',
+      category: 'System',
+      type: 'SYSTEM_WELCOME',
+      title: 'Welcome to FocusBoard Workspace',
+      message: 'Explore your projects, organize tasks, and evaluate real-time productivity analytics.',
+      is_read: false,
+      created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+      target_tab: 'tasks',
+    });
+
     tasks.forEach((t) => {
       if ((t.status || '').toLowerCase() === 'completed') return;
 
@@ -57,48 +124,69 @@ export function NotificationBell() {
         if (t.dueDate < todayStr) {
           localNotifs.push({
             id: `local-overdue-${t.id}`,
+            category: 'Tasks',
             type: 'TASK_OVERDUE',
             title: `Task Overdue: ${t.title}`,
-            message: `Was due on ${t.dueDate}. Review priority or reschedule.`,
+            message: `Was due on ${t.dueDate}. Review priority or reschedule to maintain velocity.`,
             is_read: false,
-            created_at: new Date().toISOString(),
+            created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+            target_tab: 'tasks',
           });
         } else if (t.dueDate === todayStr) {
           localNotifs.push({
             id: `local-today-${t.id}`,
+            category: 'Tasks',
             type: 'TASK_DUE_TODAY',
             title: `Due Today: ${t.title}`,
-            message: 'Allocated for completion today.',
+            message: 'Allocated for sprint completion today. Track your focus time.',
             is_read: false,
-            created_at: new Date().toISOString(),
+            created_at: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
+            target_tab: 'tasks',
           });
         }
       }
     });
 
     setNotifications(localNotifs);
-    setUnreadCount(localNotifs.length);
+    setUnreadCount(localNotifs.filter((n) => !n.is_read).length);
   };
 
   useEffect(() => {
     fetchNotifications();
   }, [isAuthenticated, tasks]);
 
-  const handleMarkAsRead = async (notifId) => {
+  const handleToggleRead = async (notifId, currentlyRead, e) => {
+    if (e) e.stopPropagation();
+    const nextReadState = !currentlyRead;
+
+    // Optimistic state update
+    setNotifications((prev) =>
+      prev.map((n) =>
+        n.id === notifId
+          ? { ...n, is_read: nextReadState, read_at: nextReadState ? new Date().toISOString() : null }
+          : n
+      )
+    );
+    setUnreadCount((c) => Math.max(0, nextReadState ? c - 1 : c + 1));
+
     if (isAuthenticated && typeof notifId === 'number') {
       try {
-        await notificationApi.markAsRead(notifId);
+        if (nextReadState) {
+          await notificationApi.markAsRead(notifId);
+        }
       } catch (err) {
-        console.error('Failed to mark read:', err);
+        console.error('Failed to update notification read state:', err);
       }
     }
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === notifId ? { ...n, is_read: true, read_at: new Date().toISOString() } : n))
-    );
-    setUnreadCount((c) => Math.max(0, c - 1));
   };
 
   const handleMarkAllRead = async () => {
+    // Optimistic state
+    setNotifications((prev) =>
+      prev.map((n) => ({ ...n, is_read: true, read_at: new Date().toISOString() }))
+    );
+    setUnreadCount(0);
+
     if (isAuthenticated) {
       try {
         await notificationApi.markAllAsRead();
@@ -106,12 +194,18 @@ export function NotificationBell() {
         console.error('Failed to mark all read:', err);
       }
     }
-    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true, read_at: new Date().toISOString() })));
-    setUnreadCount(0);
   };
 
   const handleDelete = async (notifId, e) => {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
+    const target = notifications.find((n) => n.id === notifId);
+    const wasUnread = target && !target.is_read && !target.read_at;
+
+    setNotifications((prev) => prev.filter((n) => n.id !== notifId));
+    if (wasUnread) {
+      setUnreadCount((c) => Math.max(0, c - 1));
+    }
+
     if (isAuthenticated && typeof notifId === 'number') {
       try {
         await notificationApi.deleteNotification(notifId);
@@ -119,33 +213,48 @@ export function NotificationBell() {
         console.error('Failed to delete notification:', err);
       }
     }
-    setNotifications((prev) => prev.filter((n) => n.id !== notifId));
-    setUnreadCount((c) => Math.max(0, c - 1));
   };
 
-  const handleTriggerCheck = async () => {
-    if (isAuthenticated) {
-      try {
-        await notificationApi.triggerCheck();
-        await fetchNotifications();
-      } catch (err) {
-        console.error('Failed to trigger deadline check:', err);
-      }
-    } else {
-      generateLocalNotifications();
+  const handleNotificationClick = (n) => {
+    if (!n.is_read && !n.read_at) {
+      handleToggleRead(n.id, false);
     }
+    const target = n.target_tab || (n.category === 'Security' ? 'soc' : n.category === 'Governance' ? 'enterprise' : 'tasks');
+    if (onNavigate) {
+      onNavigate(target);
+    }
+    setIsOpen(false);
   };
 
-  const getNotificationIcon = (type) => {
-    switch (type) {
-      case 'TASK_OVERDUE':
-        return <AlertTriangle size={15} className="notif-icon overdue" />;
-      case 'TASK_DUE_TODAY':
-      case 'TASK_DUE_SOON':
-        return <Clock size={15} className="notif-icon due" />;
-      default:
-        return <Sparkles size={15} className="notif-icon system" />;
+  const getCategoryMeta = (notif) => {
+    const type = notif.type || notif.notification_type || '';
+    const cat = notif.category || '';
+
+    if (type.includes('OVERDUE') || cat.toLowerCase() === 'overdue') {
+      return { label: 'Overdue', color: 'danger', icon: AlertTriangle };
     }
+    if (type.includes('TASK') || cat.toLowerCase() === 'tasks') {
+      return { label: 'Tasks', color: 'primary', icon: Clock };
+    }
+    if (type.includes('PROJECT') || cat.toLowerCase() === 'projects') {
+      return { label: 'Projects', color: 'info', icon: FolderKanban };
+    }
+    if (type.includes('SECURITY') || cat.toLowerCase() === 'security') {
+      return { label: 'Security', color: 'danger', icon: ShieldAlert };
+    }
+    if (type.includes('GOVERNANCE') || cat.toLowerCase() === 'governance') {
+      return { label: 'Governance', color: 'warning', icon: ShieldCheck };
+    }
+    if (type.includes('AUTOMATION') || cat.toLowerCase() === 'automation') {
+      return { label: 'Automation', color: 'accent', icon: Workflow };
+    }
+    if (type.includes('INVITATION') || cat.toLowerCase() === 'collaboration') {
+      return { label: 'Team', color: 'success', icon: Users };
+    }
+    if (type.includes('COMMENT') || cat.toLowerCase() === 'comments') {
+      return { label: 'Comment', color: 'info', icon: MessageSquare };
+    }
+    return { label: 'System', color: 'neutral', icon: Sparkles };
   };
 
   return (
@@ -166,68 +275,141 @@ export function NotificationBell() {
       </button>
 
       {isOpen && (
-        <div className="notification-dropdown">
+        <div className="notification-dropdown" role="dialog" aria-label="Notification Center">
+          {/* Header */}
           <div className="notification-dropdown-header">
             <div className="notif-header-title">
+              <div className="notif-header-icon-wrap">
+                <Bell size={16} />
+              </div>
               <h3>Notifications</h3>
-              {unreadCount > 0 && <span className="unread-pill">{unreadCount} new</span>}
+              {unreadCount > 0 ? (
+                <span className="unread-pill">{unreadCount} new</span>
+              ) : (
+                <span className="caught-up-pill">All caught up</span>
+              )}
             </div>
+
             <div className="notif-header-actions">
               <button
                 type="button"
-                className="icon-text-btn"
-                onClick={handleTriggerCheck}
-                title="Check latest deadlines"
+                className="icon-action-btn"
+                onClick={fetchNotifications}
+                title="Refresh notifications"
+                aria-label="Refresh notifications"
               >
                 <RefreshCw size={13} className={loading ? 'spinning' : ''} />
               </button>
-              {notifications.length > 0 && (
+              {unreadCount > 0 && (
                 <button
                   type="button"
                   className="icon-text-btn"
                   onClick={handleMarkAllRead}
                   title="Mark all as read"
                 >
-                  <Check size={13} />
+                  <CheckCheck size={13} />
                   <span>Mark all read</span>
                 </button>
               )}
+              <button
+                type="button"
+                className="icon-action-btn close-btn"
+                onClick={() => setIsOpen(false)}
+                title="Close notification center"
+                aria-label="Close notifications"
+              >
+                <X size={14} />
+              </button>
             </div>
           </div>
 
+          {/* Inline Error State if any */}
+          {error && (
+            <div className="notif-error-banner" role="alert">
+              <AlertCircle size={14} />
+              <span>{error}</span>
+              <button type="button" onClick={fetchNotifications} className="retry-link">
+                Retry
+              </button>
+            </div>
+          )}
+
+          {/* List Area */}
           <div className="notification-list">
-            {notifications.length === 0 ? (
+            {loading ? (
+              <div className="notif-skeletons" aria-label="Loading notifications">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="notif-skeleton-card">
+                    <div className="skeleton-icon" />
+                    <div className="skeleton-lines">
+                      <div className="skeleton-title" />
+                      <div className="skeleton-msg" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : notifications.length === 0 ? (
               <div className="empty-notifications">
-                <Clock size={24} className="empty-icon" />
-                <p>No new notifications</p>
-                <span>You are all caught up on your deadlines.</span>
+                <div className="empty-icon-wrap">
+                  <Inbox size={26} />
+                </div>
+                <p>No notifications yet</p>
+                <span>You are fully caught up with all tasks and team activities.</span>
               </div>
             ) : (
               notifications.map((n) => {
-                const isRead = !!n.read_at || n.is_read;
+                const isRead = Boolean(n.read_at || n.is_read);
+                const { label, color, icon: CatIcon } = getCategoryMeta(n);
+
                 return (
                   <div
                     key={n.id}
                     className={`notification-item ${isRead ? 'read' : 'unread'}`}
-                    onClick={() => !isRead && handleMarkAsRead(n.id)}
+                    onClick={() => handleNotificationClick(n)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        handleNotificationClick(n);
+                      }
+                    }}
                   >
-                    <div className="notif-icon-col">{getNotificationIcon(n.type)}</div>
+                    {/* Left Icon with category color */}
+                    <div className={`notif-icon-col icon-${color}`}>
+                      <CatIcon size={16} />
+                    </div>
+
+                    {/* Content */}
                     <div className="notif-content-col">
+                      <div className="notif-meta-row">
+                        <span className={`notif-badge badge-${color}`}>{label}</span>
+                        <span className="notif-time" title={n.created_at ? new Date(n.created_at).toLocaleString() : ''}>
+                          {formatRelativeTime(n.created_at)}
+                        </span>
+                      </div>
                       <h4 className="notif-title">{n.title}</h4>
                       <p className="notif-message">{n.message}</p>
-                      <span className="notif-time">
-                        {n.created_at ? new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Today'}
-                      </span>
                     </div>
+
+                    {/* Quick Card Actions */}
                     <div className="notif-actions-col">
-                      {!isRead && <span className="unread-dot" title="Unread" />}
                       <button
                         type="button"
-                        className="delete-notif-btn"
-                        onClick={(e) => handleDelete(n.id, e)}
-                        title="Dismiss notification"
+                        className={`action-btn-status ${isRead ? 'is-read' : 'is-unread'}`}
+                        onClick={(e) => handleToggleRead(n.id, isRead, e)}
+                        title={isRead ? 'Mark as unread' : 'Mark as read'}
+                        aria-label={isRead ? 'Mark as unread' : 'Mark as read'}
                       >
-                        <Trash2 size={13} />
+                        <Check size={12} />
+                      </button>
+                      <button
+                        type="button"
+                        className="action-btn-delete"
+                        onClick={(e) => handleDelete(n.id, e)}
+                        title="Delete notification"
+                        aria-label="Delete notification"
+                      >
+                        <Trash2 size={12} />
                       </button>
                     </div>
                   </div>
@@ -240,3 +422,5 @@ export function NotificationBell() {
     </div>
   );
 }
+
+export default NotificationBell;

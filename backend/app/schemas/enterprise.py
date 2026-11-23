@@ -8,7 +8,25 @@ class OrganizationPolicyResponse(BaseModel):
     updated_at: datetime
 
 class PolicyUpdateRequest(BaseModel):
-    policy_value: Dict[str, Any]
+    policy_value: Optional[Dict[str, Any]] = None
+    policy_type: Optional[str] = None
+    is_enabled: Optional[bool] = None
+    config_json: Optional[Any] = None
+
+    def get_resolved_value(self) -> Dict[str, Any]:
+        """Normalize policy value whether sent as nested dictionary or flat boolean."""
+        if self.policy_value is not None:
+            val = dict(self.policy_value)
+            if self.is_enabled is not None and "enabled" not in val and "is_enabled" not in val:
+                val["enabled"] = self.is_enabled
+                val["is_enabled"] = self.is_enabled
+            return val
+        
+        enabled = self.is_enabled if self.is_enabled is not None else False
+        res: Dict[str, Any] = {"enabled": enabled, "is_enabled": enabled}
+        if isinstance(self.config_json, dict):
+            res.update(self.config_json)
+        return res
 
 class CustomRoleCreate(BaseModel):
     name: str

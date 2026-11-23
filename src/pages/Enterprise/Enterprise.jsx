@@ -47,6 +47,8 @@ export function Enterprise() {
 
   const [activeTab, setActiveTab] = useState('governance'); // 'governance' | 'roles' | 'domains' | 'mfa' | 'audit'
   const [policies, setPolicies] = useState({});
+  const [policyLoading, setPolicyLoading] = useState({});
+  const [policyError, setPolicyError] = useState(null);
   const [roles, setRoles] = useState([]);
   const [domains, setDomains] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -73,6 +75,7 @@ export function Enterprise() {
 
   const loadEnterpriseData = async () => {
     setLoading(true);
+    setPolicyError(null);
     try {
       if (isAuthenticated) {
         const [polRes, rolesRes, domRes] = await Promise.allSettled([
@@ -81,19 +84,51 @@ export function Enterprise() {
           enterpriseApi.getDomains(),
         ]);
 
-        if (polRes.status === 'fulfilled') {
+        if (polRes.status === 'fulfilled' && polRes.value) {
           const map = {};
-          (polRes.value || []).forEach((p) => {
-            map[p.policy_type] = p;
-          });
+          if (Array.isArray(polRes.value)) {
+            polRes.value.forEach((p) => {
+              const pType = p.policy_type || p.key;
+              map[pType] = {
+                policy_type: pType,
+                is_enabled: Boolean(p.is_enabled ?? p.enabled),
+                ...p,
+              };
+            });
+          } else if (typeof polRes.value === 'object') {
+            Object.entries(polRes.value).forEach(([k, v]) => {
+              const isEn = typeof v === 'boolean' ? v : Boolean(v?.is_enabled ?? v?.enabled);
+              map[k] = {
+                policy_type: k,
+                is_enabled: isEn,
+                ...(typeof v === 'object' ? v : {}),
+              };
+            });
+          }
+          // Ensure aliases match
+          if (map['mfa_required'] && !map['mfa_enforced']) {
+            map['mfa_enforced'] = { ...map['mfa_required'], policy_type: 'mfa_enforced' };
+          }
+          if (map['mfa_enforced'] && !map['mfa_required']) {
+            map['mfa_required'] = { ...map['mfa_enforced'], policy_type: 'mfa_required' };
+          }
           setPolicies(map);
+          try {
+            localStorage.setItem('focusboard_enterprise_policies', JSON.stringify(map));
+          } catch {}
         }
         if (rolesRes.status === 'fulfilled') setRoles(rolesRes.value || []);
         if (domRes.status === 'fulfilled') setDomains(domRes.value || []);
       } else {
-        // Guest / demo mock values
-        setPolicies({
+        // Load cached or default policies for guest / offline mode
+        let cached = null;
+        try {
+          cached = JSON.parse(localStorage.getItem('focusboard_enterprise_policies') || 'null');
+        } catch {}
+
+        setPolicies(cached || {
           mfa_enforced: { policy_type: 'mfa_enforced', is_enabled: true },
+          mfa_required: { policy_type: 'mfa_required', is_enabled: true },
           domain_restriction: { policy_type: 'domain_restriction', is_enabled: false },
           ai_governance: { policy_type: 'ai_governance', is_enabled: true },
         });
@@ -113,28 +148,49 @@ export function Enterprise() {
   };
 
   const handleTogglePolicy = async (policyType) => {
-    const current = policies[policyType]?.is_enabled || false;
+    if (policyLoading[policyType]) return;
+
+    const current = Boolean(policies[policyType]?.is_enabled);
     const nextVal = !current;
 
     // Optimistic UI update
-    setPolicies((prev) => ({
-      ...prev,
-      [policyType]: { ...prev[policyType], policy_type: policyType, is_enabled: nextVal },
-    }));
+    const updatedMap = {
+      ...policies,
+      [policyType]: { ...policies[policyType], policy_type: policyType, is_enabled: nextVal },
+    };
+    if (policyType === 'mfa_enforced') {
+      updatedMap['mfa_required'] = { ...updatedMap['mfa_required'], is_enabled: nextVal };
+    }
+    setPolicies(updatedMap);
+    setPolicyError(null);
+    setPolicyLoading((prev) => ({ ...prev, [policyType]: true }));
 
     try {
       if (isAuthenticated) {
         await enterpriseApi.updatePolicy(policyType, nextVal);
       }
-      setActionNotice(`Policy '${policyType}' updated.`);
-      setTimeout(() => setActionNotice(null), 3000);
+      try {
+        localStorage.setItem('focusboard_enterprise_policies', JSON.stringify(updatedMap));
+      } catch {}
+
+      setActionNotice(`Policy '${policyType.replace('_', ' ')}' successfully updated to ${nextVal ? 'Enforced' : 'Disabled'}.`);
+      setTimeout(() => setActionNotice(null), 4000);
     } catch (err) {
-      alert('Failed to update policy: ' + err.message);
-      // Revert
-      setPolicies((prev) => ({
-        ...prev,
-        [policyType]: { ...prev[policyType], is_enabled: current },
-      }));
+      // Revert optimistic update
+      const revertedMap = {
+        ...policies,
+        [policyType]: { ...policies[policyType], is_enabled: current },
+      };
+      if (policyType === 'mfa_enforced') {
+        revertedMap['mfa_required'] = { ...revertedMap['mfa_required'], is_enabled: current };
+      }
+      setPolicies(revertedMap);
+      setPolicyError({
+        policyType,
+        message: err.message || 'Network error updating policy. Please check backend connection.',
+      });
+    } finally {
+      setPolicyLoading((prev) => ({ ...prev, [policyType]: false }));
     }
   };
 
@@ -347,6 +403,37 @@ export function Enterprise() {
         </button>
       </div>
 
+      {/* Notification Banners */}
+      {actionNotice && (
+        <div className="enterprise-notice success" role="status">
+          <CheckCircle2 size={16} />
+          <span>{actionNotice}</span>
+        </div>
+      )}
+
+      {policyError && (
+        <div className="enterprise-notice error" role="alert">
+          <AlertTriangle size={16} />
+          <div className="notice-content">
+            <strong>Update Error:</strong> {policyError.message}
+          </div>
+          <button
+            type="button"
+            className="notice-retry-btn"
+            onClick={() => handleTogglePolicy(policyError.policyType)}
+          >
+            Retry
+          </button>
+          <button
+            type="button"
+            className="notice-dismiss-btn"
+            onClick={() => setPolicyError(null)}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* Tab: Governance Policies */}
       {activeTab === 'governance' && (
         <div className="tab-pane">
@@ -366,13 +453,21 @@ export function Enterprise() {
               </div>
               <div className="policy-toggle-wrapper">
                 <button
-                  className={`toggle-switch ${policies['mfa_enforced']?.is_enabled ? 'enabled' : ''}`}
+                  className={`toggle-switch ${policies['mfa_enforced']?.is_enabled ? 'enabled' : ''} ${policyLoading['mfa_enforced'] ? 'loading' : ''}`}
                   onClick={() => handleTogglePolicy('mfa_enforced')}
+                  disabled={policyLoading['mfa_enforced']}
+                  aria-label="Toggle Multi-Factor Authentication"
                 >
                   <span className="toggle-slider" />
                 </button>
                 <span className="toggle-state">
-                  {policies['mfa_enforced']?.is_enabled ? 'Enforced' : 'Optional'}
+                  {policyLoading['mfa_enforced'] ? (
+                    <RefreshCw size={13} className="spin-icon" />
+                  ) : policies['mfa_enforced']?.is_enabled ? (
+                    'Enforced'
+                  ) : (
+                    'Optional'
+                  )}
                 </span>
               </div>
             </div>
@@ -392,13 +487,21 @@ export function Enterprise() {
               </div>
               <div className="policy-toggle-wrapper">
                 <button
-                  className={`toggle-switch ${policies['domain_restriction']?.is_enabled ? 'enabled' : ''}`}
+                  className={`toggle-switch ${policies['domain_restriction']?.is_enabled ? 'enabled' : ''} ${policyLoading['domain_restriction'] ? 'loading' : ''}`}
                   onClick={() => handleTogglePolicy('domain_restriction')}
+                  disabled={policyLoading['domain_restriction']}
+                  aria-label="Toggle Corporate Domain Restriction"
                 >
                   <span className="toggle-slider" />
                 </button>
                 <span className="toggle-state">
-                  {policies['domain_restriction']?.is_enabled ? 'Restricted' : 'Open'}
+                  {policyLoading['domain_restriction'] ? (
+                    <RefreshCw size={13} className="spin-icon" />
+                  ) : policies['domain_restriction']?.is_enabled ? (
+                    'Restricted'
+                  ) : (
+                    'Open'
+                  )}
                 </span>
               </div>
             </div>
@@ -418,13 +521,21 @@ export function Enterprise() {
               </div>
               <div className="policy-toggle-wrapper">
                 <button
-                  className={`toggle-switch ${policies['ai_governance']?.is_enabled ? 'enabled' : ''}`}
+                  className={`toggle-switch ${policies['ai_governance']?.is_enabled ? 'enabled' : ''} ${policyLoading['ai_governance'] ? 'loading' : ''}`}
                   onClick={() => handleTogglePolicy('ai_governance')}
+                  disabled={policyLoading['ai_governance']}
+                  aria-label="Toggle AI Data Privacy & Zero Retention"
                 >
                   <span className="toggle-slider" />
                 </button>
                 <span className="toggle-state">
-                  {policies['ai_governance']?.is_enabled ? 'Protected' : 'Standard'}
+                  {policyLoading['ai_governance'] ? (
+                    <RefreshCw size={13} className="spin-icon" />
+                  ) : policies['ai_governance']?.is_enabled ? (
+                    'Protected'
+                  ) : (
+                    'Standard'
+                  )}
                 </span>
               </div>
             </div>

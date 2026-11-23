@@ -36,6 +36,7 @@ import OnboardingModal from '../components/Onboarding/OnboardingModal';
 import FeedbackModal from '../components/FeedbackModal/FeedbackModal';
 import { growthApi } from '../services/growthApi';
 import { MobileBottomNav } from '../components/Navigation/MobileBottomNav';
+import { MobileDrawer } from '../components/Navigation/MobileDrawer';
 import { AuthModal } from '../components/auth/AuthModal';
 import { CommandPalette } from '../components/CommandPalette/CommandPalette';
 import { KeyboardShortcutsModal } from '../components/KeyboardShortcutsModal/KeyboardShortcutsModal';
@@ -59,6 +60,7 @@ function AppContent() {
     }
     return 'tasks';
   });
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
@@ -226,6 +228,8 @@ function AppContent() {
         <Header
           title={getPageTitle(activeTab)}
           onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+          onOpenMobileDrawer={() => setIsMobileDrawerOpen(true)}
+          onNavigate={(tab) => setActiveTab(tab)}
         />
         <main className="app-main" id="main-content">
           {renderActiveContent()}
@@ -233,7 +237,25 @@ function AppContent() {
       </div>
 
       {/* Mobile Touch Navigation & Offline Status (Bottom bar on screens <= 768px) */}
-      <MobileBottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+      <MobileBottomNav
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        onOpenMobileDrawer={() => setIsMobileDrawerOpen(true)}
+        onNewTask={() => {
+          setActiveTab('tasks');
+          openCreateModal?.();
+        }}
+      />
+
+      {/* Comprehensive Mobile Navigation Drawer with 100% Feature Parity */}
+      <MobileDrawer
+        isOpen={isMobileDrawerOpen}
+        onClose={() => setIsMobileDrawerOpen(false)}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        onOpenSearch={() => setIsCommandPaletteOpen(true)}
+        onOpenFeedback={() => setIsFeedbackModalOpen(true)}
+      />
 
       {/* Authentication Modal */}
       <AuthModal />

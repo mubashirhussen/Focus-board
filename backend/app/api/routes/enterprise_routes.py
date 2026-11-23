@@ -49,8 +49,43 @@ def update_organization_policy(
     """Update organization security policy (requires organization.manage_security)."""
     tenant_id = get_tenant_id_for_user(current_user.id, workspace_id)
     require_permission(db, current_user, tenant_id, "organization.manage_security")
-    enterprise_service.update_policy(db, tenant_id, policy_type, req.policy_value, current_user.id)
-    return {"status": "policy_updated", "policy_type": policy_type}
+    resolved_val = req.get_resolved_value()
+    enterprise_service.update_policy(db, tenant_id, policy_type, resolved_val, current_user.id)
+    return {
+        "status": "policy_updated",
+        "policy_type": policy_type,
+        "is_enabled": resolved_val.get("is_enabled", False),
+        "policy_value": resolved_val,
+    }
+
+@router.get("/invitations", response_model=List[EnterpriseInvitationResponse])
+def get_invitations(
+    workspace_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """List pending organization invitations."""
+    tenant_id = get_tenant_id_for_user(current_user.id, workspace_id)
+    require_permission(db, current_user, tenant_id, "organization.manage_members")
+    return enterprise_service.list_invitations(db, tenant_id)
+
+@router.post("/invitations", response_model=EnterpriseInvitationResponse, status_code=status.HTTP_201_CREATED)
+def create_invitation(
+    req: EnterpriseInvitationCreate,
+    workspace_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Create organization invitation with corporate domain enforcement."""
+    tenant_id = get_tenant_id_for_user(current_user.id, workspace_id)
+    require_permission(db, current_user, tenant_id, "organization.manage_members")
+    return enterprise_service.create_invitation(
+        db=db,
+        tenant_id=tenant_id,
+        email=req.email,
+        role=req.role,
+        inviter_id=current_user.id
+    )
 
 @router.get("/roles", response_model=List[CustomRoleResponse])
 def get_custom_roles(

@@ -45,6 +45,10 @@ def get_user_permissions(db: Session, user: User, tenant_id: str) -> Set[str]:
     role_name = (user.role or "Member").upper()
     perms: Set[str] = set(ROLE_PERMISSIONS_MAP.get(role_name, ROLE_PERMISSIONS_MAP["MEMBER"]))
 
+    # User is owner/admin of their own personal tenant
+    if tenant_id in [f"user:{user.id}", f"user_{user.id}", "default", ""] or role_name in ["ADMIN", "OWNER"]:
+        perms.update(ROLE_PERMISSIONS_MAP["OWNER"])
+
     # 2. Check workspace-specific membership role if tenant is a workspace
     if tenant_id.startswith("ws:"):
         ws_id = int(tenant_id.replace("ws:", ""))
@@ -55,6 +59,8 @@ def get_user_permissions(db: Session, user: User, tenant_id: str) -> Set[str]:
         if membership:
             m_role = (membership.role or "MEMBER").upper()
             perms.update(ROLE_PERMISSIONS_MAP.get(m_role, set()))
+            if m_role in ["OWNER", "ADMIN"]:
+                perms.update(ROLE_PERMISSIONS_MAP["OWNER"])
 
     # 3. Check custom roles assigned to tenant
     custom_roles = db.query(CustomRole).filter(CustomRole.tenant_id == tenant_id).all()
