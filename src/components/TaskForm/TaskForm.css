@@ -29,7 +29,8 @@
   transform: translateY(-50%);
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
-  pointer-events: none;
+  pointer-events: auto;
+  cursor: text;
   transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   padding: 0 4px;
   background: transparent;
@@ -44,7 +45,10 @@
 }
 
 /* Float up to top-left when focused, clicked, hovered, or filled */
+.floating-placeholder-label:hover,
 .floating-input-wrap:hover .floating-placeholder-label,
+.floating-input-wrap:focus-within .floating-placeholder-label,
+.floating-input:hover ~ .floating-placeholder-label,
 .floating-input:focus ~ .floating-placeholder-label,
 .floating-input:not(:placeholder-shown) ~ .floating-placeholder-label,
 .floating-input-wrap.has-value .floating-placeholder-label {

@@ -59,7 +59,6 @@ export function Sidebar({ activeTab = 'tasks', onTabChange, onOpenFeedback }) {
     { id: 'knowledge', label: t('nav.knowledge', 'Knowledge Hub'), icon: BookOpen, count: null },
     { id: 'trust', label: t('nav.trust', 'Trust Center'), icon: Lock, count: null },
     { id: 'executive', label: t('nav.executive', 'Executive BI'), icon: TrendingUp, count: null },
-    { id: 'developer', label: t('nav.developer', 'Developer Platform'), icon: Code, count: null },
     { id: 'analytics', label: t('nav.analytics', 'Analytics'), icon: BarChart2, count: null },
     { id: 'billing', label: t('nav.billing', 'Plans & Billing'), icon: CreditCard, count: null },
     { id: 'support', label: t('nav.support', 'Support & Help'), icon: HelpCircle, count: null },

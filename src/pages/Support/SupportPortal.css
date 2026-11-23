@@ -147,51 +147,60 @@
 .priority-badge {
   font-size: 0.6875rem;
   font-weight: 600;
-  padding: 0.125rem 0.375rem;
+  padding: 0.1875rem 0.5rem;
   border-radius: 0.25rem;
   text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .priority-badge.urgent {
-  background: #fee2e2;
-  color: #dc2626;
+  background: #0f172a;
+  color: #ffffff;
+  border: 1px solid #0f172a;
 }
 
 .priority-badge.high {
-  background: #fef3c7;
-  color: #d97706;
+  background: #f1f5f9;
+  color: #1e293b;
+  border: 1px solid #94a3b8;
 }
 
 .priority-badge.normal {
-  background: #e0f2fe;
-  color: #0284c7;
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #cbd5e1;
 }
 
 .priority-badge.low {
-  background: #f1f5f9;
+  background: #ffffff;
   color: #64748b;
+  border: 1px solid #e2e8f0;
 }
 
 .status-badge {
   font-size: 0.6875rem;
   font-weight: 600;
-  padding: 0.125rem 0.375rem;
+  padding: 0.1875rem 0.5rem;
   border-radius: 0.25rem;
+  letter-spacing: 0.02em;
 }
 
 .status-badge.open {
-  background: #e0e7ff;
-  color: #4338ca;
+  background: #eef2ff;
+  color: #4f46e5;
+  border: 1px solid #c7d2fe;
 }
 
 .status-badge.in_progress {
-  background: #fef3c7;
-  color: #b45309;
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
 }
 
 .status-badge.resolved {
-  background: #dcfce7;
-  color: #15803d;
+  background: #f8fafc;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
 }
 
 .ticket-item-title {
@@ -216,7 +225,7 @@
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  color: #d97706;
+  color: #475569;
   font-weight: 500;
 }
 
@@ -282,9 +291,9 @@
 }
 
 .message-bubble.internal-note {
-  background: #fffbeb;
-  border: 1px solid #fde68a;
-  border-left: 4px solid #f59e0b;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 3px solid #6366f1;
 }
 
 .message-header {
@@ -306,8 +315,9 @@
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  background: #fef3c7;
-  color: #b45309;
+  background: #eef2ff;
+  color: #4f46e5;
+  border: 1px solid #c7d2fe;
   font-size: 0.6875rem;
   padding: 0.125rem 0.375rem;
   border-radius: 0.25rem;
@@ -333,7 +343,7 @@
   align-items: center;
   gap: 0.5rem;
   font-size: 0.8125rem;
-  color: #b45309;
+  color: #4f46e5;
   cursor: pointer;
   font-weight: 500;
 }
@@ -369,7 +379,7 @@
 }
 
 .btn-send-reply.internal {
-  background: #d97706;
+  background: #4f46e5;
 }
 
 .no-ticket-selected {
@@ -634,18 +644,21 @@
 }
 
 .health-status-badge.healthy {
-  background: #ecfdf5;
-  color: #059669;
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
 }
 
 .health-status-badge.needs_attention {
-  background: #fef3c7;
-  color: #d97706;
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #cbd5e1;
 }
 
 .health-status-badge.at_risk {
-  background: #fee2e2;
-  color: #dc2626;
+  background: #0f172a;
+  color: #ffffff;
+  border: 1px solid #0f172a;
 }
 
 .health-score-display {

@@ -82,20 +82,25 @@
 .workspace-header-actions {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .ws-action-btn {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
-  height: 36px;
-  padding: 0 var(--space-4);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-xs);
+  justify-content: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
 }
 
 .ws-action-btn.secondary {
@@ -106,16 +111,19 @@
 
 .ws-action-btn.secondary:hover {
   background-color: var(--bg-hover);
+  border-color: var(--color-primary);
 }
 
 .ws-action-btn.primary {
   background-color: var(--color-primary);
   color: white;
   border: none;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
 }
 
 .ws-action-btn.primary:hover {
   background-color: var(--color-primary-hover);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
 }
 
 .empty-workspace-screen {
@@ -154,110 +162,195 @@
 .team-subnav {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  border-bottom: 1px solid var(--border-subtle);
-  padding-bottom: var(--space-2);
+  gap: 10px;
+  border-bottom: 1px solid var(--border-subtle, #e2e8f0);
+  padding-bottom: 10px;
   overflow-x: auto;
+  width: 100%;
 }
 
 .subnav-tab {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: 8px 14px;
-  border: none;
+  gap: 8px;
+  padding: 8px 16px;
+  border: 1px solid transparent;
   background: none;
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-xs);
+  border-radius: 8px;
+  font-size: 13px;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: var(--text-secondary, #64748b);
   cursor: pointer;
   white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.subnav-tab:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
 }
 
 .subnav-tab.active {
-  background-color: var(--color-primary);
+  background-color: var(--color-primary, #4f46e5);
   color: white;
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
 }
 
 /* Shared Tasks */
+.team-tasks-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.team-tasks-header h3 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.team-tasks-header p {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
 .shared-tasks-list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  margin-top: var(--space-4);
+  gap: 12px;
+  margin-top: 4px;
 }
 
 .shared-task-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-4);
-  padding: var(--space-4) var(--space-5);
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-xs);
+  gap: 16px;
+  padding: 16px 20px;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   flex-wrap: wrap;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.shared-task-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
 }
 
 .task-main-info {
   flex: 1;
   min-width: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.task-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background-color: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.task-badge.high,
+.task-badge.urgent {
+  background-color: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.task-badge.medium {
+  background-color: #fffbeb;
+  color: #b45309;
+  border-color: #fde68a;
+}
+
+.task-badge.low {
+  background-color: #f0fdf4;
+  color: #15803d;
+  border-color: #bbf7d0;
 }
 
 .shared-task-title {
-  font-size: var(--font-size-sm);
+  font-size: 14px;
   font-weight: 600;
-  color: var(--text-primary);
-  margin: var(--space-1) 0;
+  color: #0f172a;
+  margin: 2px 0 0 0;
+  line-height: 1.4;
 }
 
 .shared-task-desc {
-  font-size: var(--font-size-xs);
-  color: var(--text-secondary);
-  margin: 0;
+  font-size: 12.5px;
+  color: #64748b;
+  margin: 2px 0 0 0;
+  line-height: 1.4;
 }
 
 .task-collab-controls {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
+  gap: 16px;
+  flex-shrink: 0;
 }
 
 .assignee-picker {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  font-size: var(--font-size-xs);
-  color: var(--text-secondary);
+  gap: 8px;
+  font-size: 12.5px;
+  color: #64748b;
+  white-space: nowrap;
 }
 
 .assignee-picker select {
-  padding: 4px 8px;
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-xs);
-  background-color: var(--bg-surface);
+  padding: 6px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 12.5px;
+  background-color: #ffffff;
+  color: #0f172a;
+  cursor: pointer;
+  outline: none;
+}
+
+.assignee-picker select:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
 }
 
 .comments-bubble-btn {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
-  padding: 6px 10px;
-  background-color: var(--bg-hover);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
-  font-size: 11px;
+  gap: 6px;
+  padding: 6px 12px;
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 12px;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: #475569;
   cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
 .comments-bubble-btn:hover {
-  background-color: #EEF2FF;
-  color: var(--color-primary);
+  background-color: #eef2ff;
+  border-color: #818cf8;
+  color: #4f46e5;
 }
 
 /* Projects Grid */

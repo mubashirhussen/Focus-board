@@ -136,8 +136,15 @@
 
 .policies-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 20px;
+  width: 100%;
+}
+
+@media (max-width: 992px) {
+  .policies-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .policy-card {
@@ -150,6 +157,8 @@
   justify-content: space-between;
   gap: 20px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-sizing: border-box;
+  height: 100%;
 }
 
 .policy-card-header {
