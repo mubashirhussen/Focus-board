@@ -114,4 +114,44 @@ export const aiApi = {
     const q = new URLSearchParams(params).toString();
     return api.get(`/ai/usage${q ? `?${q}` : ''}`);
   },
+
+  // Strategic Work Intelligence & High-Value Features (Review Expansion)
+  getNextBestTask: async () => {
+    return api.get('/ai/next-best-task');
+  },
+
+  logFocusSession: async (data) => {
+    return api.post('/ai/focus-sessions', data);
+  },
+
+  getFocusStats: async () => {
+    return api.get('/ai/focus-stats');
+  },
+
+  getPredictiveRisks: async (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return api.get(`/ai/predictive-risks${q ? `?${q}` : ''}`);
+  },
+
+  getTeamCapacity: async (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return api.get(`/ai/team-capacity${q ? `?${q}` : ''}`);
+  },
+
+  analyzeMeeting: async (data) => {
+    return api.post('/ai/meetings/analyze', data);
+  },
+
+  convertMeetingActionItem: async (data) => {
+    return api.post('/ai/meetings/convert-action-item', data);
+  },
+
+  createDecision: async (data) => {
+    return api.post('/ai/decisions', data);
+  },
+
+  getDecisions: async (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return api.get(`/ai/decisions${q ? `?${q}` : ''}`);
+  },
 };

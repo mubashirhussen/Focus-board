@@ -81,6 +81,9 @@ from app.models.ai_conversation import (
     AIConversation,
     AIMessage,
     AIUsageLog,
+    FocusSessionRecord,
+    MeetingIntelligenceRecord,
+    DecisionMemoryRecord,
 )
 from app.models.regional_settings import UserRegionalSetting
 from app.models.enterprise_analytics import (
@@ -390,4 +393,8 @@ __all__ = [
     "CXInsight",
     "CXRecommendation",
     "CXJourneyEvent",
+    # Work Intelligence & AI Extensions
+    "FocusSessionRecord",
+    "MeetingIntelligenceRecord",
+    "DecisionMemoryRecord",
 ]

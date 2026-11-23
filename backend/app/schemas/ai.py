@@ -318,3 +318,171 @@ class AIUsageSummaryResponse(BaseModel):
     usage_by_feature: Dict[str, int] = {}
     usage_by_provider: Dict[str, int] = {}
     recent_logs: List[AIUsageLogItem] = []
+
+# -------------------------------------------------------------
+# Smart Prioritization & Next Best Task Models
+# -------------------------------------------------------------
+
+class NextBestTaskResponse(BaseModel):
+    task_id: Optional[str] = None
+    title: str
+    category: str = "General"
+    priority: str = "High"
+    due_date: Optional[str] = None
+    estimated_minutes: int = 45
+    priority_score: int = 85
+    urgency_tier: str = "Critical"  # Critical, High, Moderate, Normal
+    explainability_tags: List[str] = []
+    rationale: str
+    suggested_action: str
+    confidence_score: float = 94.0
+    ranked_queue: List[TaskPriorityRecommendation] = []
+
+# -------------------------------------------------------------
+# Adaptive Focus Mode & Session Models
+# -------------------------------------------------------------
+
+class FocusSessionCreate(BaseModel):
+    task_id: Optional[str] = None
+    task_title: Optional[str] = None
+    duration_minutes: int = Field(25, ge=1, le=240)
+    completed: bool = False
+    notes: Optional[str] = None
+    interruptions: int = 0
+
+class FocusSessionResponse(BaseModel):
+    id: str
+    task_id: Optional[str] = None
+    task_title: Optional[str] = None
+    duration_minutes: int
+    completed: bool
+    notes: Optional[str] = None
+    interruptions: int
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+class FocusSessionStatsResponse(BaseModel):
+    total_focus_minutes: int
+    completed_sessions_count: int
+    today_focus_minutes: int
+    current_streak_days: int
+    recent_sessions: List[FocusSessionResponse] = []
+
+# -------------------------------------------------------------
+# Predictive Project Risk Models
+# -------------------------------------------------------------
+
+class PredictiveRiskItem(BaseModel):
+    category: str  # Schedule, Dependency, Workload, Scope
+    severity: str  # Critical, High, Medium, Low
+    description: str
+    impact: str
+    mitigation_strategy: str
+
+class PredictiveProjectRiskResponse(BaseModel):
+    overall_risk_score: float  # 0 to 100
+    risk_level: str  # LOW, MODERATE, ELEVATED, CRITICAL
+    predicted_completion_date: str
+    schedule_variance_days: int  # positive = delayed, negative = ahead
+    confidence_interval_days: int
+    critical_blockers_count: int
+    identified_risks: List[PredictiveRiskItem] = []
+    key_recommendations: List[str] = []
+
+# -------------------------------------------------------------
+# Team Workload & Capacity Models
+# -------------------------------------------------------------
+
+class MemberCapacityItem(BaseModel):
+    user_id: int
+    name: str
+    email: str
+    avatar_initials: str
+    assigned_tasks_count: int
+    allocated_hours: float
+    capacity_hours: float = 40.0
+    utilization_pct: float
+    workload_status: str  # "OPTIMAL", "OVERLOADED", "AVAILABLE"
+    top_task_titles: List[str] = []
+
+class TeamCapacityAnalysisResponse(BaseModel):
+    workspace_name: str
+    total_members: int
+    team_utilization_pct: float
+    overloaded_members_count: int
+    available_capacity_hours: float
+    members: List[MemberCapacityItem] = []
+    rebalancing_recommendations: List[str] = []
+
+# -------------------------------------------------------------
+# Meeting Intelligence & Decision Models
+# -------------------------------------------------------------
+
+class MeetingActionItem(BaseModel):
+    action_id: str
+    title: str
+    description: Optional[str] = None
+    suggested_assignee: Optional[str] = None
+    suggested_due_date: Optional[str] = None
+    priority: str = "Medium"
+    converted_task_id: Optional[str] = None
+
+class MeetingRecordCreate(BaseModel):
+    title: str = Field(..., min_length=2, max_length=255)
+    notes_raw: str = Field(..., min_length=5)
+    workspace_id: Optional[int] = None
+    project_id: Optional[int] = None
+    participants: Optional[str] = "[]"
+    meeting_date: Optional[str] = None
+
+class MeetingIntelligenceAnalysisResponse(BaseModel):
+    meeting_id: str
+    title: str
+    summary: str
+    decisions: List[str] = []
+    action_items: List[MeetingActionItem] = []
+    meeting_date: str
+
+class ConvertActionItemRequest(BaseModel):
+    meeting_id: Optional[str] = None
+    action_id: str
+    title: str
+    description: Optional[str] = None
+    priority: Optional[str] = "Medium"
+    due_date: Optional[str] = None
+    assignee_id: Optional[int] = None
+    project_id: Optional[int] = None
+
+class ConvertActionItemResponse(BaseModel):
+    task_id: str
+    title: str
+    status: str
+    message: str
+
+class DecisionLogCreate(BaseModel):
+    title: str = Field(..., min_length=3, max_length=255)
+    context: str = Field(..., min_length=5)
+    rationale: str = Field(..., min_length=5)
+    alternatives: Optional[str] = None
+    impact: str = "HIGH"  # CRITICAL, HIGH, MEDIUM, LOW
+    status: str = "APPROVED"  # PROPOSED, APPROVED, SUPERSEDED
+    owner_name: Optional[str] = "Team Lead"
+    workspace_id: Optional[int] = None
+    project_id: Optional[int] = None
+
+class DecisionLogResponse(BaseModel):
+    id: str
+    title: str
+    context: str
+    rationale: str
+    alternatives: Optional[str] = None
+    impact: str
+    status: str
+    owner_name: str
+    workspace_id: Optional[int] = None
+    project_id: Optional[int] = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+

@@ -67,3 +67,64 @@ class AIUsageLog(Base):
     created_at = Column(DateTime, default=utc_now, nullable=False, index=True)
 
     user = relationship("User")
+
+# -------------------------------------------------------------
+# Work Intelligence & Adaptive Focus Models
+# -------------------------------------------------------------
+
+class FocusSessionRecord(Base):
+    __tablename__ = "focus_sessions"
+
+    id = Column(String(64), primary_key=True, default=lambda: f"foc_{uuid.uuid4().hex[:12]}")
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    task_id = Column(String(64), ForeignKey("tasks.id", ondelete="SET NULL"), nullable=True, index=True)
+    task_title = Column(String(255), nullable=True)
+    duration_minutes = Column(Integer, default=25, nullable=False)
+    completed = Column(Boolean, default=False, nullable=False)
+    notes = Column(Text, nullable=True)
+    interruptions = Column(Integer, default=0, nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False, index=True)
+
+    user = relationship("User")
+    task = relationship("Task")
+
+class MeetingIntelligenceRecord(Base):
+    __tablename__ = "meeting_intelligence_records"
+
+    id = Column(String(64), primary_key=True, default=lambda: f"meet_{uuid.uuid4().hex[:12]}")
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id", ondelete="SET NULL"), nullable=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id", ondelete="SET NULL"), nullable=True, index=True)
+    title = Column(String(255), nullable=False)
+    participants = Column(String(512), default="[]", nullable=False)
+    notes_raw = Column(Text, nullable=False)
+    summary = Column(Text, nullable=False)
+    decisions_json = Column(Text, default="[]", nullable=False)
+    action_items_json = Column(Text, default="[]", nullable=False)
+    meeting_date = Column(DateTime, default=utc_now, nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False, index=True)
+
+    user = relationship("User")
+    workspace = relationship("Workspace")
+    project = relationship("Project")
+
+class DecisionMemoryRecord(Base):
+    __tablename__ = "decision_memory_records"
+
+    id = Column(String(64), primary_key=True, default=lambda: f"dec_{uuid.uuid4().hex[:12]}")
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    workspace_id = Column(Integer, ForeignKey("workspaces.id", ondelete="SET NULL"), nullable=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id", ondelete="SET NULL"), nullable=True, index=True)
+    title = Column(String(255), nullable=False)
+    context = Column(Text, nullable=False)
+    alternatives = Column(Text, nullable=True)
+    rationale = Column(Text, nullable=False)
+    owner_name = Column(String(100), default="Team Lead", nullable=False)
+    impact = Column(String(32), default="HIGH", nullable=False)  # CRITICAL, HIGH, MEDIUM, LOW
+    status = Column(String(32), default="APPROVED", nullable=False)  # PROPOSED, APPROVED, SUPERSEDED
+    created_at = Column(DateTime, default=utc_now, nullable=False, index=True)
+
+    user = relationship("User")
+    workspace = relationship("Workspace")
+    project = relationship("Project")
+

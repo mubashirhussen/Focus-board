@@ -36,6 +36,18 @@ from app.schemas.ai import (
     AnalyticsInterpretRequest,
     AnalyticsInterpretResponse,
     AIUsageSummaryResponse,
+    NextBestTaskResponse,
+    FocusSessionCreate,
+    FocusSessionResponse,
+    FocusSessionStatsResponse,
+    PredictiveProjectRiskResponse,
+    TeamCapacityAnalysisResponse,
+    MeetingRecordCreate,
+    MeetingIntelligenceAnalysisResponse,
+    ConvertActionItemRequest,
+    ConvertActionItemResponse,
+    DecisionLogCreate,
+    DecisionLogResponse,
 )
 from app.ai.prioritizer import prioritize_tasks
 from app.ai.planner import generate_daily_plan
@@ -347,3 +359,87 @@ def get_ai_usage(
 ):
     """Retrieve aggregated AI token consumption, request counts, and cost tracking."""
     return ai_service.get_usage_summary(db, current_user, workspace_id=workspace_id, days=days)
+
+# -------------------------------------------------------------
+# Work Intelligence & Next Best Task (Review Expansion)
+# -------------------------------------------------------------
+
+@router.get("/next-best-task", response_model=NextBestTaskResponse)
+def get_next_best_task(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Evaluate and recommend the single highest-impact Next Best Task with explainability factors."""
+    return ai_service.get_next_best_task(db, current_user)
+
+@router.post("/focus-sessions", response_model=FocusSessionResponse, status_code=status.HTTP_201_CREATED)
+def log_focus_session(
+    req: FocusSessionCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Record a focused productivity sprint and synchronize completed tasks."""
+    return ai_service.log_focus_session(db, current_user, req)
+
+@router.get("/focus-stats", response_model=FocusSessionStatsResponse)
+def get_focus_stats(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Retrieve personal focus session streaks, time investments, and recent history."""
+    return ai_service.get_focus_stats(db, current_user)
+
+@router.get("/predictive-risks", response_model=PredictiveProjectRiskResponse)
+def get_predictive_risks(
+    project_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Forecast completion dates, detect critical path blockers, and assess schedule risks."""
+    return ai_service.get_predictive_project_risks(db, current_user, project_id=project_id)
+
+@router.get("/team-capacity", response_model=TeamCapacityAnalysisResponse)
+def get_team_capacity(
+    workspace_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Evaluate team capacity, workload distribution, and generate rebalancing recommendations."""
+    return ai_service.get_team_capacity_analysis(db, current_user, workspace_id=workspace_id)
+
+@router.post("/meetings/analyze", response_model=MeetingIntelligenceAnalysisResponse)
+def analyze_meeting_notes(
+    req: MeetingRecordCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Extract executive summary, decisions, and actionable task assignments from meeting notes."""
+    return ai_service.analyze_meeting_notes(db, current_user, req)
+
+@router.post("/meetings/convert-action-item", response_model=ConvertActionItemResponse)
+def convert_meeting_action_item(
+    req: ConvertActionItemRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Convert an extracted meeting action item directly into a real FocusBoard task."""
+    return ai_service.convert_action_item_to_task(db, current_user, req)
+
+@router.post("/decisions", response_model=DecisionLogResponse, status_code=status.HTTP_201_CREATED)
+def create_decision(
+    req: DecisionLogCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Record an architectural or project decision with context, rationale, and alternatives."""
+    return ai_service.create_decision_log(db, current_user, req)
+
+@router.get("/decisions", response_model=List[DecisionLogResponse])
+def list_decisions(
+    project_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Retrieve chronological project decision history for organizational memory."""
+    return ai_service.list_decision_logs(db, current_user, project_id=project_id)
+
