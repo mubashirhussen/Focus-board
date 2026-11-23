@@ -424,11 +424,10 @@ def execute_action(
         db.refresh(notif)
         return {"notification_id": notif.id, "title": title, "user_id": target_user_id}
 
-    # 7. webhook.send
-    elif action_type == "webhook.send":
-        url = render(action_config.get("url", "https://api.focusboard.io/webhooks/dummy"))
-        payload_data = {"event": context.get("event", "automation.trigger"), "context": context, "timestamp": utc_now().isoformat()}
-        return {"webhook_dispatched": True, "url": url, "payload": payload_data}
+    # 7. external integrations actions (slack, github, google_calendar, jira, webhook)
+    elif action_type.startswith(("slack.", "github.", "google_calendar.", "jira.", "webhook.")):
+        from app.services.integration_service import execute_external_action
+        return execute_external_action(db, action_type, action_config, context, actor_id, workspace_id)
 
     # 8. support.create_ticket
     elif action_type == "support.create_ticket":
