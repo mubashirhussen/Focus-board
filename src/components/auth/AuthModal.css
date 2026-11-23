@@ -17,6 +17,13 @@
   to { opacity: 1; }
 }
 
+.auth-modal-card-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  animation: authSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 .auth-modal-card {
   position: relative;
   background: #ffffff;

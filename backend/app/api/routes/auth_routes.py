@@ -7,8 +7,9 @@ password resets, email verifications, multi-device tracking, and user profile ma
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 import uuid
+import re
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -25,7 +26,7 @@ from app.core.security import (
     verify_password,
 )
 from app.db.session import get_db
-from app.models.auth import EmailVerificationToken, PasswordResetToken, AuthAuditLog, UserSession
+from app.models.auth import EmailVerificationToken, PasswordResetToken, AuthAuditLog, UserSession, EmailOTPVerification
 from app.models.user import User
 from app.schemas.auth import (
     ChangePasswordRequest,
@@ -42,7 +43,17 @@ from app.schemas.auth import (
     UserProfileUpdate,
     UserResponse,
     UserSessionResponse,
+    EmailAuthStartRequest,
+    EmailAuthStartResponse,
+    UsernameCheckResponse,
+    EmailRegisterRequest,
+    VerifyOTPRequest,
+    ResendOTPRequest,
+    GoogleAuthRequest,
+    GoogleAuthUrlResponse,
 )
+from app.services.otp_service import otp_service
+from app.services.google_oauth_service import google_oauth_service
 
 router = APIRouter(prefix="/auth", tags=["Authentication & Identity"])
 
@@ -69,6 +80,54 @@ def _record_security_event(db: Session, event_type: str, user_id: Optional[int],
     except Exception as exc:
         logger.error("Failed to record security event: %s", exc)
         db.rollback()
+
+
+def _create_authenticated_session(
+    user: User,
+    request: Request,
+    db: Session,
+    device_name: Optional[str] = None,
+    event_type: str = "login_success",
+    metadata: Optional[dict] = None,
+) -> dict:
+    ip, user_agent = _get_client_info(request)
+    raw_refresh = generate_secure_token(48)
+    refresh_hash = hash_token(raw_refresh)
+    session_id = str(uuid.uuid4())
+    refresh_expires = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+
+    user_session = UserSession(
+        user_id=user.id,
+        session_id=session_id,
+        refresh_token_hash=refresh_hash,
+        ip_address=ip,
+        user_agent=user_agent,
+        device_name=device_name or "Web Browser",
+        expires_at=refresh_expires,
+    )
+    db.add(user_session)
+    user.last_login_at = datetime.utcnow()
+    db.commit()
+
+    access_token = create_access_token(
+        data={"sub": str(user.id), "email": user.email, "role": user.role, "sid": session_id}
+    )
+    refresh_token = create_refresh_token(
+        data={"sub": str(user.id), "sid": session_id, "token_val": raw_refresh}
+    )
+
+    sec_meta = {"sid": session_id}
+    if metadata:
+        sec_meta.update(metadata)
+    _record_security_event(db, event_type, user.id, ip, user_agent, sec_meta)
+
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+        "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        "user": user,
+    }
 
 
 def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
@@ -169,40 +228,309 @@ def login(login_data: LoginRequest, request: Request, db: Session = Depends(get_
         _record_security_event(db, "login_blocked_suspended", user.id, ip, user_agent)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is deactivated or suspended.")
     
-    # Create session
-    raw_refresh = generate_secure_token(48)
-    refresh_hash = hash_token(raw_refresh)
-    session_id = str(uuid.uuid4())
-    refresh_expires = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-    
-    user_session = UserSession(
-        user_id=user.id,
-        session_id=session_id,
-        refresh_token_hash=refresh_hash,
-        ip_address=ip,
-        user_agent=user_agent,
-        device_name=login_data.device_name or "Web Browser",
-        expires_at=refresh_expires,
+    return _create_authenticated_session(user, request, db, device_name=login_data.device_name, event_type="login_success")
+
+
+# ============================================================================
+# Passwordless Email & OTP Authentication Endpoints
+# ============================================================================
+
+@router.post("/email/start", response_model=EmailAuthStartResponse)
+def email_auth_start(req: EmailAuthStartRequest, request: Request, db: Session = Depends(get_db)):
+    """
+    Step 1 of Passwordless Auth:
+    Validates email. If user exists, dispatches login OTP.
+    If user is new, prompts registration step with name and username collection.
+    """
+    ip, user_agent = _get_client_info(request)
+    normalized_email = req.email.lower().strip()
+
+    user = db.query(User).filter(func.lower(User.email) == normalized_email).first()
+
+    if user:
+        if not user.is_active or user.status == "suspended":
+            _record_security_event(db, "email_start_blocked_suspended", user.id, ip, user_agent, {"email": normalized_email})
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="This account has been deactivated or suspended.")
+
+        session_id, _ = otp_service.create_otp_session(db, normalized_email, purpose="login")
+        _record_security_event(db, "login_otp_dispatched", user.id, ip, user_agent, {"email": normalized_email, "sid": session_id})
+
+        return EmailAuthStartResponse(
+            success=True,
+            message="Verification code sent to your email.",
+            is_new_user=False,
+            verification_session_id=session_id,
+            email=normalized_email,
+            expires_in=settings.OTP_EXPIRATION_SECONDS,
+            resend_after=settings.OTP_RESEND_COOLDOWN_SECONDS,
+        )
+
+    # User does not exist -> proceed to registration step
+    return EmailAuthStartResponse(
+        success=True,
+        message="Account does not exist yet. Please enter your name and username.",
+        is_new_user=True,
+        verification_session_id=None,
+        email=normalized_email,
+        expires_in=None,
+        resend_after=None,
     )
-    db.add(user_session)
-    user.last_login_at = datetime.utcnow()
+
+
+@router.get("/username/check", response_model=UsernameCheckResponse)
+def check_username_availability(username: str = Query(..., min_length=1, max_length=50), db: Session = Depends(get_db)):
+    """
+    Validates username format, length, reserved terms, and database uniqueness.
+    """
+    cleaned = username.strip().lower()
+
+    if len(cleaned) < 3 or len(cleaned) > 30:
+        return UsernameCheckResponse(
+            available=False,
+            username=cleaned,
+            message="Username must be between 3 and 30 characters.",
+        )
+
+    if not re.match(r"^[a-zA-Z0-9_-]+$", cleaned):
+        return UsernameCheckResponse(
+            available=False,
+            username=cleaned,
+            message="Username may only contain letters, numbers, underscores, and hyphens.",
+        )
+
+    reserved_names = {
+        "admin", "administrator", "root", "system", "focusboard",
+        "support", "help", "security", "api", "auth", "guest", "mod", "null",
+    }
+    if cleaned in reserved_names:
+        return UsernameCheckResponse(
+            available=False,
+            username=cleaned,
+            message="This username is reserved and cannot be selected.",
+        )
+
+    # Check database collision against User.name or User.display_name
+    collision = db.query(User).filter(func.lower(User.name) == cleaned).first()
+    if collision:
+        return UsernameCheckResponse(
+            available=False,
+            username=cleaned,
+            message="This username is already taken. Please choose another.",
+        )
+
+    return UsernameCheckResponse(
+        available=True,
+        username=cleaned,
+        message="Username is available.",
+    )
+
+
+@router.post("/email/register")
+def register_with_email_otp(req: EmailRegisterRequest, request: Request, db: Session = Depends(get_db)):
+    """
+    Step 2 of Passwordless Registration:
+    Collects full name, username, and email. Validates input and dispatches a 6-digit registration OTP.
+    """
+    ip, user_agent = _get_client_info(request)
+    normalized_email = req.email.lower().strip()
+    cleaned_name = req.name.strip()
+    cleaned_username = req.username.strip().lower()
+
+    if len(cleaned_name) < 2:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Please enter a valid full name (minimum 2 characters).")
+
+    # Username checks
+    if len(cleaned_username) < 3 or len(cleaned_username) > 30 or not re.match(r"^[a-zA-Z0-9_-]+$", cleaned_username):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username must be 3-30 characters alphanumeric, underscore or hyphen.")
+
+    # Duplicate checks
+    if db.query(User).filter(func.lower(User.email) == normalized_email).first():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="An account with this email address already exists. Please sign in.")
+
+    if db.query(User).filter(func.lower(User.name) == cleaned_username).first():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="This username is already taken. Please choose another.")
+
+    session_id, _ = otp_service.create_otp_session(
+        db=db,
+        email=normalized_email,
+        purpose="registration",
+        metadata={
+            "name": cleaned_name,
+            "username": cleaned_username,
+            "role": req.role or "member",
+        },
+    )
+
+    _record_security_event(db, "registration_otp_dispatched", None, ip, user_agent, {"email": normalized_email, "username": cleaned_username})
+
+    return {
+        "success": True,
+        "message": "Verification code dispatched to your email. Enter code to complete registration.",
+        "verification_session_id": session_id,
+        "email": normalized_email,
+        "expires_in": settings.OTP_EXPIRATION_SECONDS,
+        "resend_after": settings.OTP_RESEND_COOLDOWN_SECONDS,
+    }
+
+
+@router.post("/email/verify-otp", response_model=Token)
+def verify_email_otp(req: VerifyOTPRequest, request: Request, db: Session = Depends(get_db)):
+    """
+    Step 3 of Email Auth:
+    Verifies 6-digit OTP. For registration, provisions the new user account with verified status.
+    For login, confirms active status. Issues JWT access & refresh tokens and user session.
+    """
+    ip, user_agent = _get_client_info(request)
+    normalized_email = req.email.lower().strip()
+    purpose = req.purpose or "login"
+
+    is_valid, err_msg, metadata = otp_service.verify_otp(
+        db=db,
+        email=normalized_email,
+        otp=req.otp,
+        session_id=req.verification_session_id,
+        purpose=purpose,
+    )
+
+    if not is_valid:
+        _record_security_event(db, "otp_verification_failed", None, ip, user_agent, {"email": normalized_email, "reason": err_msg})
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=err_msg)
+
+    if purpose == "registration":
+        # Check if already provisioned (avoid race conditions)
+        user = db.query(User).filter(func.lower(User.email) == normalized_email).first()
+        if not user:
+            name_val = metadata.get("username") or normalized_email.split("@")[0]
+            display_val = metadata.get("name") or name_val
+            role_val = metadata.get("role") or "member"
+            random_pw = generate_secure_token(32)
+
+            user = User(
+                email=normalized_email,
+                name=name_val,
+                display_name=display_val,
+                hashed_password=get_password_hash(random_pw),
+                role=role_val,
+                is_active=True,
+                is_verified=True,
+                status="active",
+                timezone="UTC",
+                locale="en",
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+
+        return _create_authenticated_session(
+            user=user,
+            request=request,
+            db=db,
+            device_name=req.device_name or "Web Browser",
+            event_type="registration_otp_verified",
+        )
+
+    # Existing user login OTP
+    user = db.query(User).filter(func.lower(User.email) == normalized_email).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User account not found.")
+
+    if not user.is_active or user.status == "suspended":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is deactivated or suspended.")
+
+    user.is_verified = True
     db.commit()
 
-    access_token = create_access_token(
-        data={"sub": str(user.id), "email": user.email, "role": user.role, "sid": session_id}
-    )
-    refresh_token = create_refresh_token(
-        data={"sub": str(user.id), "sid": session_id, "token_val": raw_refresh}
+    return _create_authenticated_session(
+        user=user,
+        request=request,
+        db=db,
+        device_name=req.device_name or "Web Browser",
+        event_type="login_otp_verified",
     )
 
-    _record_security_event(db, "login_success", user.id, ip, user_agent, {"sid": session_id})
+
+@router.post("/email/resend-otp")
+def resend_email_otp(req: ResendOTPRequest, request: Request, db: Session = Depends(get_db)):
+    """
+    Resends OTP with cooldown rate limiting and previous code invalidation.
+    """
+    ip, user_agent = _get_client_info(request)
+    normalized_email = req.email.lower().strip()
+    purpose = req.purpose or "login"
+
+    success, msg, cooldown, expires = otp_service.resend_otp(
+        db=db,
+        email=normalized_email,
+        session_id=req.verification_session_id,
+        purpose=purpose,
+    )
+
+    if not success:
+        _record_security_event(db, "otp_resend_throttled", None, ip, user_agent, {"email": normalized_email})
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=msg)
+
+    _record_security_event(db, "otp_resend_success", None, ip, user_agent, {"email": normalized_email})
     return {
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "token_type": "bearer",
-        "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        "user": user,
+        "success": True,
+        "message": msg,
+        "resend_after": cooldown,
+        "expires_in": expires,
     }
+
+
+# ============================================================================
+# Google OAuth 2.0 & Identity Endpoints
+# ============================================================================
+
+@router.get("/google/url", response_model=GoogleAuthUrlResponse)
+def get_google_auth_url(state: Optional[str] = None):
+    """
+    Generates and returns the Google OAuth authorization URL configured with
+    account selection prompt and redirect parameters.
+    """
+    url = google_oauth_service.get_authorization_url(state=state)
+    return GoogleAuthUrlResponse(
+        url=url,
+        enabled=google_oauth_service.enabled,
+        client_id=google_oauth_service.client_id,
+    )
+
+
+@router.post("/google/verify", response_model=Token)
+def verify_google_authentication(req: GoogleAuthRequest, request: Request, db: Session = Depends(get_db)):
+    """
+    Verifies Google OAuth ID token or profile payload.
+    Maps to an existing user or provisions a new user with verified email.
+    Creates an authenticated session and issues JWT tokens.
+    """
+    ip, user_agent = _get_client_info(request)
+
+    try:
+        verified_profile = google_oauth_service.verify_identity(
+            id_token_str=req.id_token,
+            code=req.code,
+            profile=req.model_dump(),
+        )
+    except Exception as exc:
+        _record_security_event(db, "google_auth_failed", None, ip, user_agent, {"error": str(exc)})
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Google authentication failed: {exc}")
+
+    try:
+        user, is_new = google_oauth_service.authenticate_or_register_user(db, verified_profile)
+    except PermissionError as p_err:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(p_err))
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to provision user: {exc}")
+
+    event_type = "google_auth_new_user" if is_new else "google_auth_login"
+    return _create_authenticated_session(
+        user=user,
+        request=request,
+        db=db,
+        device_name=req.device_name or "Google OAuth Session",
+        event_type=event_type,
+        metadata={"google_sub": verified_profile.get("sub")},
+    )
 
 
 @router.post("/token", response_model=Token, include_in_schema=False)

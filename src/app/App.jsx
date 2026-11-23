@@ -30,6 +30,7 @@ import OperationsConsole from '../pages/Operations/OperationsConsole';
 import DataIntelligenceDashboard from '../pages/DataIntelligence/DataIntelligenceDashboard';
 import SecurityOperationsCenter from '../pages/SecurityOperations/SecurityOperationsCenter';
 import ProductLifecycleWorkspace from '../pages/ProductLifecycle/ProductLifecycleWorkspace';
+import LoginPage from '../pages/Auth/LoginPage';
 import { I18nProvider, useI18n } from '../i18n/I18nContext';
 import OnboardingModal from '../components/Onboarding/OnboardingModal';
 import FeedbackModal from '../components/FeedbackModal/FeedbackModal';
@@ -41,7 +42,23 @@ import { KeyboardShortcutsModal } from '../components/KeyboardShortcutsModal/Key
 import './App.css';
 
 function AppContent() {
-  const [activeTab, setActiveTab] = useState('tasks');
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname.toLowerCase();
+      const hash = window.location.hash.toLowerCase();
+      if (
+        path === '/login' ||
+        path === '/signin' ||
+        path === '/signup' ||
+        hash === '#login' ||
+        hash === '#signin' ||
+        hash === '#signup'
+      ) {
+        return 'login';
+      }
+    }
+    return 'tasks';
+  });
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
@@ -181,6 +198,19 @@ function AppContent() {
         return <Dashboard activeTab={activeTab} />;
     }
   };
+
+  if (activeTab === 'login') {
+    return (
+      <LoginPage
+        onNavigateToDashboard={() => {
+          setActiveTab('tasks');
+          if (typeof window !== 'undefined' && window.history.pushState) {
+            window.history.pushState({}, '', '/');
+          }
+        }}
+      />
+    );
+  }
 
   return (
     <div className="app-layout">

@@ -72,3 +72,51 @@ class UserProfileUpdate(BaseModel):
     avatar_url: Optional[str] = None
     timezone: Optional[str] = None
     locale: Optional[str] = None
+
+class EmailAuthStartRequest(BaseModel):
+    email: EmailStr
+
+class EmailAuthStartResponse(BaseModel):
+    success: bool = True
+    message: str
+    is_new_user: bool = False
+    verification_session_id: Optional[str] = None
+    email: str
+    expires_in: Optional[int] = None
+    resend_after: Optional[int] = None
+
+class UsernameCheckResponse(BaseModel):
+    available: bool
+    username: str
+    message: str
+
+class EmailRegisterRequest(BaseModel):
+    name: str
+    username: str
+    email: EmailStr
+    role: Optional[str] = "member"
+
+class VerifyOTPRequest(BaseModel):
+    email: EmailStr
+    otp: str
+    verification_session_id: Optional[str] = None
+    purpose: Optional[str] = "login"  # "login", "registration"
+    device_name: Optional[str] = None
+
+class ResendOTPRequest(BaseModel):
+    email: EmailStr
+    verification_session_id: Optional[str] = None
+    purpose: Optional[str] = "login"
+
+class GoogleAuthRequest(BaseModel):
+    id_token: Optional[str] = None
+    code: Optional[str] = None
+    email: Optional[EmailStr] = None
+    name: Optional[str] = None
+    avatar_url: Optional[str] = None
+    device_name: Optional[str] = None
+
+class GoogleAuthUrlResponse(BaseModel):
+    url: str
+    enabled: bool = True
+    client_id: Optional[str] = None

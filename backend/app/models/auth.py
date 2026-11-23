@@ -61,3 +61,20 @@ class AuthAuditLog(Base):
     user_agent = Column(String(255), nullable=True)
     details_json = Column(Text, default="{}", nullable=False)
     created_at = Column(DateTime, default=utc_now, nullable=False)
+
+class EmailOTPVerification(Base):
+    __tablename__ = "email_otp_verifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(String(64), unique=True, index=True, nullable=False)
+    email = Column(String(255), index=True, nullable=False)
+    otp_hash = Column(String(64), nullable=False)
+    purpose = Column(String(32), default="login", nullable=False)  # "login", "registration", "email_verification"
+    metadata_json = Column(Text, default="{}", nullable=False)
+    attempts = Column(Integer, default=0, nullable=False)
+    max_attempts = Column(Integer, default=5, nullable=False)
+    is_verified = Column(Boolean, default=False, nullable=False)
+    is_consumed = Column(Boolean, default=False, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    last_sent_at = Column(DateTime, default=utc_now, nullable=False)
+    created_at = Column(DateTime, default=utc_now, nullable=False)

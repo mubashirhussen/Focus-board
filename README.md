@@ -210,6 +210,36 @@ focusboard/
 - **Mobile (390px)**: Stacked cards, sticky bottom navigation bar, minimum 44×44px touch targets.
 - **Accessibility**: Semantic HTML5 tags (`<nav>`, `<main>`, `<header>`, `<section>`), ARIA live regions, visible focus rings, and WCAG AA contrast (17.85:1 primary text contrast).
 
+### 11. Authentication, Email OTP & Google OAuth
+- **Passwordless Email OTP Flow**: Users start by providing their email address.
+  - *Existing users*: Dispatches a cryptographically secure single-use 6-digit code straight to the user's inbox for instant verification and login.
+  - *New users*: Prompts collection of **Full Name** and **Username**, with real-time format validation (3-30 chars, alphanumeric, hyphens/underscores) and backend uniqueness/reserved-words checking before issuing a registration verification OTP.
+- **OTP Generation & Verification**:
+  - Secure backend 6-digit numeric generation (`secrets.choice`).
+  - Stored using SHA-256 hash (never stored in plaintext).
+  - 5-minute expiration window enforced strictly by the backend.
+  - Maximum 5 attempts allowed before invalidating the code.
+  - 60-second cooldown on resending codes to prevent flooding and abuse.
+- **Responsive Email Delivery**:
+  - Branded FocusBoard HTML email template with large monospace verification code, expiration notice, and security warnings.
+  - Plain-text alternative for legacy email clients.
+  - Configurable SMTP integration with TLS/SSL encryption.
+- **Dedicated OTP Input UI**:
+  - 6 individual digit input boxes with auto-advancement on keystroke.
+  - Backspace navigation to previous box.
+  - Full-code clipboard paste handler (`Ctrl+V` / `Cmd+V`).
+  - Mobile numeric keypad activation (`inputMode="numeric"`, `pattern="[0-9]*"`).
+  - Live countdown timer for code expiration and resend cooldown.
+- **Continue with Google OAuth**:
+  - Native Google OAuth 2.0 flow with explicit account selection prompt (`prompt=select_account`).
+  - Verified identity mapping for existing accounts.
+  - Automated unique username generation and account provisioning for new Google users.
+- **Session Security & Persistence**:
+  - Issues JWT access tokens and rotating refresh tokens.
+  - Backed by persistent multi-device `UserSession` records in the database.
+  - Persistent login surviving browser reloads (`focusboard_token`, `focusboard_user`).
+  - Instant server session revocation on logout.
+
 ---
 
 ## 🧠 State Management Explanation

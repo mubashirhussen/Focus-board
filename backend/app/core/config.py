@@ -71,13 +71,28 @@ class Settings(BaseSettings):
     AI_COST_PER_1K_INPUT_CENTS: float = 0.015
     AI_COST_PER_1K_OUTPUT_CENTS: float = 0.06
 
-    # Email & Notifications Configuration (Phase 15)
+    # Email & Notifications Configuration (Phase 15 & OTP Authentication)
     SMTP_HOST: str = "localhost"
     SMTP_PORT: int = 1025
     SMTP_USERNAME: Optional[str] = None
     SMTP_PASSWORD: Optional[str] = None
     EMAIL_FROM: str = "notifications@focusboard.io"
+    SMTP_FROM_NAME: str = "FocusBoard"
+    SMTP_USE_TLS: bool = True
+    SMTP_USE_SSL: bool = False
     EMAIL_ENABLED: bool = False
+
+    # Google OAuth
+    GOOGLE_CLIENT_ID: Optional[str] = None
+    GOOGLE_CLIENT_SECRET: Optional[str] = None
+    GOOGLE_REDIRECT_URI: Optional[str] = "http://localhost:5173/auth/google/callback"
+    GOOGLE_OAUTH_ENABLED: bool = True
+
+    # Email OTP Configuration
+    OTP_LENGTH: int = 6
+    OTP_EXPIRATION_SECONDS: int = 300
+    OTP_RESEND_COOLDOWN_SECONDS: int = 60
+    OTP_MAX_ATTEMPTS: int = 5
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod

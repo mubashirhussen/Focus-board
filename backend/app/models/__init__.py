@@ -4,6 +4,7 @@ from app.models.auth import (
     PasswordResetToken,
     EmailVerificationToken,
     AuthAuditLog,
+    EmailOTPVerification,
 )
 from app.models.organization import (
     Organization,
