@@ -172,9 +172,6 @@ export function Enterprise() {
       try {
         localStorage.setItem('focusboard_enterprise_policies', JSON.stringify(updatedMap));
       } catch {}
-
-      setActionNotice(`Policy '${policyType.replace('_', ' ')}' successfully updated to ${nextVal ? 'Enforced' : 'Disabled'}.`);
-      setTimeout(() => setActionNotice(null), 4000);
     } catch (err) {
       // Revert optimistic update
       const revertedMap = {

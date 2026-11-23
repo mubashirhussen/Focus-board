@@ -418,13 +418,6 @@ export default function SupportPortal() {
             <Map size={16} />
             <span>Product Roadmap</span>
           </button>
-          <button
-            className={`nav-pill ${activeTab === 'health' ? 'active' : ''}`}
-            onClick={() => setActiveTab('health')}
-          >
-            <Activity size={16} />
-            <span>Customer Health</span>
-          </button>
         </div>
       </div>
 
@@ -769,70 +762,6 @@ export default function SupportPortal() {
               );
             })}
           </div>
-        </div>
-      )}
-
-      {/* TAB 4: CUSTOMER HEALTH */}
-      {activeTab === 'health' && (
-        <div className="health-layout">
-          {healthData ? (
-            <div className="health-card">
-              <div className="health-top-row">
-                <div>
-                  <span className="health-section-label">Deterministic Telemetry</span>
-                  <h2>Account Productivity Health</h2>
-                </div>
-                <div className={`health-status-badge ${healthData.health_status.toLowerCase()}`}>
-                  {healthData.health_status}
-                </div>
-              </div>
-
-              <div className="health-score-display">
-                <div className="health-score-dial">
-                  <span className="score-num">{healthData.health_score}</span>
-                  <span className="score-den">/100</span>
-                </div>
-                <div className="health-score-summary">
-                  <p>
-                    Health is calculated from actual task completion ratios, overdue deadlines, and open support tickets.
-                  </p>
-                </div>
-              </div>
-
-              <div className="health-metrics-grid">
-                <div className="metric-box">
-                  <span className="metric-label">Completion Velocity</span>
-                  <span className="metric-value">{healthData.metrics?.completion_rate}%</span>
-                  <span className="metric-sub">
-                    {healthData.metrics?.completed_tasks} of {healthData.metrics?.total_tasks} tasks
-                  </span>
-                </div>
-
-                <div className="metric-box">
-                  <span className="metric-label">Overdue Tasks</span>
-                  <span className="metric-value">{healthData.metrics?.overdue_tasks}</span>
-                  <span className="metric-sub">Needs rescheduling</span>
-                </div>
-
-                <div className="metric-box">
-                  <span className="metric-label">Open Critical Tickets</span>
-                  <span className="metric-value">{healthData.metrics?.open_urgent_tickets || 0}</span>
-                  <span className="metric-sub">Active support tickets</span>
-                </div>
-              </div>
-
-              <div className="health-recommendations">
-                <h4>Recommended Actions</h4>
-                <ul>
-                  {healthData.recommendations?.map((rec, i) => (
-                    <li key={i}>{rec}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          ) : (
-            <div className="loading-box">Calculating account health telemetry...</div>
-          )}
         </div>
       )}
     </div>

@@ -393,7 +393,7 @@ export function CommandPalette({
             ref={inputRef}
             type="text"
             className="cmd-input"
-            placeholder="Type a command or search tasks, projects..."
+            placeholder="Search..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             aria-autocomplete="list"
@@ -409,7 +409,6 @@ export function CommandPalette({
               <X size={16} />
             </button>
           )}
-          <span className="cmd-esc-badge" aria-hidden="true">ESC</span>
         </div>
 
         {/* Command / Search Results List */}
@@ -454,13 +453,6 @@ export function CommandPalette({
               );
             })
           )}
-        </div>
-
-        {/* Footer shortcuts hint */}
-        <div className="cmd-footer" aria-hidden="true">
-          <span><kbd>↑</kbd> <kbd>↓</kbd> to navigate</span>
-          <span><kbd>↵</kbd> to select</span>
-          <span><kbd>esc</kbd> to close</span>
         </div>
       </div>
     </div>

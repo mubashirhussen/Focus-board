@@ -194,7 +194,7 @@ export function MobileDrawer({
             }}
           >
             <Search size={16} />
-            <span>Search features & commands...</span>
+            <span>Search</span>
             <span className="drawer-search-badge">⌘K</span>
           </button>
         </div>

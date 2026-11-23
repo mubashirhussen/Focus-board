@@ -891,10 +891,6 @@ export function AIAssistant() {
           {nextBestTask && (
             <div className="next-best-task-card">
               <div className="nbt-header">
-                <div className="nbt-badge">
-                  <Sparkles size={14} />
-                  <span>NEXT BEST TASK RECOMMENDATION (Confidence: {nextBestTask.confidence_score}%)</span>
-                </div>
                 <span className={`nbt-urgency ${nextBestTask.urgency_tier?.toLowerCase()}`}>
                   {nextBestTask.urgency_tier} Urgency
                 </span>

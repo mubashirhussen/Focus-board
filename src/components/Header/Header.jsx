@@ -57,7 +57,7 @@ export function Header({
           aria-label="Open Command Palette"
         >
           <Search size={14} className="cmd-trigger-icon" />
-          <span className="cmd-trigger-text">Search & commands...</span>
+          <span className="cmd-trigger-text">Search</span>
         </button>
 
         {/* Notification Bell ONLY appears when a user is actually logged in */}
