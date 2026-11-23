@@ -22,6 +22,7 @@ class SecurityEvent(Base):
     actor_email = Column(String(255), nullable=True)
     target_entity = Column(String(255), nullable=True)
     organization_id = Column(Integer, nullable=True, index=True)
+    workspace_id = Column(Integer, nullable=True, index=True)
     ip_address = Column(String(64), nullable=True)
     source = Column(String(64), default="SYSTEM", nullable=False) # SYSTEM, AUTH, API, RBAC, INTEGRATION, AUTOMATION
     evidence_json = Column(Text, server_default="{}", nullable=False)
@@ -44,6 +45,8 @@ class SecurityDetectionRule(Base):
     time_window_seconds = Column(Integer, default=300, nullable=False)
     severity = Column(String(32), default="HIGH", nullable=False)
     is_enabled = Column(Boolean, default=True, nullable=False)
+    organization_id = Column(Integer, nullable=True, index=True)
+    workspace_id = Column(Integer, nullable=True, index=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
@@ -58,6 +61,8 @@ class SecurityDetectionResult(Base):
     matched_count = Column(Integer, default=1, nullable=False)
     target_entity = Column(String(255), nullable=True)
     evidence_summary = Column(Text, nullable=False)
+    organization_id = Column(Integer, nullable=True, index=True)
+    workspace_id = Column(Integer, nullable=True, index=True)
     detected_at = Column(DateTime, default=utc_now, nullable=False)
 
     rule = relationship("SecurityDetectionRule")
@@ -78,6 +83,8 @@ class SecurityAlert(Base):
     actor_email = Column(String(255), nullable=True)
     target_entity = Column(String(255), nullable=True)
     evidence_json = Column(Text, server_default="{}", nullable=False)
+    organization_id = Column(Integer, nullable=True, index=True)
+    workspace_id = Column(Integer, nullable=True, index=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
     resolved_at = Column(DateTime, nullable=True)
 
@@ -95,6 +102,8 @@ class IdentityRiskRecord(Base):
     risk_score = Column(Integer, default=50, nullable=False) # 0 to 100
     status = Column(String(32), default="ACTIVE", nullable=False, index=True) # ACTIVE, MITIGATED, DISMISSED
     details = Column(Text, nullable=False)
+    organization_id = Column(Integer, nullable=True, index=True)
+    workspace_id = Column(Integer, nullable=True, index=True)
     detected_at = Column(DateTime, default=utc_now, nullable=False)
 
     user = relationship("User")
@@ -110,6 +119,8 @@ class AccessReviewCampaign(Base):
     reviewer_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     deadline_date = Column(DateTime, nullable=True)
     notes = Column(Text, nullable=True)
+    organization_id = Column(Integer, nullable=True, index=True)
+    workspace_id = Column(Integer, nullable=True, index=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
     completed_at = Column(DateTime, nullable=True)
 
@@ -148,6 +159,8 @@ class VulnerabilityRecord(Base):
     remediation_status = Column(String(32), default="OPEN", nullable=False, index=True) # OPEN, ASSIGNED, IN_PROGRESS, BLOCKED, RESOLVED, VERIFIED, CLOSED
     remediation_owner_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     due_date = Column(DateTime, nullable=True)
+    organization_id = Column(Integer, nullable=True, index=True)
+    workspace_id = Column(Integer, nullable=True, index=True)
     detected_at = Column(DateTime, default=utc_now, nullable=False)
     resolved_at = Column(DateTime, nullable=True)
 
@@ -164,6 +177,8 @@ class SecurityPostureAssessment(Base):
     status = Column(String(32), default="COMPLETED", nullable=False)
     assessed_by_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     summary = Column(Text, nullable=False)
+    organization_id = Column(Integer, nullable=True, index=True)
+    workspace_id = Column(Integer, nullable=True, index=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
 
     findings = relationship("SecurityPostureFinding", back_populates="assessment", cascade="all, delete-orphan")
@@ -196,7 +211,42 @@ class SecurityRemediation(Base):
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     due_date = Column(DateTime, nullable=True)
     resolution_notes = Column(Text, nullable=True)
+    organization_id = Column(Integer, nullable=True, index=True)
+    workspace_id = Column(Integer, nullable=True, index=True)
     created_at = Column(DateTime, default=utc_now, nullable=False)
     verified_at = Column(DateTime, nullable=True)
 
-    owner = relationship("User", foreign_keys=[owner_id])
+# 12. Zero Trust Policies
+class ZeroTrustPolicy(Base):
+    __tablename__ = "zero_trust_policies"
+
+    id = Column(String(64), primary_key=True, default=lambda: f"ztp_{uuid.uuid4().hex[:12]}")
+    name = Column(String(128), nullable=False)
+    policy_type = Column(String(64), nullable=False, index=True)
+    # MFA_ENFORCEMENT, IP_ALLOWLIST, SESSION_TIMEOUT, RISK_THRESHOLD, LEAST_PRIVILEGE
+    target_resource = Column(String(128), default="*", nullable=False)
+    conditions_json = Column(Text, server_default="{}", nullable=False)
+    action = Column(String(32), default="BLOCK", nullable=False) # BLOCK, REQUIRE_MFA, AUDIT_ONLY, ALLOW
+    is_enabled = Column(Boolean, default=True, nullable=False)
+    organization_id = Column(Integer, nullable=True, index=True)
+    workspace_id = Column(Integer, nullable=True, index=True)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
+
+# 13. Zero Trust Access Evaluations
+class ZeroTrustEvaluation(Base):
+    __tablename__ = "zero_trust_evaluations"
+
+    id = Column(String(64), primary_key=True, default=lambda: f"zte_{uuid.uuid4().hex[:12]}")
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    resource = Column(String(128), nullable=False)
+    action_requested = Column(String(64), nullable=False)
+    decision = Column(String(32), nullable=False) # ALLOW, DENY, REQUIRE_MFA
+    risk_score = Column(Integer, default=0, nullable=False)
+    reasons_json = Column(Text, server_default="[]", nullable=False)
+    context_json = Column(Text, server_default="{}", nullable=False)
+    organization_id = Column(Integer, nullable=True, index=True)
+    workspace_id = Column(Integer, nullable=True, index=True)
+    evaluated_at = Column(DateTime, default=utc_now, nullable=False)
+
+    user = relationship("User", foreign_keys=[user_id])

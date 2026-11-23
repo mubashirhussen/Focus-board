@@ -10,6 +10,7 @@ class SecurityEventCreate(BaseModel):
     actor_email: Optional[str] = None
     target_entity: Optional[str] = None
     organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
     ip_address: Optional[str] = None
     source: str = "SYSTEM"
     evidence_json: Optional[str] = "{}"
@@ -23,6 +24,7 @@ class SecurityEventResponse(BaseModel):
     actor_email: Optional[str] = None
     target_entity: Optional[str] = None
     organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
     ip_address: Optional[str] = None
     source: str
     evidence_json: str
@@ -42,6 +44,8 @@ class SecurityDetectionRuleCreate(BaseModel):
     time_window_seconds: int = 300
     severity: str = "HIGH"
     is_enabled: bool = True
+    organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
 
 class SecurityDetectionRuleResponse(BaseModel):
     id: str
@@ -54,6 +58,8 @@ class SecurityDetectionRuleResponse(BaseModel):
     time_window_seconds: int
     severity: str
     is_enabled: bool
+    organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
     created_at: datetime
     updated_at: datetime
 
@@ -71,6 +77,8 @@ class SecurityAlertCreate(BaseModel):
     actor_email: Optional[str] = None
     target_entity: Optional[str] = None
     evidence_json: Optional[str] = "{}"
+    organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
 
 class SecurityAlertUpdate(BaseModel):
     status: Optional[str] = None
@@ -89,6 +97,8 @@ class SecurityAlertResponse(BaseModel):
     actor_email: Optional[str] = None
     target_entity: Optional[str] = None
     evidence_json: str
+    organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
     created_at: datetime
     resolved_at: Optional[datetime] = None
 
@@ -101,6 +111,8 @@ class IdentityRiskRecordCreate(BaseModel):
     severity: str = "MEDIUM"
     risk_score: int = 50
     details: str
+    organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
 
 class IdentityRiskRecordResponse(BaseModel):
     id: str
@@ -110,6 +122,8 @@ class IdentityRiskRecordResponse(BaseModel):
     risk_score: int
     status: str
     details: str
+    organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
     detected_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -120,6 +134,8 @@ class AccessReviewCampaignCreate(BaseModel):
     scope_type: str
     notes: Optional[str] = None
     deadline_date: Optional[datetime] = None
+    organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
 
 class AccessReviewRecordUpdate(BaseModel):
     decision: str
@@ -146,6 +162,8 @@ class AccessReviewCampaignResponse(BaseModel):
     reviewer_id: Optional[int] = None
     deadline_date: Optional[datetime] = None
     notes: Optional[str] = None
+    organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
     created_at: datetime
     completed_at: Optional[datetime] = None
     records: List[AccessReviewRecordResponse] = []
@@ -162,6 +180,8 @@ class VulnerabilityRecordCreate(BaseModel):
     source: str = "DEPENDENCY_SCAN"
     remediation_status: str = "OPEN"
     due_date: Optional[datetime] = None
+    organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
 
 class VulnerabilityRecordUpdate(BaseModel):
     remediation_status: Optional[str] = None
@@ -178,6 +198,8 @@ class VulnerabilityRecordResponse(BaseModel):
     remediation_status: str
     remediation_owner_id: Optional[int] = None
     due_date: Optional[datetime] = None
+    organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
     detected_at: datetime
     resolved_at: Optional[datetime] = None
 
@@ -204,6 +226,8 @@ class SecurityPostureAssessmentResponse(BaseModel):
     status: str
     assessed_by_id: Optional[int] = None
     summary: str
+    organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
     created_at: datetime
     findings: List[SecurityPostureFindingResponse] = []
 
@@ -216,6 +240,8 @@ class SecurityRemediationCreate(BaseModel):
     title: str
     priority: str = "MEDIUM"
     due_date: Optional[datetime] = None
+    organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
 
 class SecurityRemediationUpdate(BaseModel):
     status: Optional[str] = None
@@ -231,15 +257,92 @@ class SecurityRemediationResponse(BaseModel):
     owner_id: Optional[int] = None
     due_date: Optional[datetime] = None
     resolution_notes: Optional[str] = None
+    organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
     created_at: datetime
     verified_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
 
+# Zero Trust Schemas
+class ZeroTrustPolicyCreate(BaseModel):
+    name: str
+    policy_type: str
+    target_resource: str = "*"
+    conditions_json: Optional[str] = "{}"
+    action: str = "BLOCK"
+    is_enabled: bool = True
+    organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
+
+class ZeroTrustPolicyUpdate(BaseModel):
+    name: Optional[str] = None
+    target_resource: Optional[str] = None
+    action: Optional[str] = None
+    is_enabled: Optional[bool] = None
+    conditions_json: Optional[str] = None
+
+class ZeroTrustPolicyResponse(BaseModel):
+    id: str
+    name: str
+    policy_type: str
+    target_resource: str
+    conditions_json: str
+    action: str
+    is_enabled: bool
+    organization_id: Optional[int] = None
+    workspace_id: Optional[int] = None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+class ZeroTrustEvaluationRequest(BaseModel):
+    user_id: Optional[int] = None
+    user_email: Optional[str] = None
+    resource: str
+    action_requested: str = "ACCESS"
+    ip_address: Optional[str] = None
+    mfa_authenticated: bool = False
+    context_data: Optional[Dict[str, Any]] = None
+    workspace_id: Optional[int] = None
+
+class ZeroTrustEvaluationResponse(BaseModel):
+    id: str
+    decision: str  # ALLOW, DENY, REQUIRE_MFA
+    risk_score: int
+    reasons: List[str] = []
+    matched_policies: List[str] = []
+    context: Dict[str, Any] = {}
+    evaluated_at: datetime
+
+# Containment & Threat Scan Schemas
+class ContainmentActionRequest(BaseModel):
+    user_id: Optional[int] = None
+    target_entity: Optional[str] = None
+    reason: str
+    workspace_id: Optional[int] = None
+
+class ContainmentActionResponse(BaseModel):
+    status: str
+    action: str
+    target: str
+    event_id: str
+    alert_id: Optional[str] = None
+    message: str
+
+class ThreatScanResponse(BaseModel):
+    status: str
+    rules_evaluated: int
+    alerts_generated: int
+    active_threats_detected: int
+    scanned_at: datetime
+
 # AI Security Assistant Query
 class AISecurityAssistantRequest(BaseModel):
     query: str
     context_type: Optional[str] = "SOC_OVERVIEW"
+    workspace_id: Optional[int] = None
 
 class AISecurityAssistantResponse(BaseModel):
     query: str
