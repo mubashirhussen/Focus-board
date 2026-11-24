@@ -51,6 +51,14 @@ from app.models.predictive_intelligence import (
     PredictionHistory,
     IntelligenceSetting,
 )
+from app.models.time_tracking import (
+    TimeEntry,
+    ActiveTimer,
+    Timesheet,
+    TimesheetApproval,
+    TimeTrackingSettings,
+    TimeEntryAuditLog,
+)
 from app.models.enterprise import (
     OrganizationPolicy,
     CustomRole,

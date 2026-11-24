@@ -29,6 +29,7 @@ import {
   RotateCcw,
   MessageSquare,
   ShieldAlert,
+  Clock,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTasks } from '../../hooks/useTasks';
@@ -40,6 +41,7 @@ const FEATURE_SECTIONS = [
     title: 'Workspaces & Projects',
     items: [
       { id: 'tasks', label: 'My Tasks', icon: CheckSquare },
+      { id: 'time-tracking', label: 'Time Tracking & Timesheets', icon: Clock },
       { id: 'team', label: 'Team Space', icon: Users },
       { id: 'calendar', label: 'Calendar Schedule', icon: Calendar },
     ],
