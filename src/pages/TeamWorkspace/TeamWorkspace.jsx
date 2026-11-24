@@ -420,6 +420,7 @@ export function TeamWorkspace() {
                   <div key={p.id} className="project-card">
                     <div className="project-card-header">
                       <span className="project-status-badge">{p.status}</span>
+                      <span className="project-health-pill badge-healthy">Health: {p.health_score || 85}%</span>
                       {p.deadline && <span className="project-deadline">Deadline: {p.deadline}</span>}
                     </div>
                     <h4 className="project-name">{p.name}</h4>

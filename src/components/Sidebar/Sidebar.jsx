@@ -51,6 +51,7 @@ export function Sidebar({ activeTab = 'tasks', onTabChange, onOpenFeedback }) {
     { id: 'data-intelligence', label: t('nav.data_intelligence', 'Data Intelligence'), icon: Database, count: null },
     { id: 'soc', label: t('nav.soc', 'Security SOC'), icon: Shield, count: null },
     { id: 'product-lifecycle', label: t('nav.product_lifecycle', 'Product Lifecycle'), icon: Sliders, count: null },
+    { id: 'predictive-intelligence', label: t('nav.predictive_intelligence', 'Predictive AI'), icon: TrendingUp, count: null },
     { id: 'intelligence', label: t('nav.intelligence', 'Intelligence'), icon: Brain, count: null },
     { id: 'enterprise', label: t('nav.enterprise', 'Enterprise Admin'), icon: ShieldCheck, count: null },
     { id: 'finance', label: t('nav.finance', 'Financial Intelligence'), icon: DollarSign, count: null },

@@ -160,6 +160,7 @@ app.include_router(calendar_routes.router, prefix=settings.API_V1_STR)
 app.include_router(workflow_routes.router, prefix=settings.API_V1_STR)
 app.include_router(push_routes.router, prefix=settings.API_V1_STR)
 app.include_router(intelligence_routes.router, prefix=settings.API_V1_STR)
+app.include_router(intelligence_routes.router)  # Direct /intelligence/... access support
 app.include_router(enterprise_routes.router, prefix=settings.API_V1_STR)
 app.include_router(growth_routes.router, prefix=settings.API_V1_STR)
 app.include_router(support_routes.router, prefix=settings.API_V1_STR)

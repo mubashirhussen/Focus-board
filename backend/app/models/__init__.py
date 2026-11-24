@@ -42,6 +42,15 @@ from app.models.integration import (
 from app.models.workflow import Workflow, WorkflowExecution
 from app.models.push import PushSubscriptionRecord
 from app.models.intelligence import ProductivityEvent, IntelligencePreference, InsightFeedback
+from app.models.predictive_intelligence import (
+    ProjectHealthSnapshot,
+    TaskRiskPrediction,
+    DeadlineForecast,
+    WorkloadSnapshot,
+    AIProjectRecommendation,
+    PredictionHistory,
+    IntelligenceSetting,
+)
 from app.models.enterprise import (
     OrganizationPolicy,
     CustomRole,

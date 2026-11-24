@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useTasks } from '../../hooks/useTasks';
 import { validateTaskForm } from '../../utils/validation';
 import { APP_CONFIG } from '../../app/appConfig';
+import { predictiveIntelligenceApi } from '../../services/predictiveIntelligenceApi';
+import { AlertTriangle, ShieldCheck } from 'lucide-react';
 import './TaskForm.css';
 
 export function TaskForm() {
@@ -20,6 +22,7 @@ export function TaskForm() {
 
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [taskRisk, setTaskRisk] = useState(null);
 
   // Populate form in edit mode
   useEffect(() => {
@@ -32,7 +35,14 @@ export function TaskForm() {
         priority: editingTask.priority || 'Medium',
         dueDate: editingTask.dueDate || '',
       });
+      // Fetch task risk telemetry
+      if (editingTask.id) {
+        predictiveIntelligenceApi.getTaskRisk(editingTask.id)
+          .then(setTaskRisk)
+          .catch(() => setTaskRisk(null));
+      }
     } else {
+      setTaskRisk(null);
       setFormData({
         title: '',
         description: '',
@@ -217,6 +227,21 @@ export function TaskForm() {
           />
         </div>
       </div>
+
+      {/* Predictive Task Risk Telemetry (Module B47) */}
+      {taskRisk && (
+        <div className={`task-risk-summary-box risk-${taskRisk.risk_level?.toLowerCase()}`}>
+          <div className="risk-header-line">
+            <span className="risk-title">
+              <AlertTriangle size={13} /> Predictive Risk: <strong>{taskRisk.risk_level}</strong> ({taskRisk.risk_score}/100)
+            </span>
+            <span className="risk-conf">Confidence: {Math.round((taskRisk.confidence || 0.85) * 100)}%</span>
+          </div>
+          {taskRisk.suggested_action && (
+            <p className="risk-action-text">{taskRisk.suggested_action}</p>
+          )}
+        </div>
+      )}
 
       {/* Form Action Buttons */}
       <div className="form-actions">

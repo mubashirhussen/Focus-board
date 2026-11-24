@@ -30,6 +30,7 @@ import OperationsConsole from '../pages/Operations/OperationsConsole';
 import DataIntelligenceDashboard from '../pages/DataIntelligence/DataIntelligenceDashboard';
 import SecurityOperationsCenter from '../pages/SecurityOperations/SecurityOperationsCenter';
 import ProductLifecycleWorkspace from '../pages/ProductLifecycle/ProductLifecycleWorkspace';
+import PredictiveIntelligenceDashboard from '../pages/PredictiveIntelligence/PredictiveIntelligenceDashboard';
 import LoginPage from '../pages/Auth/LoginPage';
 import { I18nProvider, useI18n } from '../i18n/I18nContext';
 import OnboardingModal from '../components/Onboarding/OnboardingModal';
@@ -118,6 +119,8 @@ function AppContent() {
         return 'Product Lifecycle Intelligence & Discovery Platform';
       case 'billing':
         return 'SaaS Plans & Usage Limits';
+      case 'predictive-intelligence':
+        return 'Predictive Project Intelligence & Health Analytics';
       case 'intelligence':
         return 'Product Intelligence & Behavioral Insights';
       case 'enterprise':
@@ -174,6 +177,8 @@ function AppContent() {
         return <ProductLifecycleWorkspace />;
       case 'billing':
         return <Billing />;
+      case 'predictive-intelligence':
+        return <PredictiveIntelligenceDashboard />;
       case 'intelligence':
         return <Intelligence />;
       case 'enterprise':

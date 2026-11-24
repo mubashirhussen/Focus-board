@@ -58,6 +58,7 @@ const FEATURE_SECTIONS = [
       { id: 'analytics', label: 'Productivity Analytics', icon: BarChart2 },
       { id: 'data-intelligence', label: 'Data Intelligence & BI', icon: Database },
       { id: 'product-lifecycle', label: 'Product Lifecycle', icon: Sliders },
+      { id: 'predictive-intelligence', label: 'Predictive Project Intelligence', icon: TrendingUp },
       { id: 'intelligence', label: 'Behavioral Insights', icon: Brain },
       { id: 'executive', label: 'Executive BI', icon: TrendingUp },
     ],
