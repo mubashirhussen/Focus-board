@@ -95,6 +95,21 @@ from app.models.service_desk import (
     ServiceDeskEscalationRecord,
     ServiceDeskSLABreach,
 )
+from app.models.client_portal import (
+    GuestProfile,
+    GuestInvitation,
+    GuestProjectAccess,
+    ClientProjectVisibility,
+    ClientSharedTask,
+    ClientDeliverable,
+    ClientDeliverableVersion,
+    ClientFeedback,
+    ClientComment,
+    ClientDocumentAccess,
+    ClientReport,
+    GuestActivityLog,
+    ClientPortalSettings,
+)
 from app.models.enterprise import (
     OrganizationPolicy,
     CustomRole,
@@ -490,4 +505,18 @@ __all__ = [
     "ServiceDeskEscalationRule",
     "ServiceDeskEscalationRecord",
     "ServiceDeskSLABreach",
+    # Module B53: Client & Guest Portal
+    "GuestProfile",
+    "GuestInvitation",
+    "GuestProjectAccess",
+    "ClientProjectVisibility",
+    "ClientSharedTask",
+    "ClientDeliverable",
+    "ClientDeliverableVersion",
+    "ClientFeedback",
+    "ClientComment",
+    "ClientDocumentAccess",
+    "ClientReport",
+    "GuestActivityLog",
+    "ClientPortalSettings",
 ]

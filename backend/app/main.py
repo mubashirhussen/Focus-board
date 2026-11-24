@@ -64,6 +64,7 @@ from app.api.routes import (
     goal_routes,
     project_planning_routes,
     service_desk_routes,
+    client_portal_routes,
 )
 
 # Configure structured, sensitive-data-safe logging
@@ -209,6 +210,8 @@ app.include_router(project_planning_routes.router, prefix=settings.API_V1_STR)
 app.include_router(project_planning_routes.router)  # Direct /projects/... planning access support
 app.include_router(service_desk_routes.router, prefix=settings.API_V1_STR)
 app.include_router(service_desk_routes.router)  # Direct /service-desk/... access support
+app.include_router(client_portal_routes.router, prefix=settings.API_V1_STR)
+app.include_router(client_portal_routes.router)  # Direct /client-portal/... access support
 
 @app.get("/")
 def root():

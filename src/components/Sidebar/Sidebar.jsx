@@ -69,6 +69,7 @@ export function Sidebar({ activeTab = 'tasks', onTabChange, onOpenFeedback }) {
     { id: 'executive', label: t('nav.executive', 'Executive BI'), icon: TrendingUp, count: null },
     { id: 'analytics', label: t('nav.analytics', 'Analytics'), icon: BarChart2, count: null },
     { id: 'service-desk', label: t('nav.service_desk', 'Service Desk & SLAs'), icon: LifeBuoy, count: null },
+    { id: 'client-portal', label: t('nav.client_portal', 'Client & Guest Portal'), icon: Globe, count: null },
     { id: 'billing', label: t('nav.billing', 'Plans & Billing'), icon: CreditCard, count: null },
     { id: 'support', label: t('nav.support', 'Support & Help'), icon: HelpCircle, count: null },
   ];

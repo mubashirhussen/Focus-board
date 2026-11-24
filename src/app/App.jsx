@@ -35,6 +35,7 @@ import TimeTrackingDashboard from '../pages/TimeTracking/TimeTrackingDashboard';
 import GoalsDashboard from '../pages/Goals/GoalsDashboard';
 import ProjectPlanningWorkspace from '../pages/ProjectPlanning/ProjectPlanningWorkspace';
 import ServiceDeskWorkspace from '../pages/ServiceDesk/ServiceDeskWorkspace';
+import ClientPortalWorkspace from '../pages/ClientPortal/ClientPortalWorkspace';
 import LoginPage from '../pages/Auth/LoginPage';
 import { I18nProvider, useI18n } from '../i18n/I18nContext';
 import OnboardingModal from '../components/Onboarding/OnboardingModal';
@@ -133,6 +134,10 @@ function AppContent() {
       case 'support-desk':
       case 'tickets':
         return 'Service Desk & SLA Operations';
+      case 'client-portal':
+      case 'guest-portal':
+      case 'portal':
+        return 'Client & Guest External Portal';
       case 'time-tracking':
         return 'Time Tracking, Timesheets & Billables';
       case 'goals':
@@ -209,6 +214,10 @@ function AppContent() {
       case 'support-desk':
       case 'tickets':
         return <ServiceDeskWorkspace onNavigate={setActiveTab} />;
+      case 'client-portal':
+      case 'guest-portal':
+      case 'portal':
+        return <ClientPortalWorkspace onNavigate={setActiveTab} />;
       case 'intelligence':
         return <Intelligence />;
       case 'enterprise':

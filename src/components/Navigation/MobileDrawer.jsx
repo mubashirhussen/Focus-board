@@ -96,6 +96,7 @@ const FEATURE_SECTIONS = [
       { id: 'developer', label: 'Developer Platform', icon: Code },
       { id: 'billing', label: 'Plans & Usage Limits', icon: CreditCard },
       { id: 'service-desk', label: 'Service Desk & SLAs', icon: LifeBuoy },
+      { id: 'client-portal', label: 'Client & Guest Portal', icon: Globe },
       { id: 'support', label: 'Support & Help', icon: HelpCircle },
     ],
   },

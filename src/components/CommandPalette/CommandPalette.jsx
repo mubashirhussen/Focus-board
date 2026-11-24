@@ -103,6 +103,13 @@ export function CommandPalette({
       action: () => { onNavigate('service-desk'); onClose(); },
     },
     {
+      id: 'nav-client-portal',
+      category: 'Navigation',
+      label: 'Open Client & Guest External Portal',
+      icon: Globe,
+      action: () => { onNavigate('client-portal'); onClose(); },
+    },
+    {
       id: 'nav-ai',
       category: 'Navigation',
       label: 'Open AI Productivity Assistant',
