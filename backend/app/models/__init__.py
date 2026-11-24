@@ -83,6 +83,18 @@ from app.models.project_planning import (
     ScenarioTaskChange,
     ProjectScheduleForecast,
 )
+from app.models.service_desk import (
+    ServiceDeskCategory,
+    ServiceDeskSLAPolicy,
+    ServiceDeskTicket,
+    ServiceDeskComment,
+    ServiceDeskAttachment,
+    ServiceDeskAssignmentHistory,
+    ServiceDeskActivityLog,
+    ServiceDeskEscalationRule,
+    ServiceDeskEscalationRecord,
+    ServiceDeskSLABreach,
+)
 from app.models.enterprise import (
     OrganizationPolicy,
     CustomRole,
@@ -467,4 +479,15 @@ __all__ = [
     "ProjectScheduleScenario",
     "ScenarioTaskChange",
     "ProjectScheduleForecast",
+    # Module B52: Service Desk & SLA Management
+    "ServiceDeskCategory",
+    "ServiceDeskSLAPolicy",
+    "ServiceDeskTicket",
+    "ServiceDeskComment",
+    "ServiceDeskAttachment",
+    "ServiceDeskAssignmentHistory",
+    "ServiceDeskActivityLog",
+    "ServiceDeskEscalationRule",
+    "ServiceDeskEscalationRecord",
+    "ServiceDeskSLABreach",
 ]

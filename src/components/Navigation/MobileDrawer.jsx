@@ -32,6 +32,7 @@ import {
   Clock,
   Target,
   GitBranch,
+  LifeBuoy,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTasks } from '../../hooks/useTasks';
@@ -94,6 +95,7 @@ const FEATURE_SECTIONS = [
       { id: 'integrations', label: 'Integrations Ecosystem', icon: Layers },
       { id: 'developer', label: 'Developer Platform', icon: Code },
       { id: 'billing', label: 'Plans & Usage Limits', icon: CreditCard },
+      { id: 'service-desk', label: 'Service Desk & SLAs', icon: LifeBuoy },
       { id: 'support', label: 'Support & Help', icon: HelpCircle },
     ],
   },

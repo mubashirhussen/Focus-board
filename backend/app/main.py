@@ -63,6 +63,7 @@ from app.api.routes import (
     time_tracking_routes,
     goal_routes,
     project_planning_routes,
+    service_desk_routes,
 )
 
 # Configure structured, sensitive-data-safe logging
@@ -206,6 +207,8 @@ app.include_router(goal_routes.router, prefix=settings.API_V1_STR)
 app.include_router(goal_routes.router)  # Direct /goals/... access support
 app.include_router(project_planning_routes.router, prefix=settings.API_V1_STR)
 app.include_router(project_planning_routes.router)  # Direct /projects/... planning access support
+app.include_router(service_desk_routes.router, prefix=settings.API_V1_STR)
+app.include_router(service_desk_routes.router)  # Direct /service-desk/... access support
 
 @app.get("/")
 def root():

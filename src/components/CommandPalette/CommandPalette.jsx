@@ -96,6 +96,13 @@ export function CommandPalette({
       action: () => { onNavigate('planning'); onClose(); },
     },
     {
+      id: 'nav-service-desk',
+      category: 'Navigation',
+      label: 'Open Service Desk & SLA Operations',
+      icon: LifeBuoy,
+      action: () => { onNavigate('service-desk'); onClose(); },
+    },
+    {
       id: 'nav-ai',
       category: 'Navigation',
       label: 'Open AI Productivity Assistant',

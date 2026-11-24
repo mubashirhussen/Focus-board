@@ -34,6 +34,7 @@ import PredictiveIntelligenceDashboard from '../pages/PredictiveIntelligence/Pre
 import TimeTrackingDashboard from '../pages/TimeTracking/TimeTrackingDashboard';
 import GoalsDashboard from '../pages/Goals/GoalsDashboard';
 import ProjectPlanningWorkspace from '../pages/ProjectPlanning/ProjectPlanningWorkspace';
+import ServiceDeskWorkspace from '../pages/ServiceDesk/ServiceDeskWorkspace';
 import LoginPage from '../pages/Auth/LoginPage';
 import { I18nProvider, useI18n } from '../i18n/I18nContext';
 import OnboardingModal from '../components/Onboarding/OnboardingModal';
@@ -128,6 +129,10 @@ function AppContent() {
       case 'gantt':
       case 'project-planning':
         return 'Advanced Project Planning & Scheduling';
+      case 'service-desk':
+      case 'support-desk':
+      case 'tickets':
+        return 'Service Desk & SLA Operations';
       case 'time-tracking':
         return 'Time Tracking, Timesheets & Billables';
       case 'goals':
@@ -200,6 +205,10 @@ function AppContent() {
       case 'gantt':
       case 'project-planning':
         return <ProjectPlanningWorkspace />;
+      case 'service-desk':
+      case 'support-desk':
+      case 'tickets':
+        return <ServiceDeskWorkspace onNavigate={setActiveTab} />;
       case 'intelligence':
         return <Intelligence />;
       case 'enterprise':
