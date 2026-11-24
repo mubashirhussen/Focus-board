@@ -71,6 +71,18 @@ from app.models.goals import (
     GoalComment,
     GoalSettings,
 )
+from app.models.project_planning import (
+    ProjectSchedule,
+    ProjectBaseline,
+    BaselineTaskSnapshot,
+    BaselineMilestoneSnapshot,
+    ProjectBudget,
+    ProjectBudgetCategory,
+    ProjectCostRecord,
+    ProjectScheduleScenario,
+    ScenarioTaskChange,
+    ProjectScheduleForecast,
+)
 from app.models.enterprise import (
     OrganizationPolicy,
     CustomRole,
@@ -444,4 +456,15 @@ __all__ = [
     "GoalCheckIn",
     "GoalComment",
     "GoalSettings",
+    # Module B51: Advanced Project Planning & Scheduling
+    "ProjectSchedule",
+    "ProjectBaseline",
+    "BaselineTaskSnapshot",
+    "BaselineMilestoneSnapshot",
+    "ProjectBudget",
+    "ProjectBudgetCategory",
+    "ProjectCostRecord",
+    "ProjectScheduleScenario",
+    "ScenarioTaskChange",
+    "ProjectScheduleForecast",
 ]

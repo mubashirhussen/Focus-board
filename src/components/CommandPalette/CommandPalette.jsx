@@ -89,6 +89,13 @@ export function CommandPalette({
       action: () => { onNavigate('tasks'); onClose(); },
     },
     {
+      id: 'nav-planning',
+      category: 'Navigation',
+      label: 'Open Advanced Project Planning & Gantt Scheduling',
+      icon: Calendar,
+      action: () => { onNavigate('planning'); onClose(); },
+    },
+    {
       id: 'nav-ai',
       category: 'Navigation',
       label: 'Open AI Productivity Assistant',
@@ -424,13 +431,13 @@ export function CommandPalette({
             ref={inputRef}
             type="text"
             className="cmd-input"
-            placeholder="Search..."
+            placeholder="Search tasks, projects & commands..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             aria-autocomplete="list"
             aria-expanded={filteredCommands.length > 0}
           />
-          {query && (
+          {query ? (
             <button
               type="button"
               className="cmd-clear-btn"
@@ -439,6 +446,8 @@ export function CommandPalette({
             >
               <X size={16} />
             </button>
+          ) : (
+            <kbd className="cmd-esc-badge" onClick={onClose} title="Press Escape to close">ESC</kbd>
           )}
         </div>
 
@@ -484,6 +493,13 @@ export function CommandPalette({
               );
             })
           )}
+        </div>
+
+        {/* Footer shortcuts */}
+        <div className="cmd-footer">
+          <span><kbd>↑</kbd> <kbd>↓</kbd> to navigate</span>
+          <span><kbd>↵</kbd> to select</span>
+          <span><kbd>esc</kbd> to close</span>
         </div>
       </div>
     </div>

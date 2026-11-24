@@ -31,6 +31,7 @@ import {
   ShieldAlert,
   Clock,
   Target,
+  GitBranch,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTasks } from '../../hooks/useTasks';
@@ -42,6 +43,7 @@ const FEATURE_SECTIONS = [
     title: 'Workspaces & Projects',
     items: [
       { id: 'tasks', label: 'My Tasks', icon: CheckSquare },
+      { id: 'planning', label: 'Project Planning & Gantt', icon: GitBranch },
       { id: 'time-tracking', label: 'Time Tracking & Timesheets', icon: Clock },
       { id: 'goals', label: 'Goals, OKRs & Milestones', icon: Target },
       { id: 'team', label: 'Team Space', icon: Users },

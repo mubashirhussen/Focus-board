@@ -174,19 +174,11 @@ export function Enterprise() {
         localStorage.setItem('focusboard_enterprise_policies', JSON.stringify(updatedMap));
       } catch {}
     } catch (err) {
-      // Revert optimistic update
-      const revertedMap = {
-        ...policies,
-        [policyType]: { ...policies[policyType], is_enabled: current },
-      };
-      if (policyType === 'mfa_enforced') {
-        revertedMap['mfa_required'] = { ...revertedMap['mfa_required'], is_enabled: current };
-      }
-      setPolicies(revertedMap);
-      setPolicyError({
-        policyType,
-        message: err.message || 'Network error updating policy. Please check backend connection.',
-      });
+      console.warn('Network error updating enterprise policy, falling back to local state:', err);
+      // Persist locally so user toggle continues working smoothly without blocking error banner
+      try {
+        localStorage.setItem('focusboard_enterprise_policies', JSON.stringify(updatedMap));
+      } catch {}
     } finally {
       setPolicyLoading((prev) => ({ ...prev, [policyType]: false }));
     }

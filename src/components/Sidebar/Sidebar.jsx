@@ -31,6 +31,7 @@ import {
   Sliders,
   Clock,
   Target,
+  GitBranch,
 } from 'lucide-react';
 import { useTasks } from '../../hooks/useTasks';
 import { useI18n } from '../../i18n/I18nContext';
@@ -43,6 +44,7 @@ export function Sidebar({ activeTab = 'tasks', onTabChange, onOpenFeedback }) {
 
   const navItems = [
     { id: 'tasks', label: t('nav.tasks', 'My Tasks'), icon: CheckSquare, count: stats.total },
+    { id: 'planning', label: t('nav.planning', 'Project Planning & Gantt'), icon: GitBranch, count: null },
     { id: 'time-tracking', label: t('nav.time_tracking', 'Time Tracking'), icon: Clock, count: null },
     { id: 'goals', label: t('nav.goals', 'Goals & OKRs'), icon: Target, count: null },
     { id: 'ai', label: t('nav.ai', 'AI Planner'), icon: Sparkles, count: null },

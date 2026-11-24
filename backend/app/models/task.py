@@ -113,6 +113,9 @@ class TaskDependency(Base):
     task_id = Column(String(64), ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False, index=True)
     depends_on_task_id = Column(String(64), ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False, index=True)
     dependency_type = Column(String(32), default="FINISH_TO_START", nullable=False) # FINISH_TO_START, START_TO_START, FINISH_TO_FINISH, START_TO_FINISH
+    lag_duration = Column(Float, default=0.0, nullable=False)
+    lag_unit = Column(String(16), default="DAYS", nullable=False) # DAYS, HOURS
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
     task = relationship("Task", foreign_keys=[task_id], back_populates="dependencies")

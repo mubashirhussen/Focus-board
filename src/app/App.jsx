@@ -33,6 +33,7 @@ import ProductLifecycleWorkspace from '../pages/ProductLifecycle/ProductLifecycl
 import PredictiveIntelligenceDashboard from '../pages/PredictiveIntelligence/PredictiveIntelligenceDashboard';
 import TimeTrackingDashboard from '../pages/TimeTracking/TimeTrackingDashboard';
 import GoalsDashboard from '../pages/Goals/GoalsDashboard';
+import ProjectPlanningWorkspace from '../pages/ProjectPlanning/ProjectPlanningWorkspace';
 import LoginPage from '../pages/Auth/LoginPage';
 import { I18nProvider, useI18n } from '../i18n/I18nContext';
 import OnboardingModal from '../components/Onboarding/OnboardingModal';
@@ -123,6 +124,10 @@ function AppContent() {
         return 'SaaS Plans & Usage Limits';
       case 'predictive-intelligence':
         return 'Predictive Project Intelligence & Health Analytics';
+      case 'planning':
+      case 'gantt':
+      case 'project-planning':
+        return 'Advanced Project Planning & Scheduling';
       case 'time-tracking':
         return 'Time Tracking, Timesheets & Billables';
       case 'goals':
@@ -191,6 +196,10 @@ function AppContent() {
       case 'goals':
       case 'okrs':
         return <GoalsDashboard />;
+      case 'planning':
+      case 'gantt':
+      case 'project-planning':
+        return <ProjectPlanningWorkspace />;
       case 'intelligence':
         return <Intelligence />;
       case 'enterprise':
