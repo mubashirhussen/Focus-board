@@ -43,7 +43,8 @@ const AVAILABLE_PERMISSIONS = [
 ];
 
 export function Enterprise() {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, openAuthModal } = useAuth();
+  const isUserLoggedIn = Boolean(isAuthenticated && user && !user.isGuest);
 
   const [activeTab, setActiveTab] = useState('governance'); // 'governance' | 'roles' | 'domains' | 'mfa' | 'audit'
   const [policies, setPolicies] = useState({});
@@ -434,7 +435,27 @@ export function Enterprise() {
       {/* Tab: Governance Policies */}
       {activeTab === 'governance' && (
         <div className="tab-pane">
-          <div className="policies-grid">
+          {!isUserLoggedIn ? (
+            <div className="enterprise-auth-gate" role="region" aria-label="Authentication Required">
+              <div className="auth-gate-card">
+                <div className="auth-gate-icon">
+                  <Lock size={32} />
+                </div>
+                <h3 className="auth-gate-title">Enterprise Security Policies</h3>
+                <p className="auth-gate-desc">
+                  Security guardrails, corporate domain restrictions, and AI privacy controls are restricted to authenticated enterprise administrators.
+                </p>
+                <button
+                  type="button"
+                  className="auth-gate-btn"
+                  onClick={openAuthModal}
+                >
+                  Sign In to Access Security Policies
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="policies-grid">
             {/* Policy 1: MFA */}
             <div className="policy-card">
               <div className="policy-card-header">
@@ -537,6 +558,7 @@ export function Enterprise() {
               </div>
             </div>
           </div>
+        )}
         </div>
       )}
 
