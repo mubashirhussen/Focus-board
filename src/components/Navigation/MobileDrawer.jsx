@@ -30,6 +30,7 @@ import {
   MessageSquare,
   ShieldAlert,
   Clock,
+  Target,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTasks } from '../../hooks/useTasks';
@@ -42,6 +43,7 @@ const FEATURE_SECTIONS = [
     items: [
       { id: 'tasks', label: 'My Tasks', icon: CheckSquare },
       { id: 'time-tracking', label: 'Time Tracking & Timesheets', icon: Clock },
+      { id: 'goals', label: 'Goals, OKRs & Milestones', icon: Target },
       { id: 'team', label: 'Team Space', icon: Users },
       { id: 'calendar', label: 'Calendar Schedule', icon: Calendar },
     ],

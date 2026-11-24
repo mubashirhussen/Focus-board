@@ -25,6 +25,9 @@ import {
   Compass,
   Lightbulb,
   BookOpen,
+  Target,
+  Clock,
+  UsersRound,
 } from 'lucide-react';
 import { searchApi } from '../../services/searchApi';
 import { userPrivacyApi } from '../../services/userPrivacyApi';
@@ -238,6 +241,34 @@ export function CommandPalette({
       label: 'Launch Autonomous AI Agents & Task Orchestration',
       icon: Bot,
       action: () => { onNavigate('agents'); onClose(); },
+    },
+    {
+      id: 'nav-goals',
+      category: 'Navigation',
+      label: 'Open Goals, OKRs & Milestones Management',
+      icon: Target,
+      action: () => { onNavigate('goals'); onClose(); },
+    },
+    {
+      id: 'nav-time-tracking',
+      category: 'Navigation',
+      label: 'Open Time Tracking & Timesheets',
+      icon: Clock,
+      action: () => { onNavigate('time-tracking'); onClose(); },
+    },
+    {
+      id: 'nav-resources',
+      category: 'Navigation',
+      label: 'Open Resource & Workload Management',
+      icon: UsersRound,
+      action: () => { onNavigate('resources'); onClose(); },
+    },
+    {
+      id: 'nav-predictive',
+      category: 'Navigation',
+      label: 'Open Predictive Project Intelligence',
+      icon: Brain,
+      action: () => { onNavigate('predictive-intelligence'); onClose(); },
     },
   ], [onNavigate, onClose]);
 

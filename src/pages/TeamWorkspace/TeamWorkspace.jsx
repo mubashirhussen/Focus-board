@@ -356,8 +356,10 @@ export function TeamWorkspace() {
                     return (
                       <div key={t.id} className="shared-task-card">
                         <div className="task-main-info">
-                          <span className={`task-badge ${t.priority?.toLowerCase()}`}>{t.priority}</span>
-                          <h4 className="shared-task-title">{t.title}</h4>
+                          <div className="task-title-line">
+                            <span className={`task-badge priority-${t.priority?.toLowerCase() || 'medium'}`}>{t.priority}</span>
+                            <h4 className="shared-task-title">{t.title}</h4>
+                          </div>
                           {t.description && <p className="shared-task-desc">{t.description}</p>}
                         </div>
 

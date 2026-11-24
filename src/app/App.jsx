@@ -32,6 +32,7 @@ import SecurityOperationsCenter from '../pages/SecurityOperations/SecurityOperat
 import ProductLifecycleWorkspace from '../pages/ProductLifecycle/ProductLifecycleWorkspace';
 import PredictiveIntelligenceDashboard from '../pages/PredictiveIntelligence/PredictiveIntelligenceDashboard';
 import TimeTrackingDashboard from '../pages/TimeTracking/TimeTrackingDashboard';
+import GoalsDashboard from '../pages/Goals/GoalsDashboard';
 import LoginPage from '../pages/Auth/LoginPage';
 import { I18nProvider, useI18n } from '../i18n/I18nContext';
 import OnboardingModal from '../components/Onboarding/OnboardingModal';
@@ -124,6 +125,9 @@ function AppContent() {
         return 'Predictive Project Intelligence & Health Analytics';
       case 'time-tracking':
         return 'Time Tracking, Timesheets & Billables';
+      case 'goals':
+      case 'okrs':
+        return 'Strategic Goals, OKRs & Milestones Management';
       case 'intelligence':
         return 'Product Intelligence & Behavioral Insights';
       case 'enterprise':
@@ -184,6 +188,9 @@ function AppContent() {
         return <PredictiveIntelligenceDashboard />;
       case 'time-tracking':
         return <TimeTrackingDashboard />;
+      case 'goals':
+      case 'okrs':
+        return <GoalsDashboard />;
       case 'intelligence':
         return <Intelligence />;
       case 'enterprise':

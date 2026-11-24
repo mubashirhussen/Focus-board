@@ -61,6 +61,7 @@ from app.api.routes import (
     activity_routes,
     cx_intelligence_routes,
     time_tracking_routes,
+    goal_routes,
 )
 
 # Configure structured, sensitive-data-safe logging
@@ -200,6 +201,8 @@ app.include_router(cx_intelligence_routes.router, prefix=settings.API_V1_STR)
 app.include_router(cx_intelligence_routes.router)  # Direct /cx/... access support
 app.include_router(time_tracking_routes.router, prefix=settings.API_V1_STR)
 app.include_router(time_tracking_routes.router)  # Direct /time-tracking/... access support
+app.include_router(goal_routes.router, prefix=settings.API_V1_STR)
+app.include_router(goal_routes.router)  # Direct /goals/... access support
 
 @app.get("/")
 def root():

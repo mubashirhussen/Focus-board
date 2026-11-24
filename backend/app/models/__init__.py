@@ -59,6 +59,18 @@ from app.models.time_tracking import (
     TimeTrackingSettings,
     TimeEntryAuditLog,
 )
+from app.models.goals import (
+    Goal,
+    KeyResult,
+    KeyResultProgressHistory,
+    GoalMilestone,
+    MilestoneDependency,
+    GoalProjectLink,
+    KeyResultTaskLink,
+    GoalCheckIn,
+    GoalComment,
+    GoalSettings,
+)
 from app.models.enterprise import (
     OrganizationPolicy,
     CustomRole,
@@ -414,4 +426,22 @@ __all__ = [
     "FocusSessionRecord",
     "MeetingIntelligenceRecord",
     "DecisionMemoryRecord",
+    # Module B48: Time Tracking & Timesheets
+    "TimeEntry",
+    "ActiveTimer",
+    "Timesheet",
+    "TimesheetApproval",
+    "TimeTrackingSettings",
+    "TimeEntryAuditLog",
+    # Module B50: Goals, OKRs & Milestones
+    "Goal",
+    "KeyResult",
+    "KeyResultProgressHistory",
+    "GoalMilestone",
+    "MilestoneDependency",
+    "GoalProjectLink",
+    "KeyResultTaskLink",
+    "GoalCheckIn",
+    "GoalComment",
+    "GoalSettings",
 ]
